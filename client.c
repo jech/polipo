@@ -237,7 +237,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         if(request->ohandler)
             abortObjectHandler(request->ohandler);
         request->ohandler = NULL;
-        if(request->object->requestor == request)
+        if(request->object && request->object->requestor == request)
             request->object->requestor = NULL;
         httpDequeueRequest(connection);
         httpDestroyRequest(request);
