@@ -2035,6 +2035,8 @@ httpServerHandlerHeaders(int eof,
     if(new_object->flags & OBJECT_INITIAL) {
         objectPartial(new_object, full_len, headers);
     } else {
+        if(new_object->length < 0)
+            new_object->length = full_len;
         /* XXX -- RFC 2616 13.5.3 */
         releaseAtom(headers);
     }
