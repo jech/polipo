@@ -52,8 +52,13 @@ preinitServer(void)
                              "Estimated time for a pipeline break.");
     CONFIG_VARIABLE_SETTABLE(replyUnpipelineSize, CONFIG_INT, configIntSetter,
                     "Size for a pipeline break.");
-    CONFIG_VARIABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
-                    "Pipeline requests on an active connection.");
+    CONFIG_VARIABLE_SETTABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
+                             configIntSetter,
+                             "Pipeline requests on an active connection.");
+    CONFIG_VARIABLE_SETTABLE(maxPipelineTrain, CONFIG_INT,
+                             configIntSetter,
+                             "Maximum number of requests "
+                             "pipelined at a time.");
     CONFIG_VARIABLE(pmmFirstSize, CONFIG_INT,
                     "The size of the first PMM chunk.");
     CONFIG_VARIABLE(pmmSize, CONFIG_INT,
