@@ -1694,8 +1694,8 @@ Typically, the effect is to cause calls to the @code{malloc} and
 @code{mmap} library functions to fail.
 
 Polipo will usually react gracefully to failures to allocate
-memory@footnote{There are exactly two places in the code where Polipo
-will give up and exit if out of memory; both are extremely unlikely to
+memory@footnote{There are exactly three places in the code where Polipo
+will give up and exit if out of memory; all three are extremely unlikely to
 happen in practice.}.  Nonetheless, you should avoid using OS limits
 to limit Polipo's memory usage.  Indeed, when it hits an OS limit,
 Polipo cannot allocate the memory needed to schedule recovery from the
