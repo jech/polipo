@@ -472,14 +472,14 @@ redirectorStreamHandler2(int status,
         message = internAtom("Redirected by external redirector");
         if(message == NULL) {
             request->handler(-ENOMEM, request->url, NULL, NULL, request->data);
-            goto fail;
+            goto kill;
         }
 
         headers = internAtomF("\r\nLocation: %s", redirector_buffer);
         if(headers == NULL) {
             releaseAtom(message);
             request->handler(-ENOMEM, request->url, NULL, NULL, request->data);
-            goto fail;
+            goto kill;
         }
     } else {
         code = 0;
@@ -489,6 +489,7 @@ redirectorStreamHandler2(int status,
     request->handler(code, request->url,
                      message, headers, request->data);
     goto cont;
+
  kill:
     close(redirector_read_fd);
     redirector_read_fd = -1;
@@ -499,8 +500,7 @@ redirectorStreamHandler2(int status,
     if(rc < 0)
         do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
     redirector_pid = 0;
- fail:
-    request->handler(-ENOMEM, request->url, NULL, NULL, request->data);
+
  cont:
     assert(redirector_request_first == request);
     redirector_request_first = request->next;
