@@ -989,8 +989,7 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
 {
     HTTPConnectionPtr connection = request->connection;
     ObjectPtr object = request->object;
-    int serveNow = 
-        (request == connection->request && !(connection->flags & CONN_WRITER));
+    int serveNow = (request == connection->request);
     int validate = 0;
     int conditional = 0;
     int local, haveData;
