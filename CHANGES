@@ -1,4 +1,4 @@
-Polipo 0.9.6 (unreleased):
+31 October 2004: Polipo 0.9.6:
         Fixed a possible crash in ServeObject.
         Fixed two possible crashes when relaxTransparency is not false.
         Modified the config file parser to make it possible to have
