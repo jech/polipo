@@ -848,7 +848,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       "\n<html><head>"
                       "\n<title>Proxy %s: %3d %s.</title>"
                       "\n</head><body>"
-                      "\n<h1>%3d %s</h1><hr>"
+                      "\n<h1>%3d %s</h1>"
                       "\n<p>The following %s",
                       code >= 400 ? "error" : "result",
                       code, htmlMessage,
@@ -870,7 +870,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
         m = snnprintf(body, m, CHUNK_SIZE,
                       ":<br><br>"
                       "\n<strong>%3d %s</strong></p>"
-                      "\n<hr>Generated %s by <em>%s:%d</em>"
+                      "\n<hr>Generated %s by Polipo on <em>%s:%d</em>."
                       "\n</body></html>\r\n",
                       code, htmlMessage,
                       timeStr, proxyName->string, proxyPort);
