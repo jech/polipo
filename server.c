@@ -2031,6 +2031,10 @@ httpServerHandlerHeaders(int eof,
         new_object->cache_control |= CACHE_NO_HIDDEN;
     }
 
+    if(urlIsUncachable(new_object->key, new_object->key_size)) {
+        new_object->cache_control |= CACHE_NO_HIDDEN;
+    }
+
     if(!via)
         new_via = internAtomF("%s %s",
                               version == HTTP_11 ? "1.1" : "1.0",

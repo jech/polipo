@@ -37,6 +37,10 @@ int redirectorRedirectCode = 302;
 DomainPtr *forbiddenDomains = NULL;
 regex_t *forbiddenRegex = NULL;
 
+AtomPtr uncachableFile = NULL;
+DomainPtr *uncachableDomains = NULL;
+regex_t *uncachableRegex = NULL;
+
 /* these three are only used internally by {parse,read}DomainFile */
 /* to avoid having to pass it all as parameters */
 static DomainPtr *domains;
@@ -65,6 +69,8 @@ preinitForbidden(void)
     CONFIG_VARIABLE(redirector, CONFIG_ATOM, "Squid-style redirector.");
     CONFIG_VARIABLE(redirectorRedirectCode, CONFIG_INT,
                     "Redirect code to use with redirector.");
+    CONFIG_VARIABLE_SETTABLE(uncachableFile, CONFIG_ATOM, atomSetterForbidden,
+                             "File specifying uncachable URLs.");
 }
 
 static int
@@ -85,7 +91,7 @@ readDomainFile(char *filename)
     in = fopen(filename, "r");
     if(in == NULL) {
         if(errno != ENOENT)
-            do_log_error(L_ERROR, errno, "Couldn't open forbidden file");
+            do_log_error(L_ERROR, errno, "Couldn't open file: %s", filename);
         return -1;
     }
 
@@ -126,7 +132,7 @@ readDomainFile(char *filename)
                 char *new_regexbuf;
                 new_regexbuf = realloc(regexbuf, rsize * 2 + 1);
                 if(new_regexbuf == NULL) {
-                    do_log(L_ERROR, "Couldn't reallocate forbidden regex.\n");
+                    do_log(L_ERROR, "Couldn't reallocate regex.\n");
                     fclose(in);
                     return -1;
                 }
@@ -146,18 +152,18 @@ readDomainFile(char *filename)
                                       sizeof(DomainPtr));
                 if(new_domains == NULL) {
                     do_log(L_ERROR, 
-                           "Couldn't reallocate forbidden domains.\n");
-		    fclose(in);
-		    return -1;
+                           "Couldn't reallocate domain list.\n");
+                    fclose(in);
+                    return -1;
                 }
                 domains = new_domains;
                 dsize = dsize * 2 + 1;
             }
             new_domain = malloc(sizeof(DomainRec) - 1 + i - start);
             if(new_domain == NULL) {
-                do_log(L_ERROR, "Couldn't allocate forbidden domain.\n");
-		fclose(in);
-		return -1;
+                do_log(L_ERROR, "Couldn't allocate domain.\n");
+                fclose(in);
+                return -1;
             }
             new_domain->length = i - start;
             memcpy(new_domain->domain, buf + start, i - start);
@@ -180,12 +186,12 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
             domain++;
         }
         free(*domains_return);
-	*domains_return = NULL;
+        *domains_return = NULL;
     }
 
     if(*regex_return) {
         regfree(*regex_return);
-	*regex_return = NULL;
+        *regex_return = NULL;
     }
 
     if(!file || file->length == 0)
@@ -193,7 +199,7 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
 
     domains = malloc(64 * sizeof(DomainPtr));
     if(domains == NULL) {
-        do_log(L_ERROR, "Couldn't allocate forbidden domains.\n");
+        do_log(L_ERROR, "Couldn't allocate domain list.\n");
         return;
     }
     dlen = 0;
@@ -201,7 +207,7 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
 
     regexbuf = malloc(512);
     if(regexbuf == NULL) {
-        do_log(L_ERROR, "Couldn't allocate forbidden regex.\n");
+        do_log(L_ERROR, "Couldn't allocate regex.\n");
         free(domains);
         return;
     }
@@ -212,7 +218,7 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
     rc = stat(file->string, &ss);
     if(rc < 0) {
         if(errno != ENOENT)
-            do_log_error(L_WARN, errno, "Couldn't stat forbidden file");
+            do_log_error(L_WARN, errno, "Couldn't stat file %s", file->string);
     } else {
         if(!S_ISDIR(ss.st_mode))
             readDomainFile(file->string);
@@ -234,7 +240,7 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
                 fts_close(fts);
             } else {
                 do_log_error(L_ERROR, errno,
-                             "Couldn't scan forbidden directory");
+                             "Couldn't scan directory %s", file->string);
             }
         }
     }
@@ -249,15 +255,15 @@ parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return
     regex_t *regex;
 
     if(rlen > 0) {
-	regex = malloc(sizeof(regex_t));
+        regex = malloc(sizeof(regex_t));
         rc = regcomp(regex, regexbuf, REG_EXTENDED | REG_NOSUB);
         if(rc != 0) {
-            do_log(L_ERROR, "Couldn't compile forbidden regex: %d.\n", rc);
-	    free(regex);
-	    regex = NULL;
+            do_log(L_ERROR, "Couldn't compile regex: %d.\n", rc);
+            free(regex);
+            regex = NULL;
         }
     } else {
-	regex = NULL;
+        regex = NULL;
     }
     free(regexbuf);
 
@@ -292,31 +298,52 @@ initForbidden(void)
 
     parseDomainFile(forbiddenFile, &forbiddenDomains, &forbiddenRegex);
 
+
+    if(uncachableFile)
+        uncachableFile = expandTilde(uncachableFile);
+
+    if(uncachableFile == NULL) {
+        uncachableFile = expandTilde(internAtom("~/.polipo-uncachable"));
+        if(uncachableFile) {
+            if(access(uncachableFile->string, F_OK) < 0) {
+                releaseAtom(uncachableFile);
+                uncachableFile = NULL;
+            }
+        }
+    }
+
+    if(uncachableFile == NULL) {
+        if(access("/etc/polipo/uncachable", F_OK) >= 0)
+            uncachableFile = internAtom("/etc/polipo/uncachable");
+    }
+
+    parseDomainFile(uncachableFile, &uncachableDomains, &uncachableRegex);
+
     return;
 }
 
 int
-urlIsMatched(AtomPtr url, DomainPtr *domains, regex_t *regex)
+urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
 {
-    if(url->length < 8)
+    if(length < 8)
         return 0;
 
-    if(memcmp(url->string, "http://", 7) != 0)
+    if(memcmp(url, "http://", 7) != 0)
         return 0;
 
     if(domains) {
         int i;
         DomainPtr *domain;
-        for(i = 8; i < url->length; i++) {
-            if(url->string[i] == '/')
+        for(i = 8; i < length; i++) {
+            if(url[i] == '/')
                 break;
         }
         domain = domains;
         while(*domain) {
             if((*domain)->length <= (i - 7) &&
-               (url->string[i - (*domain)->length - 1] == '.' ||
-                url->string[i - (*domain)->length - 1] == '/') &&
-               memcmp(url->string + i - (*domain)->length,
+               (url[i - (*domain)->length - 1] == '.' ||
+                url[i - (*domain)->length - 1] == '/') &&
+               memcmp(url + i - (*domain)->length,
                       (*domain)->domain, 
                       (*domain)->length) == 0)
                 return 1;
@@ -324,10 +351,16 @@ urlIsMatched(AtomPtr url, DomainPtr *domains, regex_t *regex)
         }
     }
     if(regex) {
-        if(!regexec(regex, url->string, 0, NULL, 0))
+        if(!regexec(regex, url, 0, NULL, 0))
             return 1;
     }
     return 0;
+}
+
+int
+urlIsUncachable(char *url, int length)
+{
+  return urlIsMatched(url, length, uncachableDomains, uncachableRegex);
 }
 
 static char lf[1] = "\n";
@@ -337,7 +370,7 @@ urlForbidden(AtomPtr url,
              int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
              void *closure)
 {
-    int forbidden = urlIsMatched(url, forbiddenDomains, forbiddenRegex);
+    int forbidden = urlIsMatched(url->string, url->length, forbiddenDomains, forbiddenRegex);
     int code = 0;
     AtomPtr message = NULL, headers = NULL;
 
