@@ -1182,7 +1182,7 @@ specified by @code{parentPort}.
 If the parent proxy requires authorisation, the username and password
 should be specified in the variable @code{parentAuthCredentials} in
 the form @samp{username:password}.  Only @emph{Basic} authentication
-is supported, which is vulnerable to spoofing.
+is supported, which is vulnerable to replay attacks.
 
 The main application of the parent proxy support is to cross
 firewalls.  Given a machine, say @code{trurl}, with unrestricted
