@@ -12,6 +12,8 @@ Polipo 0.9.6 (unreleased):
         Fixed a scheduling bug that caused server-side requests to be
         issued in the order opposite to a client-side pipeline (many
         thanks to Joachim Haga).
+        Abort when the config file couldn't be parsed (thanks to
+        Joachim Haga).
 
 17 June 2004: Polipo 0.9.5:
         Implemented upstream proxy authentication (HTTP Basic only).

@@ -115,6 +115,8 @@ main(int argc, char **argv)
     }
 
     rc = parseConfigFile(configFile);
+    if(rc < 0)
+        exit(1);
 
     while(i < argc) {
         rc = parseConfigLine(argv[i], "command line", 0);
