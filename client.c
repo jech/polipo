@@ -944,21 +944,21 @@ static int
 httpClientDelayed(TimeEventHandlerPtr event)
 {
      HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
-    if(connection->reqlen > 0) {
-        do_stream(IO_READ | IO_IMMEDIATE,
-                  connection->fd, connection->reqlen,
-                  connection->reqbuf, CHUNK_SIZE,
-                  httpClientHandler, connection);
-    } else {
-        if(connection->reqbuf)
-            dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
-        do_stream_buf(IO_READ,
-                      connection->fd, 0,
-                      &connection->reqbuf, CHUNK_SIZE,
-                      httpClientHandler, connection);
-    }
-    return 1;
+     if(connection->reqlen > 0) {
+         do_stream(IO_READ | IO_IMMEDIATE,
+                   connection->fd, connection->reqlen,
+                   connection->reqbuf, CHUNK_SIZE,
+                   httpClientHandler, connection);
+     } else {
+         if(connection->reqbuf)
+             dispose_chunk(connection->reqbuf);
+         connection->reqbuf = NULL;
+         do_stream_buf(IO_READ,
+                       connection->fd, 0,
+                       &connection->reqbuf, CHUNK_SIZE,
+                       httpClientHandler, connection);
+     }
+     return 1;
 }
 
 int
