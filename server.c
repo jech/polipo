@@ -1293,15 +1293,6 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     if(proxyOffline)
         return -1;
 
-    if(urlForbidden(object->key, object->key_size)) {
-        do_log(L_FORBIDDEN, "Forbidden URL ");
-        do_log_n(L_FORBIDDEN, object->key, object->key_size);
-        do_log(L_FORBIDDEN, "\n");
-        abortObject(object, 403, internAtom("Forbidden URL"));
-        notifyObject(object);
-        return 1;
-    }
-
     rc = parseUrl(object->key, object->key_size, &x, &y, &port, &z);
     
     if(rc < 0 || x < 0 || y < 0 || y - x > 131) {
