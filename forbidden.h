@@ -36,6 +36,7 @@ int urlIsForbidden(AtomPtr url);
 int urlForbidden(AtomPtr url,
                  int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
                  void *closure);
+void redirectorKill(void);
 int redirectorStreamHandler1(int status,
                              FdEventHandlerPtr event,
                              StreamRequestPtr srequest);

@@ -173,6 +173,8 @@ initForbidden(void)
     int rc;
     struct stat ss;
 
+    redirectorKill();
+
     if(forbiddenFile)
         forbiddenFile = expandTilde(forbiddenFile);
 
@@ -362,6 +364,25 @@ urlForbidden(AtomPtr url,
 }
 
 void
+redirectorKill(void)
+{
+    int rc;
+    int status;
+    if(redirector_read_fd >= 0) {
+        close(redirector_read_fd);
+        redirector_read_fd = -1;
+        close(redirector_write_fd);
+        redirector_write_fd = -1;
+        kill(redirector_pid, SIGTERM);
+        rc = waitpid(redirector_pid, &status, 0);
+        if(rc < 0) {
+            do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
+        }
+        redirector_pid = -1;
+    }
+}
+
+void
 redirectorTrigger(void)
 {
     RedirectRequestPtr request = redirector_request_first;
@@ -389,29 +410,18 @@ redirectorTrigger(void)
                 redirectorStreamHandler1, request);
 }
 
-
 int
 redirectorStreamHandler1(int status,
                          FdEventHandlerPtr event,
                          StreamRequestPtr srequest)
 {
     RedirectRequestPtr request = (RedirectRequestPtr)srequest->data;
-    int rc;
 
     if(status < 0) {
         do_log_error(L_ERROR, -status, "Write to redirector failed");
         request->handler(status, request->url, NULL, NULL, request->data);
         free(request);
-        close(redirector_read_fd);
-        redirector_read_fd = -1;
-        close(redirector_write_fd);
-        redirector_write_fd = -1;
-        kill(redirector_pid, SIGTERM);
-        rc = waitpid(redirector_pid, &status, 0);
-        if(rc < 0) {
-            do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
-        }
-        redirector_pid = -1;
+        redirectorKill();
         return 1;
     }
 
