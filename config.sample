@@ -97,7 +97,7 @@
 
 # Uncomment this if you want to use Poor Man's Multiplexing; increase
 # the sizes if you're on a fast line.  They should each amount to a few
-# seconds' worth of transfer; iff pmmSize is small, you'll want
+# seconds' worth of transfer; if pmmSize is small, you'll want
 # pmmFirstSize to be larger.
 
 # Note that PMM is somewhat unreliable.
