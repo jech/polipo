@@ -1422,7 +1422,7 @@ httpClientSideHandler(int status,
 
     assert(status);
     do_log(L_ERROR, "Incomplete client request.\n");
-    httpClientError(request, 502, internAtom("Incomplete client request"));
+    httpClientFinish(connection, 2);
     return 1;
 }
 
