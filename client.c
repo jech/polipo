@@ -1367,7 +1367,7 @@ httpClientGetHandler(int status, ConditionHandlerPtr chandler)
                            internAtom("Couldn't schedule "
                                       "noticing of request"));
            } else {
-               request->ohandler = NULL;
+               request->chandler = NULL;
                return 1;
            }
         }
