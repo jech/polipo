@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003 by Juliusz Chroboczek
+Copyright (c) 2003, 2004 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -74,7 +74,7 @@ atomSetterForbidden(ConfigVariablePtr var, void *value)
     return configAtomSetter(var, value);
 }
 
-void
+int
 readDomainFile(char *filename)
 {
     FILE *in;
@@ -86,7 +86,7 @@ readDomainFile(char *filename)
     if(in == NULL) {
         if(errno != ENOENT)
             do_log_error(L_ERROR, errno, "Couldn't open forbidden file");
-        return;
+        return -1;
     }
 
     while(1) {
@@ -127,8 +127,8 @@ readDomainFile(char *filename)
                 new_regexbuf = realloc(regexbuf, rsize * 2 + 1);
                 if(new_regexbuf == NULL) {
                     do_log(L_ERROR, "Couldn't reallocate forbidden regex.\n");
-		    fclose(in);
-		    return;
+                    fclose(in);
+                    return -1;
                 }
                 regexbuf = new_regexbuf;
                 rsize = rsize * 2 + 1;
@@ -148,7 +148,7 @@ readDomainFile(char *filename)
                     do_log(L_ERROR, 
                            "Couldn't reallocate forbidden domains.\n");
 		    fclose(in);
-		    return;
+		    return -1;
                 }
                 domains = new_domains;
                 dsize = dsize * 2 + 1;
@@ -157,7 +157,7 @@ readDomainFile(char *filename)
             if(new_domain == NULL) {
                 do_log(L_ERROR, "Couldn't allocate forbidden domain.\n");
 		fclose(in);
-		return;
+		return -1;
             }
             new_domain->length = i - start;
             memcpy(new_domain->domain, buf + start, i - start);
@@ -165,27 +165,27 @@ readDomainFile(char *filename)
         }
     }
     fclose(in);
-    return;
+    return 1;
 }
 
 void
-parseDomainFile(AtomPtr file, DomainPtr **ptrToDomains, regex_t **ptrToRegex)
+parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return)
 {
     int rc;
 
-    if(*ptrToDomains) {
-        DomainPtr *domain = *ptrToDomains;
+    if(*domains_return) {
+        DomainPtr *domain = *domains_return;
         while(*domain) {
             free(*domain);
             domain++;
         }
-        free(*ptrToDomains);
-	*ptrToDomains = NULL;
+        free(*domains_return);
+	*domains_return = NULL;
     }
 
-    if(*ptrToRegex) {
-        regfree(*ptrToRegex);
-	*ptrToRegex = NULL;
+    if(*regex_return) {
+        regfree(*regex_return);
+	*regex_return = NULL;
     }
 
     if(!file || file->length == 0)
@@ -261,8 +261,8 @@ parseDomainFile(AtomPtr file, DomainPtr **ptrToDomains, regex_t **ptrToRegex)
     }
     free(regexbuf);
 
-    *ptrToDomains = domains;
-    *ptrToRegex = regex;
+    *domains_return = domains;
+    *regex_return = regex;
 
     return;
 }
