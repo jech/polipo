@@ -41,6 +41,7 @@ static AtomPtr atomConnection, atomProxyConnection, atomContentLength,
     atomXPolipoBodyOffset;
 
 int censorReferer = 0;
+int laxHttpParser = 1;
 
 static AtomListPtr censoredHeaders;
 
@@ -55,6 +56,8 @@ preinitHttpParser()
     }
     CONFIG_VARIABLE(censoredHeaders, CONFIG_ATOM_LIST_LOWER,
                     "Headers to censor.");
+    CONFIG_VARIABLE(laxHttpParser, CONFIG_BOOLEAN,
+                    "Ignore unknown HTTP headers.");
 }
 
 void
@@ -499,6 +502,8 @@ parseInt(const char *restrict buf, int start, int *val_return)
     return i;
 }
 
+/* Returned *name_start_return is -1 at end of headers, -2 if the line
+   couldn't be parsed. */
 static int
 parseHeaderLine(const char *restrict buf, int start,
                 int *name_start_return, int *name_end_return,
@@ -518,15 +523,32 @@ parseHeaderLine(const char *restrict buf, int start,
 
     i = getNextToken(buf, start, &name_start, &name_end);
     if(i < 0 || buf[i] != ':')
-        return -1;
+        goto syntax;
 
     i = getHeaderValue(buf, i + 2, &value_start, &value_end);
-    if(i < 0) return -1;
+    if(i < 0)
+        goto syntax;
 
     *name_start_return = name_start;
     *name_end_return = name_end;
     *value_start_return = value_start;
     *value_end_return = value_end;
+    return i;
+
+ syntax:
+    i = start;
+    while(1) {
+        if(buf[i] == '\n') {
+            i++;
+            break;
+        }
+        if(buf[i] == '\r' && buf[i + 1] == '\n') {
+            i += 2;
+            break;
+        }
+        i++;
+    }
+    *name_start_return = -2;
     return i;
 }
 
@@ -750,15 +772,18 @@ httpParseHeaders(int client, AtomPtr url,
     i = start;
 
     while(1) {
-        i = parseHeaderLine(buf, i, 
+        i = parseHeaderLine(buf, i,
                             &name_start, &name_end, &value_start, &value_end);
         if(i < 0) {
-            do_log(L_ERROR, "Couldn't find end of header line\n");
+            do_log(L_ERROR, "Couldn't find end of header line.\n");
             goto fail;
         }
 
-        if(name_start < 0)
+        if(name_start == -1)
             break;
+
+        if(name_start < 0)
+            continue;
 
         /* It's not worthwile to intern the name -- it will only be
            compared once. */
@@ -806,12 +831,20 @@ httpParseHeaders(int client, AtomPtr url,
         i = parseHeaderLine(buf, i, 
                             &name_start, &name_end, &value_start, &value_end);
         if(i < 0) {
-            do_log(L_ERROR, "Couldn't find end of header line\n");
+            do_log(L_ERROR, "Couldn't find end of header line.\n");
             goto fail;
         }
 
-        if(name_start < 0)
+        if(name_start == -1)
             break;
+
+        if(name_start < 0) {
+            do_log(L_WARN, "Couldn't parse header line.\n");
+            if(laxHttpParser)
+                continue;
+            else
+                goto fail;
+        }
 
         name = internAtomLowerN(buf + name_start, name_end - name_start);
         
