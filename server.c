@@ -2047,6 +2047,13 @@ httpServerHandlerHeaders(int eof,
     }
 
     if(new_object != old_object) {
+        if(new_object->flags & OBJECT_INPROGRESS) {
+            /* Make sure we don't fetch this object two times at the
+               same time.  Just drop the connection. */
+            releaseObject(new_object);
+            httpServerFinish(connection, 1, 0);
+            return 1;
+        }
         old_object->flags &= ~OBJECT_VALIDATING;
         new_object->flags |= OBJECT_INPROGRESS;
         /* Signal the client side to switch to the new object -- see
@@ -2058,11 +2065,13 @@ httpServerHandlerHeaders(int eof,
         request->can_mutate = NULL;
         new_object->flags &= ~OBJECT_MUTATING;
         old_object->flags &= ~OBJECT_INPROGRESS;
-        if(request->object != new_object) {
+        if(request->object == old_object) {
             if(request->request)
                 request->request->request = NULL;
             request->request = NULL;
             request->object = new_object;
+        } else {
+            assert(request->object == new_object);
         }
         releaseNotifyObject(old_object);
         old_object = NULL;
@@ -2193,6 +2202,7 @@ httpServerIndirectHandlerCommon(HTTPConnectionPtr connection, int eof)
     HTTPRequestPtr request = connection->request;
 
     assert(eof >= 0);
+    assert(request->object->flags & OBJECT_INPROGRESS);
 
     if(connection->len > 0) {
         int rc;
@@ -2279,6 +2289,8 @@ httpServerReadData(HTTPConnectionPtr connection, int immediate)
     HTTPRequestPtr request = connection->request;
     ObjectPtr object = request->object;
     int to = -1;
+
+    assert(object->flags & OBJECT_INPROGRESS);
 
     if(request->request == NULL) {
         httpServerFinish(connection, 1, 0);
