@@ -2389,12 +2389,8 @@ httpServerReadData(HTTPConnectionPtr connection, int immediate)
         }
     }
        
-    if(connection->len == 0) {
-        if(connection->buf) {
-            dispose_chunk(connection->buf);
-            connection->buf = NULL;
-        }
-    }
+    if(connection->len == 0)
+        httpConnectionDestroyBuf(connection);
 
     httpSetTimeout(connection, serverTimeout);
     do_stream_buf(IO_READ | IO_NOTNOW |
