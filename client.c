@@ -1379,7 +1379,7 @@ httpClientGetHandler(int status, ConditionHandlerPtr chandler)
                 new_object->requestor = request;
             object->requestor = NULL;
         }
-        request->ohandler = NULL;
+        request->chandler = NULL;
         releaseObject(object);
         request->object = new_object;
         request->request->object = new_object;
