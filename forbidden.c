@@ -490,17 +490,6 @@ redirectorStreamHandler2(int status,
                      message, headers, request->data);
     goto cont;
 
- kill:
-    close(redirector_read_fd);
-    redirector_read_fd = -1;
-    close(redirector_write_fd);
-    redirector_write_fd = -1;
-    kill(redirector_pid, SIGTERM);
-    rc = waitpid(redirector_pid, &status, 0);
-    if(rc < 0)
-        do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
-    redirector_pid = 0;
-
  cont:
     assert(redirector_request_first == request);
     redirector_request_first = request->next;
@@ -509,6 +498,10 @@ redirectorStreamHandler2(int status,
     free(request);
     redirectorTrigger();
     return 1;
+
+ kill:
+    redirectorKill();
+    goto cont;
 }
             
 int
