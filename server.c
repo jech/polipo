@@ -661,6 +661,9 @@ httpServerTrigger(HTTPServerPtr server)
 
         if(REQUEST_SIDE(server->request)) {
             rc = httpServerSideRequest(server);
+            /* If rc is 0, httpServerSideRequest didn't dequeue this
+               request.  Go through the scheduling loop again, come
+               back later. */
             if(rc <= 0) break;
             continue;
         }
@@ -815,7 +818,7 @@ httpServerSideRequest(HTTPServerPtr server)
         do_log(L_ERROR, "Couldn't write POST or PUT request.\n");
         httpServerAbortRequest(request, rc != -ECLIENTRESET, 503, 
                                internAtom("Couldn't write request"));
-        return 1;
+        return 0;
     }
     server->request = request->next;
     request->next = NULL;
