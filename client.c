@@ -944,8 +944,11 @@ static int
 httpClientDelayed(TimeEventHandlerPtr event)
 {
      HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+
+     /* IO_NOTNOW is unfortunate, but needed to avoid starvation if a
+        client is pipelining a lot of requests. */
      if(connection->reqlen > 0) {
-         do_stream(IO_READ | IO_IMMEDIATE,
+         do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
                    connection->fd, connection->reqlen,
                    connection->reqbuf, CHUNK_SIZE,
                    httpClientHandler, connection);
@@ -953,7 +956,7 @@ httpClientDelayed(TimeEventHandlerPtr event)
          if(connection->reqbuf)
              dispose_chunk(connection->reqbuf);
          connection->reqbuf = NULL;
-         do_stream_buf(IO_READ,
+         do_stream_buf(IO_READ | IO_NOTNOW,
                        connection->fd, 0,
                        &connection->reqbuf, CHUNK_SIZE,
                        httpClientHandler, connection);
