@@ -457,6 +457,7 @@ httpClientRawErrorHeaders(HTTPConnectionPtr connection,
                               code, message, close, headers,
                               url, url_len, etag);
     if(n <= 0) {
+        shutdown(connection->fd, 1);
         httpClientFinish(connection, 1);
         return 1;
     }
