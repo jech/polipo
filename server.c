@@ -1301,6 +1301,13 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
         do_log(L_FORBIDDEN, "\n");
         abortObject(object, 403, internAtom("Forbidden URL"));
         notifyObject(object);
+        if(REQUEST_SIDE(requestor)) {
+            HTTPConnectionPtr client = requestor->connection;
+            do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
+                      client->fd, client->reqlen,
+                      client->reqbuf, CHUNK_SIZE,
+                      httpClientSideHandler, client);
+        }
         return 1;
     }
 

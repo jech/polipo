@@ -1381,8 +1381,8 @@ httpClientSideHandler(int status,
 {
     HTTPConnectionPtr connection = srequest->data;
     HTTPRequestPtr request = connection->request;
-    HTTPRequestPtr requestee = request->request;
-    HTTPConnectionPtr server = requestee->connection;
+    HTTPRequestPtr requestee;
+    HTTPConnectionPtr server;
     int push;
 
     if((request->object->flags & OBJECT_ABORTED) || 
@@ -1402,6 +1402,9 @@ httpClientSideHandler(int status,
             httpClientFinish(connection, 2);
         return 1;
     }
+
+    requestee = request->request;
+    server = requestee->connection;
 
     push = MIN(srequest->offset - connection->reqlen, 
                connection->bodylen - connection->reqoffset);
