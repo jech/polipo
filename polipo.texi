@@ -11,7 +11,7 @@
 @end direntry
 
 @copying
-Copyright @copyright{} 2003 by Juliusz Chroboczek.
+Copyright @copyright{} 2003, 2004 by Juliusz Chroboczek.
 @end copying
 
 @titlepage
@@ -1164,9 +1164,11 @@ cached (default 5 minutes).
 @section Parent proxies
 @vindex parentHost
 @vindex parentProxy
+@vindex parentAuthCredentials
 @cindex parent proxy
 @cindex upstream proxy
 @cindex firewall
+@cindex authentication
 
 Polipo will usually fetch instances directly from source servers as
 this configuration minimises latency.  In some cases, however, it may
@@ -1175,6 +1177,11 @@ be useful to have Polipo fetch instances from a @dfn{parent} proxy.
 The variable @code{parentHost} specifies the hostname or IP address of
 a parent proxy; Polipo will contact this proxy using the port number
 specified by @code{parentPort}.
+
+If the parent proxy requires authorisation, the username and password
+should be specified in the variable @code{parentAuthCredentials} in
+the form @samp{username:password}.  Only @emph{Basic} authentication
+is supported, which is vulnerable to spoofing.
 
 The main application of the parent proxy support is to cross
 firewalls.  Given a machine, say @code{trurl}, with unrestricted

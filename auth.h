@@ -21,3 +21,4 @@ THE SOFTWARE.
 */
 
 int checkClientAuth(AtomPtr, AtomPtr, AtomPtr*, AtomPtr*);
+int buildServerAuthHeaders(char*, int, int, AtomPtr);

@@ -76,7 +76,7 @@ char *expandTildeString(char *string);
 AtomPtr expandTilde(AtomPtr filename);
 void do_daemonise(int noclose);
 void writePid(char *pidfile);
-void b64cpy(char *restrict dst, const char *restrict src, int n, int fss);
+int b64cpy(char *restrict dst, const char *restrict src, int n, int fss);
 int b64cmp(const char *a, int an, const char *b, int bn) ATTRIBUTE ((pure));
 IntListPtr makeIntList(int size) ATTRIBUTE ((malloc));
 void destroyIntList(IntListPtr list);

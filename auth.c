@@ -23,8 +23,8 @@ THE SOFTWARE.
 #include "polipo.h"
 
 int
-buildAuthHeaders(AtomPtr url, char *word,
-                 AtomPtr *message_return, AtomPtr *headers_return)
+buildClientAuthHeaders(AtomPtr url, char *word,
+                       AtomPtr *message_return, AtomPtr *headers_return)
 {
     int code;
     char *h;
@@ -59,18 +59,33 @@ checkClientAuth(AtomPtr auth, AtomPtr url,
         return 0;
 
     if(auth == NULL)
-        code = buildAuthHeaders(url, "required", &message, &headers);
+        code = buildClientAuthHeaders(url, "required", &message, &headers);
     else if(auth->length >= 6 || lwrcmp(auth->string, "basic ", 6) == 0) {
         if(b64cmp(auth->string + 6, auth->length - 6,
                   authCredentials->string, authCredentials->length) == 0)
             return 0;
-        code = buildAuthHeaders(url, "incorrect", &message, &headers);
+        code = buildClientAuthHeaders(url, "incorrect", &message, &headers);
     } else {
-        code = buildAuthHeaders(url, NULL, NULL, &headers);
+        code = buildClientAuthHeaders(url, NULL, NULL, &headers);
         message = internAtom("Unexpected authentication scheme");
     }
 
     *message_return = message;
     *headers_return = headers;
     return code;
+}
+
+int
+buildServerAuthHeaders(char* buf, int n, int size, AtomPtr authCredentials)
+{
+    char authbuf[4 * 128 + 3];
+    int authlen;
+
+    if(authCredentials->length >= 3 * 128)
+        return -1;
+    authlen = b64cpy(authbuf, parentAuthCredentials->string,
+                     parentAuthCredentials->length, 0);
+    n = snnprintf(buf, n, size, "\r\nProxy-Authorization: Basic ");
+    n = snnprint_n(buf, n, size, authbuf, authlen);
+    return n;
 }

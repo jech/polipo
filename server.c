@@ -1448,6 +1448,10 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
             n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
                           ":%d", port);
         }
+    } else {
+        if(parentAuthCredentials)
+            n = buildServerAuthHeaders(connection->reqbuf, n, CHUNK_SIZE,
+                                       parentAuthCredentials);
     }
 
     if(bodylen >= 0)
@@ -2045,23 +2049,19 @@ httpServerHandlerHeaders(int eof,
     }
 
     if(!expect_body) {
-        if(request->method == METHOD_GET && object->length != 0) {
-            do_log(L_ERROR, "No content received.\n");
-            httpServerAbort(connection, 1, 502, 
-                            internAtom("No content received"));
-            return 1;
-        } else {
-            if(code == 412) {
-                /* 412 replies contain a useless body.  For now, we
-                   drop the connection. */
-                httpServerFinish(connection, 1, 0);
-            } else {
-                httpServerFinish(connection, 0, rc);
-            }
-            notifyObject(object);
-            return 1;
-        }
+        httpServerFinish(connection, 0, rc);
+        notifyObject(object);
+        return 1;
     }
+
+    if(code == 412) {
+        /* 412 replies contain a useless body.  For now, we
+           drop the connection. */
+        httpServerFinish(connection, 1, 0);
+        notifyObject(object);
+        return 1;
+    }
+
 
     if(request->persistent) {
         if(request->method != METHOD_HEAD && 

@@ -118,6 +118,7 @@ extern int proxyOffline;
 extern int relaxTransparency;
 extern AtomPtr authRealm;
 extern AtomPtr authCredentials;
+extern AtomPtr parentAuthCredentials;
 extern AtomListPtr allowedClients;
 extern NetAddressPtr allowedNets;
 extern IntListPtr allowedPorts;

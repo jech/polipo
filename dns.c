@@ -809,7 +809,7 @@ dnsTimeoutHandler(TimeEventHandlerPtr event)
         rc = sendQuery(query);
         if(rc < 0) {
             do_log(L_ERROR, "Couldn't send DNS query.\n");
-            if(rc != -EWOULDBLOCK || rc != -EAGAIN || rc != -ENOBUFS) {
+            if(rc != -EWOULDBLOCK && rc != -EAGAIN && rc != -ENOBUFS) {
                 abortObject(object, 501,
                             internAtom("Couldn't send DNS query"));
                 goto fail;
@@ -1003,7 +1003,7 @@ really_do_dns(AtomPtr name, ObjectPtr object)
     object->flags |= OBJECT_INPROGRESS;
     rc = sendQuery(query);
     if(rc < 0) {
-        if(rc != -EWOULDBLOCK || rc != -EAGAIN || rc != -ENOBUFS) {
+        if(rc != -EWOULDBLOCK && rc != -EAGAIN && rc != -ENOBUFS) {
             object->flags &= ~OBJECT_INPROGRESS;
             message = internAtomError(-rc, "Couldn't send DNS query");
             goto remove_fallback;
@@ -1378,7 +1378,7 @@ dnsBuildQuery(int id, char *buf, int offset, int n, AtomPtr name, int af)
     default: return EINVAL;
     }
 
-    if(i + 6 >= n) return -1;
+    if(i + 12 >= n) return -1;
     DO_HTONS(&buf[i], id); i += 2;
     DO_HTONS(&buf[i], 1<<8); i += 2;
     DO_HTONS(&buf[i], 1); i += 2;

@@ -1119,8 +1119,10 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
         request->ohandler = NULL;
         request->object->flags &= ~OBJECT_VALIDATING;
         request->object->flags |= OBJECT_FAILED;
-        return httpClientRawError(connection, 503,
-                                  internAtom("Couldn't schedule get"), 0);
+        if(request->error_message)
+            releaseAtom(request->error_message);
+        request->error_code = 503;
+        request->error_message = internAtom("Couldn't schedule get");
     }
     return 1;
 }
@@ -1328,8 +1330,6 @@ httpServeObject(HTTPConnectionPtr connection)
     int j = request->from % CHUNK_SIZE;
     int n, len;
     int condition_result;
-
-    assert(!(object->flags & OBJECT_VALIDATING));
 
     object->atime = current_time.tv_sec;
     objectMetadataChanged(object, 0);
@@ -1566,7 +1566,6 @@ delayedHttpServeObject(HTTPConnectionPtr connection)
 
     assert(connection->request->object->chunks[connection->request->from / 
                                                CHUNK_SIZE].locked > 0);
-    assert(!(connection->request->object->flags & OBJECT_VALIDATING));
 
     event = scheduleTimeEvent(-1, httpServeObjectDelayed,
                               sizeof(connection), &connection);

@@ -487,7 +487,7 @@ static const char b64[64] =
 static const char b64fss[64] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 
-void
+int
 b64cpy(char *restrict dst, const char *restrict src, int n, int fss)
 {
     const char *b = fss ? b64fss: b64;
@@ -510,6 +510,7 @@ b64cpy(char *restrict dst, const char *restrict src, int n, int fss)
         else
             dst[j++] = '=';
     }
+    return j;
 }
 
 int

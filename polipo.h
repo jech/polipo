@@ -128,18 +128,22 @@ THE SOFTWARE.
 #endif
 
 #ifdef __FreeBSD__
-#if __FreeBSD_version >= 450000
+#if __FreeBSD_version >= 400000
 #define HAVE_IPv6
 #endif
 #endif
 
 #ifdef __NetBSD__
-#if __NetBSD_Version__ >= 106000100
+#if __NetBSD_Version__ >= 105000000
 #define HAVE_IPv6
 #endif
 #endif
 
-/* OpenBSD ? */
+#ifdef __OpenBSD__
+#if OpenBSD >= 200311
+#define HAVE_IPv6
+#endif
+#endif
 
 #endif
 

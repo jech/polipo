@@ -1,3 +1,10 @@
+Polipo 0.9.5 (unreleased):
+        Implemented upstream proxy authentication (HTTP Basic only).
+        Fixed a possible crash when unable to schedule servicing a
+        request.
+        Fixed signedness issues to make allowedClients work on PPC
+        (from Gergely Nagy).
+
 10 May 2004: Polipo 0.9.4:
         Fixed a bug (introduced in 0.9.3) that could cause a crash
         when the download of an object was interrupted and then immediately

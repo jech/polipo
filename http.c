@@ -28,6 +28,8 @@ int proxyPort = 8123;
 AtomPtr authRealm = NULL;
 AtomPtr authCredentials = NULL;
 
+AtomPtr parentAuthCredentials = NULL;
+
 AtomListPtr allowedClients = NULL;
 NetAddressPtr allowedNets = NULL;
 
@@ -65,6 +67,8 @@ preinitHttp()
     CONFIG_VARIABLE(authRealm, CONFIG_ATOM,
                     "Authentication realm.");
     CONFIG_VARIABLE(authCredentials, CONFIG_ATOM,
+                    "username:password.");
+    CONFIG_VARIABLE(parentAuthCredentials, CONFIG_ATOM,
                     "username:password.");
     CONFIG_VARIABLE(allowedClients, CONFIG_ATOM_LIST_LOWER,
                     "Networks from which clients are allowed to connect.");

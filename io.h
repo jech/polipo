@@ -150,8 +150,8 @@ int setNodelay(int fd, int nodelay);
 int lingeringClose(int fd);
 
 typedef struct _NetAddress {
-    char prefix;
-    char af;
+    int prefix;
+    int af;
     char data[16];
 } NetAddressRec, *NetAddressPtr;
 
