@@ -5,6 +5,8 @@ Polipo 0.9.7 (unreleased):
         dropped by client.
         Fixed parsing of URLs with explicit port number (thanks to
         Frank Behrens).
+        Fixed a possible crash when exiting POST in error.
+        Fixed a protocol violation when an empty object is not superseded.
 
 31 October 2004: Polipo 0.9.6:
         Fixed a possible crash in ServeObject.
