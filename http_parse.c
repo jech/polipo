@@ -1330,11 +1330,19 @@ parseUrl(const char *url, int len,
         y = i;
 
         if(i < len && url[i] == ':') {
-            port = atol(url + i + 1);
-            while(i < len && url[i] != '/')
-                i++;
-        } else
+            int j;
+            j = atoi_n(url, i + 1, len, &port);
+            if(j < 0) {
+                port = 80;
+            } else {
+                if(j < len && url[j] == '/')
+                    i = j + 1;
+                else
+                    i = j;
+            }
+        } else {
             port = 80;
+        }
     } else {
         x = -1;
         y = -1;
