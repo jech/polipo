@@ -2061,7 +2061,6 @@ httpServerHandlerHeaders(int eof,
         /* 412 replies contain a useless body.  For now, we
            drop the connection. */
         httpServerFinish(connection, 1, 0);
-        notifyObject(object);
         return 1;
     }
 
@@ -2119,7 +2118,6 @@ httpServerHandlerHeaders(int eof,
                     }
                 }
                 httpServerFinish(connection, 0, 0);
-                notifyObject(object);
                 return 1;
             }
         }
