@@ -178,6 +178,7 @@ void
 parseDomainFile(AtomPtr file,
                 DomainPtr **domains_return, regex_t **regex_return)
 {
+    struct stat ss;
     int rc;
 
     if(*domains_return) {
@@ -215,7 +216,6 @@ parseDomainFile(AtomPtr file,
     rlen = 0;
     rsize = 512;
 
-    struct stat ss;
     rc = stat(file->string, &ss);
     if(rc < 0) {
         if(errno != ENOENT)
