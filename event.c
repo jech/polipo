@@ -298,11 +298,11 @@ allocateFdEventNum(int fd)
         new_poll_fds = realloc(poll_fds, new_size * sizeof(struct pollfd));
         if(!new_poll_fds)
             return -1;
-        new_fdEvents = realloc(fdEvents, new_size * sizeof(FdEventHandlerRec));
+        new_fdEvents = realloc(fdEvents, new_size * sizeof(FdEventHandlerPtr));
         if(!new_fdEvents)
             return -1;
         new_fdEventsLast = realloc(fdEventsLast, 
-                                   new_size * sizeof(FdEventHandlerRec));
+                                   new_size * sizeof(FdEventHandlerPtr));
         if(!new_fdEventsLast)
             return -1;
 
