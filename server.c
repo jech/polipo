@@ -1268,6 +1268,7 @@ httpServerRestart(HTTPConnectionPtr connection)
         connection->request_last = NULL;
     }
     connection->pipelined = 0;
+    httpServerFinish(connection, 1, 0);
 }
 
 int
