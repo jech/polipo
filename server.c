@@ -1790,10 +1790,11 @@ httpServerHandlerHeaders(int eof,
     } else if(code < 400 && 
               (content_range.from >= 0 || content_range.to >= 0 || 
                content_range.full_length >= 0)) {
-        do_log(L_ERROR, "Range without partial content.\n");
-        httpServerAbort(connection, 1, 502,
-                        internAtom("Range without partial content"));
-        goto fail;
+        do_log(L_WARN, "Range without partial content.\n");
+        /* Damn anakata. */
+        content_range.from = -1;
+        content_range.to = -1;
+        content_range.full_length = -1;
     } else if(code != 304 && code != 412) {
         full_len = len;
     }
