@@ -1268,6 +1268,26 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
         request->request->object = new_object;
     }
 
+    if(object->requestor != request) {
+        /* Make sure we don't serve an object that is stale for us
+           unless we're the requestor. */
+        if((object->flags & OBJECT_LINEAR) ||
+           objectMustRevalidate(object, &request->cache_control)) {
+           if(object->flags & OBJECT_INPROGRESS)
+               return 0;
+           rc = delayedHttpClientNoticeRequest(request);
+           if(rc < 0) {
+               do_log(L_ERROR, "Couldn't schedule noticing of request.");
+               abortObject(object, 500,
+                           internAtom("Couldn't schedule "
+                                      "noticing of request"));
+           } else {
+               request->ohandler = NULL;
+               return 1;
+           }
+        }
+    }
+
     if(object->flags & (OBJECT_INITIAL | OBJECT_VALIDATING)) {
         if(object->flags & (OBJECT_INPROGRESS | OBJECT_VALIDATING)) {
             return 0;
