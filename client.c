@@ -933,8 +933,9 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     return 1;
 
  fail:
-    shutdown(connection->fd, 0);
     connection->flags &= ~CONN_READER;
+    shutdown(connection->fd, 0);
+    httpClientFinish(connection, 1);
     return 1;
 }
 
