@@ -1342,9 +1342,7 @@ httpClientSideHandler(int status,
 
     assert(status);
     do_log(L_ERROR, "Incomplete client request.\n");
-    connection->flags &= ~CONN_READER;
-    httpClientRawError(connection, 502,
-                       internAtom("Incomplete client request"), 1);
+    httpClientError(request, 502, internAtom("Incomplete client request"));
     return 1;
 }
 
