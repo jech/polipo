@@ -384,6 +384,16 @@ redirectorKill(void)
     }
 }
 
+static void
+redirectorDestroyRequest(RedirectRequestPtr request)
+{
+    assert(redirector_request_first == request);
+    redirector_request_first = request->next;
+    if(redirector_request_first == NULL)
+        redirector_request_last = NULL;
+    free(request);
+}
+
 void
 redirectorTrigger(void)
 {
@@ -398,11 +408,8 @@ redirectorTrigger(void)
                            &redirector_read_fd, &redirector_write_fd);
         if(rc < 0) {
             do_log_error(L_ERROR, -rc, "Couldn't run redirector");
-            request->handler(-rc, request->url, NULL, NULL, request->data);
-            redirector_request_first = request->next;
-            if(redirector_request_first == NULL)
-                redirector_request_last = NULL;
-            free(request);
+            request->handler(rc, request->url, NULL, NULL, request->data);
+            redirectorDestroyRequest(request);
             return;
         }
     }
@@ -419,10 +426,11 @@ redirectorStreamHandler1(int status,
 {
     RedirectRequestPtr request = (RedirectRequestPtr)srequest->data;
 
-    if(status < 0) {
+    if(status) {
         do_log_error(L_ERROR, -status, "Write to redirector failed");
-        request->handler(status, request->url, NULL, NULL, request->data);
-        free(request);
+        request->handler(status < 0 ? status : -EPIPE, 
+                         request->url, NULL, NULL, request->data);
+        redirectorDestroyRequest(request);
         redirectorKill();
         return 1;
     }
@@ -493,11 +501,7 @@ redirectorStreamHandler2(int status,
     goto cont;
 
  cont:
-    assert(redirector_request_first == request);
-    redirector_request_first = request->next;
-    if(redirector_request_first == NULL)
-        redirector_request_last = NULL;
-    free(request);
+    redirectorDestroyRequest(request);
     redirectorTrigger();
     return 1;
 
