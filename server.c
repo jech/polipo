@@ -1631,8 +1631,10 @@ httpServerReplyHandler(int status,
     }
 
     if(status) {
-        if(connection->serviced >= 1)
+        if(connection->serviced >= 1) {
             httpServerRestart(connection);
+            return 1;
+        }
         if(status < 0) {
             do_log(L_ERROR, 
                    "Error reading server headers: %d\n", -status);
