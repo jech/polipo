@@ -367,7 +367,7 @@ printConfigVariables(FILE *out, int html)
 
       fprintf(out, "%s", var->name->string);
 
-      fprintf(out, html ? "<br/>" : ""); 
+      fprintf(out, html ? "<br/>" : " "); 
       
       fprintf(out, html ? "<i>" : "");    
       
