@@ -297,10 +297,14 @@ localFilename(char *buf, int n, char *key, int len)
     if(n <= localDocumentRoot->length)
         return -1;
 
+    i = 0;
+    if(key[i] != '/')
+        return -1;
+
     memcpy(buf, localDocumentRoot->string, localDocumentRoot->length);
-    i = 1; j = localDocumentRoot->length;
-    if(buf[j - 1] != '/')
-        buf[j++] = '/';
+    j = localDocumentRoot->length;
+    if(buf[j - 1] == '/')
+        j--;
 
     while(i < len) {
         if(j >= n - 1)
