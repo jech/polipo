@@ -812,6 +812,7 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
     rc = urlForbidden(url, httpClientRequestContinue, request);
     if(rc < 0) {
         do_log(L_ERROR, "Couldn't schedule httpClientRequestContinue.\n");
+        httpClientDiscardBody(connection);
         httpClientNoticeError(request, 500,
                               internAtom("Couldn't schedule "
                                          "httpClientRequestContinue"));
@@ -832,6 +833,7 @@ httpClientRequestContinue(int forbidden_code, AtomPtr url,
 
     if(forbidden_code < 0) {
         releaseAtom(url);
+        httpClientDiscardBody(connection);
         httpClientNoticeError(request, 500, 
                               internAtomError(-forbidden_code,
                                               "Couldn't test for forbidden "
@@ -841,6 +843,7 @@ httpClientRequestContinue(int forbidden_code, AtomPtr url,
 
     if(forbidden_code) {
         releaseAtom(url);
+        httpClientDiscardBody(connection);
         httpClientNoticeErrorHeaders(request,
                                      forbidden_code, forbidden_message,
                                      forbidden_headers);
@@ -938,6 +941,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     TimeEventHandlerPtr handler;
 
     assert(connection->reqoffset == 0);
+    assert(connection->flags & CONN_READER);
 
     if(connection->reqte != TE_IDENTITY)
         goto fail;
