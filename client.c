@@ -139,7 +139,8 @@ httpClientAbort(HTTPConnectionPtr connection, int closed)
 
 static void httpClientDelayedFinish(HTTPConnectionPtr connection);
 
-/* s is 1 in order to linger the connection, 2 to close it straight away. */
+/* s != 0 specifies that the connection must be shut down.  It is 1 in
+   order to linger the connection, 2 to close it straight away. */
 void
 httpClientFinish(HTTPConnectionPtr connection, int s)
 {
