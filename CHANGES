@@ -7,6 +7,11 @@ Polipo 0.9.6 (unreleased):
         superseding objects.
         Fixed a possible crash in ClientFinish when a pipelined
         request carries no object.
+        Fixed a bug in handling of client-side Expect: 100-continue
+        (reported by Charley Chu).
+        Fixed a scheduling bug that caused server-side requests to be
+        issued in the order opposite to a client-side pipeline (many
+        thanks to Joachim Haga).
 
 17 June 2004: Polipo 0.9.5:
         Implemented upstream proxy authentication (HTTP Basic only).
