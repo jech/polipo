@@ -374,7 +374,9 @@ redirectorKill(void)
         close(redirector_write_fd);
         redirector_write_fd = -1;
         kill(redirector_pid, SIGTERM);
-        rc = waitpid(redirector_pid, &status, 0);
+        do {
+            rc = waitpid(redirector_pid, &status, 0);
+        } while(rc < 0 && errno == EINTR);
         if(rc < 0) {
             do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
         }
