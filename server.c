@@ -500,8 +500,9 @@ httpServerConnectionHandler(int status,
             internAtomError(-status, "Connect to %s:%d failed",
                             connection->server->name,
                             connection->server->port);
-        do_log_error(L_ERROR, -status, "Connect to %s:%d failed",
-                     connection->server->name, connection->server->port);
+        if(status != -ECLIENTRESET)
+            do_log_error(L_ERROR, -status, "Connect to %s:%d failed",
+                         connection->server->name, connection->server->port);
         connection->connecting = 0;
         if(connection->server->request)
             httpServerAbortRequest(connection->server->request,
