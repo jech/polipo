@@ -1352,21 +1352,21 @@ httpClientSideRequest(HTTPRequestPtr request)
     }
     if(request->from < 0 || request->to >= 0) {
         httpClientDiscardBody(connection);
-        httpClientNoticeError(request, 503,
+        httpClientNoticeError(request, 501,
                               internAtom("Partial requests not implemented"));
         return 1;
     }
     if(connection->reqte != TE_IDENTITY) {
         httpClientDiscardBody(connection);
-        httpClientNoticeError(request, 411,
+        httpClientNoticeError(request, 501,
                               internAtom("Chunked requests not implemented"));
         return 1;
     }
 
     if(connection->bodylen < 0) {
         httpClientDiscardBody(connection);
-        httpClientNoticeError(request, 503,
-                              internAtom("Partial requests not implemented"));
+        httpClientNoticeError(request, 502,
+                              internAtom("Incomplete POST or PUT"));
         return 1;
     }
         
