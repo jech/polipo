@@ -38,9 +38,13 @@ int httpErrorNofinishStreamHandler(int status,
                                    FdEventHandlerPtr event,
                                    StreamRequestPtr request);
 int httpClientRequest(HTTPRequestPtr request, AtomPtr url);
+int httpClientRequestContinue(int forbidden_code, AtomPtr url,
+                              AtomPtr forbidden_message,
+                              AtomPtr forbidden_headers,
+                              void *closure);
 int httpClientDiscardBody(HTTPConnectionPtr connection);
 int httpClientDiscardHandler(int, FdEventHandlerPtr, StreamRequestPtr);
-int httpClientGetHandler(int, ObjectHandlerPtr);
+int httpClientGetHandler(int, ConditionHandlerPtr);
 int httpClientHandlerHeaders(FdEventHandlerPtr event, 
                                 StreamRequestPtr request,
                                 HTTPConnectionPtr connection);
@@ -53,7 +57,7 @@ int httpServeObjectStreamHandler(int status,
 int httpServeObjectStreamHandler2(int status, 
                                   FdEventHandlerPtr event,
                                   StreamRequestPtr request);
-int httpServeObjectHandler(int, ObjectHandlerPtr);
+int httpServeObjectHandler(int, ConditionHandlerPtr);
 int httpClientSideRequest(HTTPRequestPtr request);
 int  httpClientSideHandler(int status,
                            FdEventHandlerPtr event,

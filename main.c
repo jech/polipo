@@ -119,7 +119,7 @@ main(int argc, char **argv)
         exit(1);
 
     while(i < argc) {
-        rc = parseConfigLine(argv[i], "command line", 0);
+        rc = parseConfigLine(argv[i], "command line", 0, 0);
         if(rc < 0)
             exit(1);
         i++;
@@ -164,10 +164,4 @@ main(int argc, char **argv)
 
     if(pidFile) unlink(pidFile->string);
     return 0;
-}
-
-void
-reconfigure()
-{
-    initForbidden();
 }

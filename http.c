@@ -22,6 +22,7 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+int disableProxy = 0;
 AtomPtr proxyName = NULL;
 int proxyPort = 8123;
 
@@ -54,10 +55,13 @@ void
 preinitHttp()
 {
     proxyAddress = internAtom("127.0.0.1");
-    CONFIG_VARIABLE(proxyOffline, CONFIG_BOOLEAN,
-                    "Avoid contacting remote servers.");
-    CONFIG_VARIABLE(relaxTransparency, CONFIG_TRISTATE,
-                    "Avoid contacting remote servers.");
+    CONFIG_VARIABLE_SETTABLE(disableProxy, CONFIG_BOOLEAN, configIntSetter,
+                             "Whether to be a web server only.");
+    CONFIG_VARIABLE_SETTABLE(proxyOffline, CONFIG_BOOLEAN, configIntSetter,
+                             "Avoid contacting remote servers.");
+    CONFIG_VARIABLE_SETTABLE(relaxTransparency, CONFIG_TRISTATE, 
+                             configIntSetter,
+                             "Avoid contacting remote servers.");
     CONFIG_VARIABLE(proxyPort, CONFIG_INT,
                     "The TCP port on which the proxy listens.");
     CONFIG_VARIABLE(proxyAddress, CONFIG_ATOM_LOWER,
@@ -546,6 +550,7 @@ httpMakeRequest()
     request = malloc(sizeof(HTTPRequestRec));
     if(request == NULL)
         return NULL;
+    request->flags = 0;
     request->connection = NULL;
     request->object = NULL;
     request->method = METHOD_UNKNOWN;
@@ -556,7 +561,6 @@ httpMakeRequest()
     request->via = NULL;
     request->persistent = 0;
     request->wait_continue = 0;
-    request->can_mutate = NULL;
     request->ohandler = NULL;
     request->requested = 0;
     request->force_error = 0;
@@ -579,7 +583,7 @@ httpDestroyRequest(HTTPRequestPtr request)
     if(request->condition)
         httpDestroyCondition(request->condition);
     releaseAtom(request->via);
-    assert(request->ohandler == NULL);
+    assert(request->chandler == NULL);
     releaseAtom(request->error_message);
     releaseAtom(request->headers);
     releaseAtom(request->error_headers);
@@ -714,12 +718,16 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
                       "\"http://www.w3.org/TR/html4/loose.dtd\">"
                       "\n<html><head>"
-                      "\n<title>Proxy error: %3d %s.</title>"
+                      "\n<title>Proxy %s: %3d %s.</title>"
                       "\n</head><body>"
                       "\n<p>The proxy on %s:%d "
-                      "encountered the following error",
-                      code, htmlMessage, 
-                      proxyName->string, proxyPort);
+                      "%s",
+                      code >= 400 ? "error" : "result",
+                      code, htmlMessage,
+                      proxyName->string, proxyPort,
+                      code >= 400 ? 
+                      "encountered the following error" :
+                      "returns the following status");
         if(url_len > 0) {
             m = snnprintf(body, m, CHUNK_SIZE,
                           " while fetching <strong>");
@@ -786,4 +794,53 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
         dispose_chunk(body);
 
     return n;
+}
+
+AtomListPtr
+urlDecode(char *buf, int n)
+{
+    char mybuf[500];
+    int i, j = 0;
+    AtomListPtr list;
+    AtomPtr atom;
+
+    list = makeAtomList(NULL, 0);
+    if(list == NULL)
+        return NULL;
+
+    i = 0;
+    while(i < n) {
+        if(buf[i] == '%') {
+            int a, b;
+            if(i + 3 > n)
+                goto fail;
+            a = h2i(buf[i + 1]);
+            b = h2i(buf[i + 2]);
+            if(a < 0 || b < 0)
+                goto fail;
+            mybuf[j++] = (char)((a << 4) | b);
+            i += 3;
+            if(j > 500) goto fail;
+        } else if(buf[i] == '&') {
+            atom = internAtomN(mybuf, j);
+            if(atom == NULL)
+                goto fail;
+            atomListCons(atom, list);
+            j = 0;
+            i++;
+        } else {
+            mybuf[j++] = buf[i++];
+            if(j > 500) goto fail;
+        }
+    }
+
+    atom = internAtomN(mybuf, j);
+    if(atom == NULL)
+        goto fail;
+    atomListCons(atom, list);
+    return list;
+
+ fail:
+    destroyAtomList(list);
+    return NULL;
 }

@@ -28,18 +28,13 @@ THE SOFTWARE.
 
 struct _HTTPRequest;
 
-typedef struct _ObjectHandler {
-    struct _ObjectHandler *previous, *next;
-    struct _Object *object;
-    int (*handler)(int, struct _ObjectHandler*);
-    char data[1];
-} ObjectHandlerRec, *ObjectHandlerPtr;
-
 typedef struct _Chunk {
     int locked;
     int size;
     char *data;
 } ChunkRec, *ChunkPtr;
+
+struct _Object;
 
 typedef int (*RequestFunction)(struct _Object *, int, int, int,
                                struct _HTTPRequest*, void*);
@@ -70,7 +65,7 @@ typedef struct _Object {
     int numchunks;
     ChunkPtr chunks;
     void *requestor;
-    ObjectHandlerPtr handlers;
+    struct _Condition condition;
     struct _DiskCacheEntry *disk_entry;
     struct _Object *next, *previous;
 } ObjectRec, *ObjectPtr;
@@ -101,7 +96,6 @@ extern int log2ObjectHashTableSize;
 /* object->type */
 #define OBJECT_HTTP 1
 #define OBJECT_DNS 2
-#define OBJECT_HTTP_TRANSCODED 3
 
 /* object->flags */
 /* object is public */
@@ -128,8 +122,6 @@ extern int log2ObjectHashTableSize;
 #define OBJECT_DYNAMIC 1024
 /* The object has been transcoded */
 #define OBJECT_TRANSCODED 2048
-/* Used for synchronisation between client and server. */
-#define OBJECT_MUTATING 4096
 
 /* object->cache_control and connection->cache_control */
 /* RFC 2616 14.9 */
@@ -155,6 +147,8 @@ extern int log2ObjectHashTableSize;
 #define CACHE_VARY 512
 /* set if Authorization header; treated specially */
 #define CACHE_AUTHORIZATION 1024
+/* set if cookie */
+#define CACHE_COOKIE 2048
 
 struct _HTTPRequest;
 
@@ -175,11 +169,6 @@ void destroyObject(ObjectPtr object);
 void privatiseObject(ObjectPtr object, int linear);
 void abortObject(ObjectPtr object, int code, struct _Atom *message);
 void supersedeObject(ObjectPtr);
-ObjectHandlerPtr registerObjectHandler(ObjectPtr object,
-                                       int (*handler)(int, ObjectHandlerPtr),
-                                       int dsize, void *data);
-void unregisterObjectHandler(ObjectHandlerPtr);
-void abortObjectHandler(ObjectHandlerPtr);
 void notifyObject(ObjectPtr);
 void releaseNotifyObject(ObjectPtr);
 ObjectPtr objectPartial(ObjectPtr object, int length, struct _Atom *headers);

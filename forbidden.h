@@ -20,7 +20,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+extern AtomPtr forbiddenUrl;
+extern int forbiddenRedirectCode;
+
+typedef struct _RedirectRequest {
+    AtomPtr url;
+    struct _RedirectRequest *next;
+    int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*);
+    void *data;
+} RedirectRequestRec, *RedirectRequestPtr;
 
 void preinitForbidden(void);
 void initForbidden(void);
-int urlForbidden(char *url, int url_size);
+int urlIsForbidden(AtomPtr url);
+int urlForbidden(AtomPtr url,
+                 int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
+                 void *closure);
+int redirectorStreamHandler1(int status,
+                             FdEventHandlerPtr event,
+                             StreamRequestPtr srequest);
+int redirectorStreamHandler2(int status,
+                             FdEventHandlerPtr event,
+                             StreamRequestPtr srequest);
+void redirectorTrigger(void);
+int 
+runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return);

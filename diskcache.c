@@ -58,25 +58,31 @@ static DiskCacheEntryRec negativeEntry = {
 #define DISK_CACHE_ROOT "/var/cache/polipo/"
 #endif
 
+static int maxDiskEntriesSetter(ConfigVariablePtr, void*);
+static int atomSetterFlush(ConfigVariablePtr, void*);
+
 void 
 preinitDiskcache()
 {
     diskCacheRoot = internAtom(DISK_CACHE_ROOT);
     localDocumentRoot = internAtom(LOCAL_ROOT);
 
-    CONFIG_VARIABLE(diskCacheDirectoryPermissions, CONFIG_OCTAL,
-                    "Access rights for new directories.");
-    CONFIG_VARIABLE(diskCacheFilePermissions, CONFIG_OCTAL,
-                    "Access rights for new cache files.");
-    CONFIG_VARIABLE(diskCacheWriteoutOnClose, CONFIG_INT,
-                    "Number of bytes to write out eagerly.");
-    CONFIG_VARIABLE(diskCacheRoot, CONFIG_ATOM,
-                    "Root of the disk cache.");
-    CONFIG_VARIABLE(localDocumentRoot, CONFIG_ATOM,
-                    "Root of the local tree.");
-    CONFIG_VARIABLE(maxDiskEntries, CONFIG_INT,
+    CONFIG_VARIABLE_SETTABLE(diskCacheDirectoryPermissions, CONFIG_OCTAL,
+                             configIntSetter,
+                             "Access rights for new directories.");
+    CONFIG_VARIABLE_SETTABLE(diskCacheFilePermissions, CONFIG_OCTAL,
+                             configIntSetter,
+                             "Access rights for new cache files.");
+    CONFIG_VARIABLE_SETTABLE(diskCacheWriteoutOnClose, CONFIG_INT,
+                             configIntSetter,
+                             "Number of bytes to write out eagerly.");
+    CONFIG_VARIABLE_SETTABLE(diskCacheRoot, CONFIG_ATOM, atomSetterFlush,
+                             "Root of the disk cache.");
+    CONFIG_VARIABLE_SETTABLE(localDocumentRoot, CONFIG_ATOM, atomSetterFlush,
+                             "Root of the local tree.");
+    CONFIG_VARIABLE_SETTABLE(maxDiskEntries, CONFIG_INT, maxDiskEntriesSetter,
                     "File descriptors used by the on-disk cache.");
-    CONFIG_VARIABLE(diskCacheUnlinkTime, CONFIG_TIME, 
+    CONFIG_VARIABLE(diskCacheUnlinkTime, CONFIG_TIME,
                     "Time after which on-disk objects are removed.");
     CONFIG_VARIABLE(diskCacheTruncateTime, CONFIG_TIME,
                     "Time after which on-disk objects are truncated.");
@@ -84,6 +90,27 @@ preinitDiskcache()
                     "Size to which on-disk objects are truncated.");
     CONFIG_VARIABLE(preciseExpiry, CONFIG_BOOLEAN,
                     "Whether to consider all files for purging.");
+}
+
+static int
+maxDiskEntriesSetter(ConfigVariablePtr var, void *value)
+{
+    int i;
+    assert(var->type == CONFIG_INT && var->value.i == &maxDiskEntries);
+    i = *(int*)value;
+    if(i < 0 || i > 1000000)
+        return -3;
+    maxDiskEntries = i;
+    while(numDiskEntries >= maxDiskEntries)
+        destroyDiskEntry(diskEntriesLast->object, 0);
+    return 1;
+}
+
+static int
+atomSetterFlush(ConfigVariablePtr var, void *value)
+{
+    discardObjects(1, 0);
+    return configAtomSetter(var, value);
 }
 
 static int

@@ -24,9 +24,21 @@ THE SOFTWARE.
 
 int disableLocalInterface = 0;
 
+AtomPtr atomInitForbidden;
+AtomPtr atomReopenLog;
+AtomPtr atomDiscardObjects;
+AtomPtr atomWriteoutObjects;
+AtomPtr atomFreeChunkArenas;
+
 void
 preinitLocal()
 {
+    atomInitForbidden = internAtom("init-forbidden");
+    atomReopenLog = internAtom("reopen-log");
+    atomDiscardObjects = internAtom("discard-objects");
+    atomWriteoutObjects = internAtom("writeout-objects");
+    atomFreeChunkArenas = internAtom("free-chunk-arenas");
+
     CONFIG_VARIABLE(disableLocalInterface, CONFIG_BOOLEAN,
                     "Disable the local configuration pages.");
 }
@@ -40,9 +52,16 @@ httpLocalRequest(ObjectPtr object, int method, int from, int to,
     if(object->requestor == NULL)
         object->requestor = requestor;
 
-    if(urlIsSpecial(object->key, object->key_size))
+    if(!disableLocalInterface && urlIsSpecial(object->key, object->key_size))
         return httpSpecialRequest(object, method, from, to, 
                                   requestor, closure);
+
+    if(method >= METHOD_POST) {
+        httpClientError(requestor, 405, internAtom("Method not allowed"));
+        requestor->connection->flags &= ~CONN_READER;
+        return 1;
+    }
+
     /* objectFillFromDisk already did the real work but we have to
        make sure we don't get into an infinite loop. */
     if(object->flags & OBJECT_INITIAL) {
@@ -110,6 +129,11 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
     char buffer[1024];
     int hlen;
 
+    if(method >= METHOD_POST) {
+        return httpSpecialSideRequest(object, method, from, to,
+                                      requestor, closure);
+    }
+
     if(!(object->flags & OBJECT_INITIAL)) {
         privatiseObject(object, 0);
         supersedeObject(object);
@@ -159,6 +183,21 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      "<p>There are %d public and %d private objects "
                      "currently in memory using %d KB in %d chunks.</p>\n"
                      "<p>There are %d atoms.</p>"
+                     "<p><form method=POST action=\"/polipo/status?\">"
+                     "<input type=submit name=\"init-forbidden\" "
+                     "value=\"Read forbidden file\"></form>\n"
+                     "<form method=POST action=\"/polipo/status?\">"
+                     "<input type=submit name=\"writeout-objects\" "
+                     "value=\"Write out in-memory cache\"></form>\n"
+                     "<form method=POST action=\"/polipo/status?\">"
+                     "<input type=submit name=\"discard-objects\" "
+                     "value=\"Discard in-memory cache\"></form>\n"
+                     "<form method=POST action=\"/polipo/status?\">"
+                     "<input type=submit name=\"reopen-log\" "
+                     "value=\"Reopen log file\"></form>\n"
+                     "<form method=POST action=\"/polipo/status?\">"
+                     "<input type=submit name=\"free-chunk-arenas\" "
+                     "value=\"Free chunk arenas\"></form></p>\n"
                      "<p><a href=\"/polipo/\">back</a></p>"
                      "</body></html>\n",
                      proxyName->string, proxyPort,
@@ -214,6 +253,187 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
     return 1;
 }
 
+int 
+httpSpecialSideRequest(ObjectPtr object, int method, int from, int to,
+                       HTTPRequestPtr requestor, void *closure)
+{
+    HTTPConnectionPtr client = requestor->connection;
+
+    assert(client->request == requestor);
+
+    if(method != METHOD_POST) {
+        httpClientError(requestor, 405, internAtom("Method not allowed"));
+        requestor->connection->flags &= ~CONN_READER;
+        return 1;
+    }
+
+    return httpSpecialDoSide(requestor);
+}
+
+int
+httpSpecialDoSide(HTTPRequestPtr requestor)
+{
+    HTTPConnectionPtr client = requestor->connection;
+
+    if(client->reqlen - client->reqbegin >= client->bodylen) {
+        AtomPtr data;
+        data = internAtomN(client->reqbuf + client->reqbegin,
+                           client->reqlen - client->reqbegin);
+        client->reqbegin = 0;
+        client->reqlen = 0;
+        if(data == NULL) {
+            do_log(L_ERROR, "Couldn't allocate data.\n");
+            httpClientError(requestor, 500,
+                            internAtom("Couldn't allocate data"));
+            return 1;
+        }
+        httpSpecialDoSideFinish(data, requestor);
+        return 1;
+    }
+
+    if(client->reqlen - client->reqbegin >= CHUNK_SIZE) {
+        httpClientError(requestor, 500, internAtom("POST too large"));
+        return 1;
+    }
+
+    if(client->reqbegin > 0 && client->reqlen > client->reqbegin) {
+        memmove(client->reqbuf, client->reqbuf + client->reqbegin,
+                client->reqlen - client->reqbegin);
+    }
+    client->reqlen -= client->reqbegin;
+    client->reqbegin = 0;
+
+    do_stream(IO_READ | IO_NOTNOW, client->fd,
+              client->reqlen, client->reqbuf, CHUNK_SIZE,
+              httpSpecialClientSideHandler, client);
+    return 1;
+}
+
+int
+httpSpecialClientSideHandler(int status,
+                             FdEventHandlerPtr event,
+                             StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+    HTTPRequestPtr request = connection->request;
+    int push;
+
+    if((request->object->flags & OBJECT_ABORTED) || 
+       !(request->object->flags & OBJECT_INPROGRESS)) {
+        httpClientDiscardBody(connection);
+        httpClientError(request, 503, internAtom("Post aborted"));
+        return 1;
+    }
+        
+    if(status < 0) {
+        do_log_error(L_ERROR, -status, "Reading from client");
+        if(status == -EDOGRACEFUL)
+            httpClientFinish(connection, 1);
+        else
+            httpClientFinish(connection, 2);
+        return 1;
+    }
+
+    push = MIN(srequest->offset - connection->reqlen,
+               connection->bodylen - connection->reqoffset);
+    if(push > 0) {
+        connection->reqlen += push;
+        httpSpecialDoSide(request);
+    }
+
+    do_log(L_ERROR, "Incomplete client request.\n");
+    connection->flags &= ~CONN_READER;
+    httpClientRawError(connection, 502,
+                       internAtom("Incomplete client request"), 1);
+    return 1;
+}
+
+int
+httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
+{
+    ObjectPtr object = requestor->object;
+
+    if(matchUrl("/polipo/config", object)) {
+        AtomListPtr list = urlDecode(data->string, data->length);
+        int i, rc;
+        if(list == NULL) {
+            abortObject(object, 400,
+                        internAtom("Couldn't parse variable to set"));
+            goto out;
+        }
+        for(i = 0; i < list->length; i++) {
+            rc = parseConfigLine(list->list[i]->string, NULL, 0, 1);
+            if(rc < 0) {
+                abortObject(object, 400,
+                            rc == -1 ?
+                            internAtom("Couldn't parse variable to set") :
+                            internAtom("Variable is not settable"));
+                destroyAtomList(list);
+                goto out;
+            }
+        }
+        destroyAtomList(list);
+        object->date = current_time.tv_sec;
+        object->age = current_time.tv_sec;
+        object->headers = internAtom("\r\nLocation: /polipo/config?");
+        object->code = 303;
+        object->message = internAtom("Done");
+        object->flags &= ~OBJECT_INITIAL;
+        object->length = 0;
+    } else if(matchUrl("/polipo/status", object)) {
+        AtomListPtr list = urlDecode(data->string, data->length);
+        int i;
+        if(list == NULL) {
+            abortObject(object, 400,
+                        internAtom("Couldn't parse action"));
+            goto out;
+        }
+        for(i = 0; i < list->length; i++) {
+            char *equals = 
+                memchr(list->list[i]->string, '=', list->list[i]->length);
+            AtomPtr name = 
+                equals ? 
+                internAtomN(list->list[i]->string, 
+                            equals - list->list[i]->string) :
+                retainAtom(list->list[i]);
+            if(name == atomInitForbidden)
+                initForbidden();
+            else if(name == atomReopenLog)
+                reopenLog();
+            else if(name == atomDiscardObjects)
+                discardObjects(1, 0);
+            else if(name == atomWriteoutObjects)
+                writeoutObjects(1);
+            else if(name == atomFreeChunkArenas)
+                free_chunk_arenas();
+            else {
+                abortObject(object, 400, internAtomF("Unknown action %s",
+                                                     name->string));
+                releaseAtom(name);
+                destroyAtomList(list);
+                goto out;
+            }
+            releaseAtom(name);
+        }
+        destroyAtomList(list);
+        object->date = current_time.tv_sec;
+        object->age = current_time.tv_sec;
+        object->headers = internAtom("\r\nLocation: /polipo/status?");
+        object->code = 303;
+        object->message = internAtom("Done");
+        object->flags &= ~OBJECT_INITIAL;
+        object->length = 0;
+    } else {
+        abortObject(object, 405, internAtom("Method not allowed"));
+    }
+
+ out:
+    releaseAtom(data);
+    notifyObject(object);
+    requestor->connection->flags &= ~CONN_READER;
+    return 1;
+}
+
 static void
 fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
 {
@@ -224,11 +444,6 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
 
     if(object->flags & OBJECT_INPROGRESS)
         return;
-
-    if(disableLocalInterface) {
-        abortObject(object, 403, internAtom("Local configuration disabled"));
-        return;
-    }
 
     rc = pipe(filedes);
     if(rc < 0) {

@@ -37,6 +37,7 @@ static AtomPtr atomConnection, atomProxyConnection, atomContentLength,
     atomIfMatch, atomIfNoneMatch, atomAge, atomTransferEncoding, 
     atomETag, atomCacheControl, atomPragma, atomContentRange, atomRange,
     atomVia, atomContentType, atomVary, atomExpect, atomAuthorization,
+    atomSetCookie, atomCookie, atomCookie2,
     atomXPolipoDate, atomXPolipoAccess, atomXPolipoLocation, 
     atomXPolipoBodyOffset;
 
@@ -97,6 +98,9 @@ initHttpParser()
     A(atomVary, "vary");
     A(atomExpect, "expect");
     A(atomAuthorization, "authorization");
+    A(atomSetCookie, "set-cookie");
+    A(atomCookie, "cookie");
+    A(atomCookie2, "cookie2");
     A(atomXPolipoDate, "x-polipo-date");
     A(atomXPolipoAccess, "x-polipo-access");
     A(atomXPolipoLocation, "x-polipo-location");
@@ -890,12 +894,6 @@ httpParseHeaders(int client, AtomPtr url,
                     len = -1;
                 }
             }
-        } else if(name == atomConnection || name == atomHost ||
-                  name == atomAcceptRange || name == atomTE ||
-                  name == atomProxyAuthenticate ||
-                  name == atomKeepAlive ||
-                  atomListMember(name, censoredHeaders)) {
-            ;
         } else if((!local && name == atomProxyAuthorization) ||
                   (local && name == atomAuthorization)) {
             if(auth_return) {
@@ -1222,18 +1220,31 @@ httpParseHeaders(int client, AtomPtr url,
                 cache_control.flags |= CACHE_AUTHORIZATION;
             } 
 
-            if(hbuf && (!hopToHop || !atomListMember(name, hopToHop))) {
-                int h;
-                while(hbuf_length > hbuf_size - 2)
-                    RESIZE_HBUF();
-                hbuf[hbuf_length++] = '\r';
-                hbuf[hbuf_length++] = '\n';
-                do {
-                    h = snnprint_n(hbuf, hbuf_length, hbuf_size,
-                                   buf + name_start, value_end - name_start);
-                    if(h < 0) RESIZE_HBUF();
-                } while(h < 0);
-                hbuf_length = h;
+            if(!client &&
+               (name == atomSetCookie || 
+                name == atomCookie || name == atomCookie2))
+                cache_control.flags |= CACHE_COOKIE;
+
+            if(hbuf) {
+                if(name != atomConnection && name != atomHost &&
+                   name != atomAcceptRange && name != atomTE &&
+                   name != atomProxyAuthenticate &&
+                   name != atomKeepAlive &&
+                   (!hopToHop || !atomListMember(name, hopToHop)) &&
+                   !atomListMember(name, censoredHeaders)) {
+                    int h;
+                    while(hbuf_length > hbuf_size - 2)
+                        RESIZE_HBUF();
+                    hbuf[hbuf_length++] = '\r';
+                    hbuf[hbuf_length++] = '\n';
+                    do {
+                        h = snnprint_n(hbuf, hbuf_length, hbuf_size,
+                                       buf + name_start, 
+                                       value_end - name_start);
+                        if(h < 0) RESIZE_HBUF();
+                    } while(h < 0);
+                    hbuf_length = h;
+                }
             }
         }
         releaseAtom(name);
@@ -1253,7 +1264,8 @@ httpParseHeaders(int client, AtomPtr url,
     hbuf_size = 0;
 
     if(request)
-        request->persistent &= persistent;
+        if(!persistent)
+            request->flags &= ~REQUEST_PERSISTENT;
 
     if(te != TE_IDENTITY) len = -1;
     if(len_return) *len_return = len;

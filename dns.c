@@ -95,7 +95,7 @@ static int dnsDecodeReply(char *buf, int offset, int n,
                           int *id_return,
                           AtomPtr *name_return, AtomPtr *value_return,
                           int *af_return, unsigned *ttl_return);
-static int dnsHandler(int status, ObjectHandlerPtr ohandler);
+static int dnsHandler(int status, ConditionHandlerPtr chandler);
 static int dnsGethostbynameFallback(int id, AtomPtr message);
 static int sendQuery(DnsQueryPtr query);
 
@@ -302,6 +302,12 @@ do_gethostbyname(char *origname,
     }
 
     request.name = name;
+    request.addr = NULL;
+    request.error_message = NULL;
+    request.count = count;
+    request.object = NULL;
+    request.handler = handler;
+    request.data = data;
 
     object = findObject(OBJECT_DNS, name->string, name->length);
     if(object == NULL || objectMustRevalidate(object, NULL)) {
@@ -339,11 +345,12 @@ do_gethostbyname(char *origname,
 
 #ifndef NO_FANCY_RESOLVER    
     if(object->flags & OBJECT_INITIAL) {
-        ObjectHandlerPtr ohandler;
+        ConditionHandlerPtr chandler;
         assert(object->flags & OBJECT_INPROGRESS);
-        ohandler = registerObjectHandler(object, dnsHandler,
-                                         sizeof(request), &request);
-        if(ohandler == NULL) {
+        request.object = object;
+        chandler = conditionWait(&object->condition, dnsHandler,
+                                 sizeof(request), &request);
+        if(chandler == NULL) {
             rc = ENOMEM;
             goto fail;
         }
@@ -719,10 +726,10 @@ static int dnsSocket = -1;
 static FdEventHandlerPtr dnsSocketHandler = NULL;
 
 static int
-dnsHandler(int status, ObjectHandlerPtr ohandler)
+dnsHandler(int status, ConditionHandlerPtr chandler)
 {
-    ObjectPtr object = ohandler->object;
-    GethostbynameRequestRec request = *(GethostbynameRequestPtr)ohandler->data;
+    GethostbynameRequestRec request = *(GethostbynameRequestPtr)chandler->data;
+    ObjectPtr object = request.object;
 
     assert(!(object->flags & OBJECT_INPROGRESS));
 
@@ -734,7 +741,7 @@ dnsHandler(int status, ObjectHandlerPtr ohandler)
             request.error_message = retainAtom(object->message);
         dnsDelayedNotify(1, &request);
     }
-    releaseObject(ohandler->object);
+    releaseObject(object);
     return 1;
 }
 

@@ -29,6 +29,7 @@ typedef struct _HTTPCondition {
 } HTTPConditionRec, *HTTPConditionPtr;
 
 typedef struct _HTTPRequest {
+    int flags;
     struct _HTTPConnection *connection;
     ObjectPtr object;
     int method;
@@ -39,7 +40,6 @@ typedef struct _HTTPRequest {
     AtomPtr via;
     int persistent;
     int wait_continue;
-    ObjectPtr can_mutate;
     ObjectHandlerPtr ohandler;
     int requested;
     int force_error;
@@ -51,6 +51,12 @@ typedef struct _HTTPRequest {
     struct _HTTPRequest *request;
     struct _HTTPRequest *next;
 } HTTPRequestRec, *HTTPRequestPtr;
+
+/* request->flags */
+#define REQUEST_PERSISTENT 1
+#define REQUEST_REQUESTED 2
+#define REQUEST_WAIT_CONTINUE 4
+#define REQUEST_FORCE_ERROR 8
 
 typedef struct _HTTPConnection {
     int flags;
@@ -112,6 +118,7 @@ typedef struct _HTTPConnection {
 #define CONDITION_NOT_MODIFIED 1
 #define CONDITION_FAILED 2
 
+extern int disableProxy;
 extern AtomPtr proxyName;
 extern int proxyPort;
 extern AtomPtr proxyAddress;
@@ -150,3 +157,4 @@ int httpCondition(ObjectPtr, HTTPConditionPtr);
 int httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                           int code, AtomPtr message, int close, AtomPtr,
                           char *url, int url_len, char *etag);
+AtomListPtr urlDecode(char*, int);

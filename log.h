@@ -43,7 +43,8 @@ THE SOFTWARE.
 #define D_IO 0x200000
 #define D_TRANSCODE 0x400000
 
-#define LOGGING (L_ERROR | L_WARN | L_UNCACHEABLE)
+#define LOGGING_DEFAULT (L_ERROR | L_WARN | L_UNCACHEABLE)
+#define LOGGING_MAX 0xFF
 
 extern AtomPtr logFile;
 extern FILE *logF;
@@ -60,7 +61,6 @@ void really_do_log_error(int type, int e, const char *f, ...)
      ATTRIBUTE((format (printf, 3, 4)));
 void really_do_log_error_v(int type, int e, const char *f, va_list args);
 
-
 #ifdef __GNUC__
 #define DO_BACKTRACE()                  \
   do {                                  \
@@ -74,15 +74,18 @@ void really_do_log_error_v(int type, int e, const char *f, va_list args);
 #define DO_BACKTRACE() /* */
 #endif
 
+/* These are macros because it's important that they should be
+   optimised away. */
+
 #if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
 
 #define do_log(_type, ...)                                           \
     do {                                                             \
-        if((_type) & (LOGGING)) really_do_log((_type), __VA_ARGS__); \
+        if((_type) & (LOGGING_MAX)) really_do_log((_type), __VA_ARGS__); \
     } while(0)
 #define do_log_error(_type, _e, ...)                                 \
     do {                                                             \
-        if((_type) & (LOGGING))                                      \
+        if((_type) & (LOGGING_MAX))                                  \
             really_do_log_error((_type), (_e), __VA_ARGS__);         \
     } while(0)
 
@@ -90,34 +93,36 @@ void really_do_log_error_v(int type, int e, const char *f, va_list args);
 
 #define do_log(_type, _args...)                                \
     do {                                                       \
-        if((_type) & (LOGGING)) really_do_log((_type), _args); \
+        if((_type) & (LOGGING_MAX)) really_do_log((_type), _args); \
     } while(0)
 #define do_log_error(_type, _e, _args...)                      \
     do {                                                       \
-        if((_type) & (LOGGING))                                \
+        if((_type) & (LOGGING_MAX))                            \
             really_do_log_error((_type), (_e), _args);         \
     } while(0)
 
 #else
 
-static void 
+/* No variadic macros -- let's hope inline works. */
+
+static inline void 
 do_log(int type, const char *f, ...)
 {
     va_list args;
 
     va_start(args, f);
-    if((type & (LOGGING)) != 0)
+    if((type & (LOGGING_MAX)) != 0)
         really_do_log_v(type, f, args);
     va_end(args);
 }
 
-static void
+static inline void
 do_log_error(int type, int e, const char *f, ...)
 {
     va_list args;
 
     va_start(args, f);
-    if((type & (LOGGING)) != 0)
+    if((type & (LOGGING_MAX)) != 0)
         really_do_log_error_v(type, e, f, args);
     va_end(args);
 }    
@@ -126,5 +131,5 @@ do_log_error(int type, int e, const char *f, ...)
 
 #define do_log_n(_type, _s, _n) \
     do { \
-        if((_type) & (LOGGING)) really_do_log_n((_type), (_s), (_n)); \
+        if((_type) & (LOGGING_MAX)) really_do_log_n((_type), (_s), (_n)); \
     } while(0)

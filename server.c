@@ -35,7 +35,8 @@ int serverMaxSlots = 4;
 
 static HTTPServerPtr servers = 0;
 
-static int httpServerContinueObjectHandler(int, ObjectHandlerPtr);
+static int httpServerContinueConditionHandler(int, ConditionHandlerPtr);
+
 void
 preinitServer(void)
 {
@@ -43,14 +44,15 @@ preinitServer(void)
     CONFIG_VARIABLE(parentPort, CONFIG_INT, "Parent proxy port.");
     CONFIG_VARIABLE(serverExpireTime, CONFIG_TIME,
                     "Time during which server data is valid.");
-    CONFIG_VARIABLE(smallRequestTime, CONFIG_TIME,
-                    "Estimated time for a small request.");
-    CONFIG_VARIABLE(replyUnpipelineTime, CONFIG_TIME,
-                    "Estimated time for a pipeline break.");
-    CONFIG_VARIABLE(replyUnpipelineSize, CONFIG_INT,
+    CONFIG_VARIABLE_SETTABLE(smallRequestTime, CONFIG_TIME, configIntSetter,
+                             "Estimated time for a small request.");
+    CONFIG_VARIABLE_SETTABLE(replyUnpipelineTime, CONFIG_TIME, configIntSetter,
+                             "Estimated time for a pipeline break.");
+    CONFIG_VARIABLE_SETTABLE(replyUnpipelineSize, CONFIG_INT, configIntSetter,
                     "Size for a pipeline break.");
-    CONFIG_VARIABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
-                    "Pipeline requests on an active connection.");
+    CONFIG_VARIABLE_SETTABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
+                             configIntSetter,
+                             "Pipeline requests on an active connection.");
     CONFIG_VARIABLE(pmmFirstSize, CONFIG_INT,
                     "The size of the first PMM chunk.");
     CONFIG_VARIABLE(pmmSize, CONFIG_INT,
@@ -339,15 +341,16 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
         if(server->lies > 0)
             request->method = METHOD_HEAD;
     }
+    request->flags =
+        REQUEST_PERSISTENT |
+        (expectContinue ? (requestor->flags & REQUEST_WAIT_CONTINUE) : 0);
     request->from = from;
     request->to = to;
-    request->persistent = 1;
     request->request = requestor;
     requestor->request = request;
     request->cache_control = requestor->cache_control;
     request->time0 = null_time;
     request->time1 = null_time;
-    request->wait_continue = expectContinue ? requestor->wait_continue : 0;
 
     rc = httpServerQueueRequest(server, request);
     if(rc < 0) {
@@ -360,7 +363,7 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
         return 1;
     }
 
-    if(request->wait_continue) {
+    if(request->flags & REQUEST_WAIT_CONTINUE) {
         if(server->version == HTTP_10) {
             httpServerAbortRequest(request, 1,
                                    417, internAtom("Expectation failed"));
@@ -368,7 +371,7 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
         }
     } else if(expectContinue >= 2 && server->version == HTTP_11) {
         if(request->method == METHOD_POST || request->method == METHOD_PUT)
-            request->wait_continue = 1;
+            request->flags |= REQUEST_WAIT_CONTINUE;
     }
         
  again:
@@ -574,7 +577,7 @@ pipelineIsSmall(HTTPConnectionPtr connection)
 
     if(!request)
         return 1;
-    if(request->next || !request->persistent)
+    if(request->next || !(request->flags & REQUEST_PERSISTENT))
         return 0;
     if(request->method == METHOD_HEAD || 
        request->method == METHOD_CONDITIONAL_GET)
@@ -858,10 +861,10 @@ httpServerDoSide(HTTPConnectionPtr connection)
                     connection->fd, 0,
                     connection->reqbuf, connection->reqlen,
                     client->reqbuf + client->reqbegin, 
-                    request->wait_continue ? 0 : len,
+                    (request->flags & REQUEST_WAIT_CONTINUE) ? 0 : len,
                     httpServerSideHandler2, connection);
         httpServerReply(connection, 0);
-    } else if(!request->wait_continue && doflush) {
+    } else if(!(request->flags & REQUEST_WAIT_CONTINUE) && doflush) {
         /* We cannot free connection->reqbuf, as httpServerFinish uses
            it to determine if there's a writer. */
         do_stream(IO_WRITE,
@@ -875,18 +878,18 @@ httpServerDoSide(HTTPConnectionPtr connection)
             connection->reqbuf = NULL;
             connection->reqlen = 0;
         }
-        if(request->wait_continue) {
-            ObjectHandlerPtr ohandler;
+        if(request->flags & REQUEST_WAIT_CONTINUE) {
+            ConditionHandlerPtr chandler;
             do_log(D_SERVER_CONN, "W... %s:%d.\n",
                    connection->server->name, connection->server->port);
-            ohandler = 
-                registerObjectHandler(request->object,
-                                      httpServerContinueObjectHandler,
-                                      sizeof(connection), &connection);
-            if(ohandler)
+            chandler = 
+                conditionWait(&request->object->condition,
+                              httpServerContinueConditionHandler,
+                              sizeof(connection), &connection);
+            if(chandler)
                 return 1;
             else
-                do_log(L_ERROR, "Couldn't register object handler.\n");
+                do_log(L_ERROR, "Couldn't register condition handler.\n");
             /* Fall through -- the client side will clean up. */
         }
         do_stream(IO_READ | (done ? IO_IMMEDIATE : 0 ) | IO_NOTNOW,
@@ -989,13 +992,11 @@ httpServerSideHandler2(int status,
 }
 
 static int
-httpServerContinueObjectHandler(int status, ObjectHandlerPtr ohandler)
+httpServerContinueConditionHandler(int status, ConditionHandlerPtr chandler)
 {
-    ObjectPtr object = ohandler->object;
-    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)ohandler->data;
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)chandler->data;
 
-    assert(object == connection->request->object);
-    if(connection->request->wait_continue)
+    if(connection->request->flags & REQUEST_WAIT_CONTINUE)
         return 0;
     httpServerDelayedDoSide(connection);
     return 1;
@@ -1017,7 +1018,8 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         assert(connection->pipelined == 0);
     }
 
-    if(s == 0 && (!connection->request || !connection->request->persistent))
+    if(s == 0 && (!connection->request ||
+                  !(connection->request->flags & REQUEST_PERSISTENT)))
         s = 1;
 
     if(s >= 0 && request) {
@@ -1222,7 +1224,7 @@ httpServerUnpipeline(HTTPRequestPtr request)
     HTTPConnectionPtr connection = request->connection;
     HTTPServerPtr server = connection->server;
 
-    request->persistent = 0;
+    request->flags &= ~REQUEST_PERSISTENT;
     if(request->next) {
         HTTPRequestPtr req;
         do_log(L_WARN,
@@ -1290,10 +1292,10 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     if(object->flags & OBJECT_INPROGRESS)
         return 1;
 
-    assert(requestor->request == NULL);
-
-    if(requestor->requested)
+    if(requestor->flags & REQUEST_REQUESTED)
         return 0;
+
+    assert(requestor->request == NULL);
 
     if(proxyOffline)
         return -1;
@@ -1304,13 +1306,6 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
         do_log(L_FORBIDDEN, "\n");
         abortObject(object, 403, internAtom("Forbidden URL"));
         notifyObject(object);
-        if(REQUEST_SIDE(requestor)) {
-            HTTPConnectionPtr client = requestor->connection;
-            do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
-                      client->fd, client->reqlen,
-                      client->reqbuf, CHUNK_SIZE,
-                      httpClientSideHandler, client);
-        }
         return 1;
     }
 
@@ -1335,7 +1330,7 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     memcpy(name, ((char*)object->key) + x, y - x);
     name[y - x] = '\0';
 
-    requestor->requested = 1;
+    requestor->flags |= REQUEST_REQUESTED;
     rc = httpMakeServerRequest(name, port, object, method, from, to,
                                requestor);
                                    
@@ -1469,7 +1464,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
         n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
                       "\r\nContent-Length: %d", bodylen);
 
-    if(request->wait_continue)
+    if(request->flags & REQUEST_WAIT_CONTINUE)
         n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
                       "\r\nExpect: 100-continue");
 
@@ -1526,7 +1521,8 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
 
     n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
                   "\r\nConnection: %s\r\n\r\n",
-                  request->persistent?"keep-alive":"close");
+                  (request->flags & REQUEST_PERSISTENT) ? 
+                  "keep-alive" : "close");
     if(n < 0 || n >= CHUNK_SIZE - 1)
         return -1;
     connection->reqlen = n;
@@ -1693,10 +1689,10 @@ httpServerHandlerHeaders(int eof,
 
     httpSetTimeout(connection, -1);
 
-    if(request->wait_continue) {
+    if(request->flags & REQUEST_WAIT_CONTINUE) {
         do_log(D_SERVER_CONN, "W   %s:%d.\n",
                connection->server->name, connection->server->port);
-        request->wait_continue = 0;
+        request->flags &= ~REQUEST_WAIT_CONTINUE;
     }
 
     rc = httpParseServerFirstLine(connection->buf, &code, &version, &message);
@@ -1723,7 +1719,7 @@ httpServerHandlerHeaders(int eof,
 
     connection->version = version;
     connection->server->version = version;
-    request->persistent = 1;
+    request->flags |= REQUEST_PERSISTENT;
 
     url = internAtomN(object->key, object->key_size);    
     rc = httpParseHeaders(0, url, connection->buf, rc, request,
@@ -2103,14 +2099,14 @@ httpServerHandlerHeaders(int eof,
     }
 
 
-    if(request->persistent) {
+    if(request->flags & REQUEST_PERSISTENT) {
         if(request->method != METHOD_HEAD && 
            connection->te == TE_IDENTITY && len < 0) {
             do_log(L_ERROR, "Persistent reply with no Content-Length\n");
             /* That's potentially dangerous, as we could start reading
                arbitrary data into the object.  Unfortunately, some
                servers do that. */
-            request->persistent = 0;
+            request->flags &= ~REQUEST_PERSISTENT;
         }
     }
 

@@ -42,7 +42,8 @@ findConfigVariable(AtomPtr name)
 }
 
 void
-declareConfigVariable(AtomPtr name, int type, void *value, char *help)
+declareConfigVariable(AtomPtr name, int type, void *value, 
+                      int (*setter)(ConfigVariablePtr, void*), char *help)
 {
     ConfigVariablePtr var;
 
@@ -53,7 +54,7 @@ declareConfigVariable(AtomPtr name, int type, void *value, char *help)
                "Configuration variable %s declared multiple times.\n",
                name->string);
         if(var->type != type) {
-            abort();
+            exit(1);
         }
     }
 
@@ -66,7 +67,7 @@ declareConfigVariable(AtomPtr name, int type, void *value, char *help)
     var->name = retainAtom(name);
     var->type = type;
     switch(type) {
-    case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_TIME:
+    case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX: case CONFIG_TIME:
     case CONFIG_BOOLEAN: case CONFIG_TRISTATE: case CONFIG_TETRASTATE:
     case CONFIG_PENTASTATE:
         var->value.i = value; break;
@@ -78,6 +79,7 @@ declareConfigVariable(AtomPtr name, int type, void *value, char *help)
         var->value.al = value; break;
     default: abort();
     }
+    var->setter = setter;
     var->help = help;
     var->next = configVariables;
     configVariables = var;
@@ -116,13 +118,13 @@ printConfigVariables(FILE *out, int html)
 
     fprintf(out,
             html ?
-            "<tr><td>configFile</td><td>%s</td><td></td><td>"
+            "<tr><td>configFile</td><td>%s</td><td></td><td></td><td>"
             "Configuration file.</td></tr>\n" :
             "configFile %s Configuration file.\n",
             configFile && configFile->length > 0 ? 
             configFile->string : "(none)");
     fprintf(out, 
-            html ?"<tr><td>CHUNK_SIZE</td><td>%d</td><td></td><td>"
+            html ?"<tr><td>CHUNK_SIZE</td><td>%d</td><td></td><td></td><td>"
             "Unit of chunk memory allocation.</td></tr>\n" :
             "CHUNK_SIZE %d Unit of chunk memory allocation.\n",
             CHUNK_SIZE);
@@ -133,6 +135,7 @@ printConfigVariables(FILE *out, int html)
         switch(var->type) {
         case CONFIG_INT: fprintf(out, "%d", *var->value.i); break;
         case CONFIG_OCTAL: fprintf(out, "0%o", *var->value.i); break;
+        case CONFIG_HEX: fprintf(out, "0x%x", *var->value.i); break;
         case CONFIG_TIME:
             {
                 int v = *var->value.i;
@@ -237,7 +240,8 @@ printConfigVariables(FILE *out, int html)
         PRINT_SEP();
         
         switch(var->type) {
-        case CONFIG_INT: case CONFIG_OCTAL: fprintf(out, "integer"); break;
+        case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
+            fprintf(out, "integer"); break;
         case CONFIG_TIME: fprintf(out, "time"); break;
         case CONFIG_BOOLEAN: fprintf(out, "boolean"); break;
         case CONFIG_TRISTATE: fprintf(out, "tristate"); break;
@@ -252,6 +256,15 @@ printConfigVariables(FILE *out, int html)
         }
         
         PRINT_SEP();
+
+        if(html) {
+            if(var->setter) {
+                printf("<form method=POST action=\"config?\">");
+                printf("<input size=10 name=%s>", var->name->string);
+                printf("</form>");
+            }
+            PRINT_SEP();
+        }
 
         fprintf(out, "%s", var->help?var->help:"");
         if(html)
@@ -433,14 +446,18 @@ parseTime(char *line, int i, int *value_return)
     return i;
 }
 
-        
 int
-parseConfigLine(char *line, char *filename, int lineno)
+parseConfigLine(char *line, char *filename, int lineno, int set)
 {
     int x0, x1;
     int i, from, to;
     AtomPtr name, value;
     ConfigVariablePtr var;
+    int iv;
+    float fv;
+    AtomPtr av;
+    AtomListPtr alv;
+    IntListPtr ilv;
 
     i = skipWhitespace(line, 0);
     if(line[i] == '\n' || line[i] == '\0' || line[i] == '#')
@@ -461,60 +478,89 @@ parseConfigLine(char *line, char *filename, int lineno)
     name = internAtomN(line + x0, x1 - x0);
     var = findConfigVariable(name);
     releaseAtom(name);
+
+    if(set && var->setter == NULL)
+        return -2;
  
     if(var == NULL) {
-        do_log(L_ERROR, "%s:%d: unknown config variable ", filename, lineno);
-        do_log_n(L_ERROR, line + x0, x1 - x0);
-        do_log(L_ERROR, "\n");
+        if(!set) {
+            do_log(L_ERROR, "%s:%d: unknown config variable ",
+                   filename, lineno);
+            do_log_n(L_ERROR, line + x0, x1 - x0);
+            do_log(L_ERROR, "\n");
+        }
         return -1;
     }
     
     i = skipWhitespace(line, i);
     switch(var->type) {
-    case CONFIG_INT: case CONFIG_OCTAL:
-        i = parseInt(line, i, var->value.i);
+    case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
+        i = parseInt(line, i, &iv);
         if(i < 0) goto syntax;
-        break;
+        if(set)
+            var->setter(var, &iv);
+        else
+            *var->value.i = iv;
+    break;
     case CONFIG_TIME:
-        i = parseTime(line, i, var->value.i);
+        i = parseTime(line, i, &iv);
         if(i < 0) goto syntax;
         i = skipWhitespace(line, i);
         if(line[i] != '\n' && line[i] != '\0' && line[i] != '#')
             goto syntax;
+        if(set)
+            var->setter(var, &iv);
+        else
+            *var->value.i = iv;
         break;
     case CONFIG_BOOLEAN:
     case CONFIG_TRISTATE:
     case CONFIG_TETRASTATE:
     case CONFIG_PENTASTATE:
-        *var->value.i = parseState(line, i, var->type);
+        iv = parseState(line, i, var->type);
         if(*var->value.i < 0)
             goto syntax;
+        if(set)
+            var->setter(var, &iv);
+        else
+            *var->value.i = iv;
         break;
     case CONFIG_FLOAT: 
         if(!digit(line[i]) && line[i] != '.')
             goto syntax;
-        *var->value.f = atof(line + i);
+        fv = atof(line + i);
+        if(set)
+            var->setter(var, &fv);
+        else
+            *var->value.f = fv;
         break;
     case CONFIG_ATOM: case CONFIG_ATOM_LOWER:
-        i = parseAtom(line, i, &value, (var->type == CONFIG_ATOM_LOWER));
+        i = parseAtom(line, i, &av, (var->type == CONFIG_ATOM_LOWER));
         if(i < 0) goto syntax;
-        if(!value) {
-            do_log(L_ERROR, "%s:%d: couldn't allocate atom.\n",
-                   filename, lineno);
+        if(!av) {
+            if(!set)
+                do_log(L_ERROR, "%s:%d: couldn't allocate atom.\n",
+                       filename, lineno);
             return -1;
         }
         i = skipWhitespace(line, i);
-        if(line[i] != '\n' && line[i] != '\0' && line[i] != '#')
+        if(line[i] != '\n' && line[i] != '\0' && line[i] != '#') {
+            releaseAtom(av);
             goto syntax;
-        if(*var->value.a) releaseAtom(*var->value.a);
-        *var->value.a = value;
+        }
+        if(set)
+            var->setter(var, &av);
+        else {
+            if(*var->value.a) releaseAtom(*var->value.a);
+            *var->value.a = av;
+        }
         break;
     case CONFIG_INT_LIST:
-        if(*var->value.il) destroyIntList(*var->value.il);
-        *var->value.il = makeIntList(0);
-        if(*var->value.il == NULL) {
-            do_log(L_ERROR, "%s:%d: couldn't allocate int list.\n",
-                   filename, lineno);
+        ilv = makeIntList(0);
+        if(ilv == NULL) {
+            if(!set)
+                do_log(L_ERROR, "%s:%d: couldn't allocate int list.\n",
+                       filename, lineno);
             return -1;
         }
         while(1) {
@@ -525,23 +571,34 @@ parseConfigLine(char *line, char *filename, int lineno)
             if(line[i] == '-') {
                 i = skipWhitespace(line, i + 1);
                 i = parseInt(line, i, &to);
-                if(i < 0) goto syntax;
+                if(i < 0) {
+                    destroyIntList(ilv);
+                    goto syntax;
+                }
                 i = skipWhitespace(line, i);
             }
-            intListCons(from, to, *var->value.il);
+            intListCons(from, to, ilv);
             if(line[i] == '\n' || line[i] == '\0' || line[i] == '#')
                 break;
-            if(line[i] != ',')
+            if(line[i] != ',') {
+                destroyIntList(ilv);
                 goto syntax;
+            }
             i = skipWhitespace(line, i + 1);
+        }
+        if(set)
+            var->setter(var, &ilv);
+        else {
+            if(*var->value.il) destroyIntList(*var->value.il);
+            *var->value.il = ilv;
         }
         break;
     case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
-        if(*var->value.al) destroyAtomList(*var->value.al);
-        *var->value.al = makeAtomList(NULL, 0);
-        if(*var->value.al == NULL) {
-            do_log(L_ERROR, "%s:%d: couldn't allocate atom list.\n",
-                   filename, lineno);
+        alv = makeAtomList(NULL, 0);
+        if(alv == NULL) {
+            if(!set)
+                do_log(L_ERROR, "%s:%d: couldn't allocate atom list.\n",
+                       filename, lineno);
             return -1;
         }
         while(1) {
@@ -549,17 +606,26 @@ parseConfigLine(char *line, char *filename, int lineno)
                           (var->type == CONFIG_ATOM_LIST_LOWER));
             if(i < 0) goto syntax;
             if(!value) {
-                do_log(L_ERROR, "%s:%d: couldn't allocate atom.\n",
-                       filename, lineno);
+                if(!set)
+                    do_log(L_ERROR, "%s:%d: couldn't allocate atom.\n",
+                           filename, lineno);
                 return -1;
             }
-            atomListCons(value, *var->value.al);
+            atomListCons(value, alv);
             i = skipWhitespace(line, i);
             if(line[i] == '\n' || line[i] == '\0' || line[i] == '#')
                 break;
-            if(line[i] != ',')
+            if(line[i] != ',') {
+                destroyAtomList(alv);
                 goto syntax;
+            }
             i = skipWhitespace(line, i + 1);
+        }
+        if(set)
+            var->setter(var, &alv);
+        else {
+            if(*var->value.al) destroyAtomList(*var->value.al);
+            *var->value.al = alv;
         }
         break;
     default: abort();
@@ -567,7 +633,8 @@ parseConfigLine(char *line, char *filename, int lineno)
     return 1;
 
  syntax:
-    do_log(L_ERROR, "%s:%d: parse error.\n", filename, lineno);
+    if(!set)
+        do_log(L_ERROR, "%s:%d: parse error.\n", filename, lineno);
     return -1;
 }
 
@@ -595,7 +662,25 @@ parseConfigFile(AtomPtr filename)
             fclose(f);
             return 1;
         }
-        rc = parseConfigLine(buf, filename->string, lineno);
+        rc = parseConfigLine(buf, filename->string, lineno, 0);
         lineno++;
     }
+}
+
+int
+configIntSetter(ConfigVariablePtr var, void* value)
+{
+    assert(var->type <= CONFIG_PENTASTATE);
+    *var->value.i = *(int*)value;
+    return 1;
+}
+
+int
+configAtomSetter(ConfigVariablePtr var, void* value)
+{
+    assert(var->type == CONFIG_ATOM || var->type == CONFIG_ATOM_LOWER);
+    if(*var->value.a)
+        releaseAtom(*var->value.a);
+    *var->value.a = *(AtomPtr*)value;
+    return 1;
 }

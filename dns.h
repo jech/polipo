@@ -31,6 +31,7 @@ typedef struct _GethostbynameRequest {
     AtomPtr addr;
     AtomPtr error_message;
     int count;
+    ObjectPtr object;
     int (*handler)(int, struct _GethostbynameRequest*);
     void *data;
 } GethostbynameRequestRec, *GethostbynameRequestPtr;

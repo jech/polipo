@@ -33,5 +33,12 @@ int httpLocalRequest(ObjectPtr object, int method, int from, int to,
                      HTTPRequestPtr, void *);
 int httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                        HTTPRequestPtr, void*);
+int httpSpecialSideRequest(ObjectPtr object, int method, int from, int to,
+                           HTTPRequestPtr requestor, void *closure);
 int specialRequestHandler(int status, 
                           FdEventHandlerPtr event, StreamRequestPtr request);
+int httpSpecialDoSide(HTTPRequestPtr requestor);
+int httpSpecialClientSideHandler(int status,
+                                 FdEventHandlerPtr event,
+                                 StreamRequestPtr srequest);
+int httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor);
