@@ -55,6 +55,8 @@ typedef struct _DiskObject {
 
 struct stat;
 
+extern int maxDiskCacheEntrySize;
+
 void preinitDiskcache(void);
 void initDiskcache(void);
 int destroyDiskEntry(ObjectPtr object, int);

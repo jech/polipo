@@ -40,6 +40,8 @@ int diskCacheDirectoryPermissions = 0755;
 int diskCacheFilePermissions = 0644;
 int diskCacheWriteoutOnClose = (32 * 1024);
 
+int maxDiskCacheEntrySize = -1;
+
 int diskCacheUnlinkTime = 32 * 24 * 60 * 60;
 int diskCacheTruncateTime = 4 * 24 * 60 * 60 + 12 * 60 * 60;
 int diskCacheTruncateSize =  1024 * 1024;
@@ -60,6 +62,7 @@ static DiskCacheEntryRec negativeEntry = {
 
 static int maxDiskEntriesSetter(ConfigVariablePtr, void*);
 static int atomSetterFlush(ConfigVariablePtr, void*);
+static int reallyWriteoutToDisk(ObjectPtr object, int upto, int max);
 
 void 
 preinitDiskcache()
@@ -90,6 +93,9 @@ preinitDiskcache()
                     "Size to which on-disk objects are truncated.");
     CONFIG_VARIABLE(preciseExpiry, CONFIG_BOOLEAN,
                     "Whether to consider all files for purging.");
+    CONFIG_VARIABLE_SETTABLE(maxDiskCacheEntrySize, CONFIG_INT,
+                             configIntSetter,
+                             "Maximum size of objects cached on disk.");
 }
 
 static int
@@ -1056,6 +1062,16 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
     if(!local && !(object->flags & OBJECT_PUBLIC))
         return NULL;
 
+    if(maxDiskCacheEntrySize >= 0) {
+        if(object->length > 0) {
+            if(object->length > maxDiskCacheEntrySize)
+                return NULL;
+        } else {
+            if(object->size > maxDiskCacheEntrySize)
+                return NULL;
+        }
+    }
+
     if(object->disk_entry) {
         entry = object->disk_entry;
         CHECK_ENTRY(entry);
@@ -1296,6 +1312,11 @@ destroyDiskEntry(ObjectPtr object, int d)
 
     assert(entry->object == object);
 
+    if(maxDiskCacheEntrySize >= 0 && object->size > maxDiskCacheEntrySize) {
+        /* See writeoutToDisk */
+        d = 1;
+    }
+
     if(d) {
         entry->object->flags &= ~OBJECT_DISK_ENTRY_COMPLETE;
         if(entry->filename) {
@@ -1313,7 +1334,7 @@ destroyDiskEntry(ObjectPtr object, int d)
         if(entry == NULL || entry == &negativeEntry)
             return 0;
         if(entry->writeable && diskCacheWriteoutOnClose > 0)
-            writeoutToDisk(object, -1, diskCacheWriteoutOnClose);
+            reallyWriteoutToDisk(object, -1, diskCacheWriteoutOnClose);
     }
  again:
     rc = close(entry->fd);
@@ -1502,6 +1523,19 @@ objectFillFromDisk(ObjectPtr object, int offset, int chunks)
 
 int 
 writeoutToDisk(ObjectPtr object, int upto, int max)
+{
+    if(maxDiskCacheEntrySize >= 0 && object->size > maxDiskCacheEntrySize) {
+        /* An object was created with an unknown length, and then grew
+           beyond maxDiskCacheEntrySize.  Destroy the disk entry. */
+        destroyDiskEntry(object, 1);
+        return 0;
+    }
+
+    return reallyWriteoutToDisk(object, upto, max);
+}
+        
+static int 
+reallyWriteoutToDisk(ObjectPtr object, int upto, int max)
 {
     DiskCacheEntryPtr entry;
     int rc;
