@@ -504,7 +504,7 @@ redirectorStreamHandler2(int status,
     char *c;
     AtomPtr message;
     AtomPtr headers;
-    int rc, code;
+    int code;
 
     if(status < 0) {
         do_log_error(L_ERROR, -status, "Read from redirector failed");
