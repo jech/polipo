@@ -683,15 +683,21 @@ httpCondition(ObjectPtr object, HTTPConditionPtr condition)
     return rc;
 }
 
-int
 httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       int code, AtomPtr message, int close, AtomPtr headers,
                       char *url, int url_len, char *etag)
 {
-    int n, m;
+    int n, m, i;
     char *body;
+    char htmlMessage[100];
 
     assert(code != 0);
+
+    i = htmlString(htmlMessage, 0, 100, message->string, message->length);
+    if(i < 0)
+        strcpy(htmlMessage, "(Couldn't format message)");
+    else
+        htmlMessage[MIN(i, 99)] = '\0';
 
     if(code != 304) {
         body = get_chunk();
@@ -708,7 +714,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       "\n</head><body>"
                       "\n<p>The proxy on %s:%d "
                       "encountered the following error",
-                      code, atomString(message), 
+                      code, htmlMessage, 
                       proxyName->string, proxyPort);
         if(url_len > 0) {
             m = snnprintf(body, m, CHUNK_SIZE,
@@ -721,7 +727,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       ":<br>"
                       "\n<strong>%3d %s</strong></p>"
                       "\n</body></html>\r\n",
-                      code, atomString(message));
+                      code, htmlMessage);
         if(m <= 0 || m >= CHUNK_SIZE) {
             do_log(L_ERROR, "Couldn't write error body.\n");
             dispose_chunk(body);
@@ -777,5 +783,3 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
 
     return n;
 }
-
-

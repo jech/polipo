@@ -974,6 +974,8 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
     if(request->error_code) {
         if(request->force_error || REQUEST_SIDE(request) ||
            request->object == NULL ||
+           (request->object->flags & OBJECT_LOCAL) ||
+           (request->object->flags & OBJECT_ABORTED) ||
            (relaxTransparency < 1 && !proxyOffline)) {
             if(serveNow) {
                 connection->flags |= CONN_WRITER;
@@ -1059,13 +1061,17 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
     if(request->cache_control.flags & CACHE_ONLY_IF_CACHED) {
         validate = 0;
         if(!haveData)
+            if(serveNow)
                 return httpClientRawError(connection, 504,
                                           internAtom("Object not in cache"),
                                           0);
+            else
+                return 1;
     }
 
     if(!(request->object->flags & OBJECT_VALIDATING) &&
-       ((!validate && haveData) || (request->object->flags & OBJECT_FAILED))) {
+       ((!validate && haveData) ||
+        (request->object->flags & OBJECT_FAILED))) {
         if(serveNow) {
             connection->flags |= CONN_WRITER;
             lockChunk(request->object, request->from / CHUNK_SIZE);
@@ -1339,9 +1345,13 @@ httpServeObject(HTTPConnectionPtr connection)
     if((request->error_code && relaxTransparency <= 0) ||
        object->flags & OBJECT_INITIAL) {
         unlockChunk(object, i);
-        return httpClientRawError(connection,
-                                  request->error_code, 
-                                  retainAtom(request->error_message), 0);
+        if(request->error_code)
+            return httpClientRawError(connection,
+                                      request->error_code, 
+                                      retainAtom(request->error_message), 0);
+        else
+            return httpClientRawError(connection,
+                                      500, internAtom("Object vanished."), 0);
     }
 
     if(!(object->flags & OBJECT_INPROGRESS) && object->code == 0) {
@@ -1409,7 +1419,8 @@ httpServeObject(HTTPConnectionPtr connection)
 
     if(object->flags & OBJECT_ABORTED) {
         unlockChunk(object, i);
-        return httpClientNoticeError(request, object->code, object->message);
+        return httpClientNoticeError(request, object->code, 
+                                     retainAtom(object->message));
     }
 
     if(connection->buf == NULL)

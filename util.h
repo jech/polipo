@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003 by Juliusz Chroboczek
+Copyright (c) 2003, 2004 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -59,6 +59,7 @@ char* lwrcpy(char *dst, const char *src, int n);
 int lwrcmp(const char *as, const char *bs, int n) ATTRIBUTE ((pure));
 int strcasecmp_n(const char *string, const char *buf, int n)
      ATTRIBUTE ((pure));
+int isWhitespace(const char *string) ATTRIBUTE((pure));
 #ifndef HAVE_MEMRCHR
 void *memrchr(const void *s, int c, size_t n) ATTRIBUTE ((pure));
 #endif

@@ -895,18 +895,40 @@ parseNetAddress(AtomListPtr list)
     for(i = 0; i < list->length; i++) {
         int prefix;
         char *s = list->list[i]->string, *p;
-        if(list->list[i]->length >= 100) {
+        int n = list->list[i]->length;
+        char *suffix;
+
+        while(*s == ' ' || *s == '\t') {
+            s++;
+            n--;
+        }
+
+        if(n >= 100) {
             do_log(L_ERROR, "Network name too long.\n");
             goto fail;
         }
-        p = memchr(s, '/', list->list[i]->length);
+        p = memchr(s, '/', n);
         if(p) {
             memcpy(buf, s, p - s);
             buf[p - s] = '\0';
-            prefix = atol(p + 1);
+            prefix = strtol(p + 1, &suffix, 10);
         } else {
+            char *s1, *s2;
             prefix = -1;
-            strcpy(buf, list->list[i]->string);
+            strcpy(buf, s);
+            s1 = strchr(s, ' ');
+            s2 = strchr(s, '\t');
+            if(s1 == NULL) suffix = s2;
+            else if(s2 == NULL) suffix = s1;
+            else if(s1 < s2) suffix = s1;
+            else suffix = s2;
+            if(suffix == NULL)
+                suffix = s + n;
+        }
+
+        if(!isWhitespace(suffix)) {
+            do_log(L_ERROR, "Couldn't parse network %s.\n", buf);
+            goto fail;
         }
 
         rc = 0; rc6 = 0;

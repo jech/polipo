@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003 by Juliusz Chroboczek
+Copyright (c) 2003, 2004 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -151,6 +151,18 @@ strcasecmp_n(const char *string, const char *buf, int n)
         return 1;
     else
         return -1;
+}
+
+int 
+isWhitespace(const char *string)
+{
+    while(*string != '\0') {
+        if(*string == ' ' || *string == '\t')
+            string++;
+        else
+            return 0;
+    }
+    return 1;
 }
 
 #ifndef HAVE_MEMRCHR

@@ -365,7 +365,7 @@ parseAtom(char *buf, int offset, AtomPtr *value_return, int insensitive)
         i++;
         y0 = i;
         while(buf[i] != '\"' && buf[i] != '\n' && buf[i] != '\0') {
-            if(buf[i] == '\\') {
+            if(buf[i] == '\\' && buf[i + 1] != '\0') {
                 escape = 1;
                 i += 2;
             } else
@@ -387,17 +387,20 @@ parseAtom(char *buf, int offset, AtomPtr *value_return, int insensitive)
         s = malloc(i - y0);
         if(buf == NULL) return -1;
         k = 0;
-        for(j = y0; j < i; j++)
-            if(buf[j] == '\\') {
+        j = y0;
+        while(j < i) {
+            if(buf[j] == '\\' && j <= i - 2) {
                 s[k++] = buf[j + 1];
                 j += 2;
             } else
                 s[k++] = buf[j++];
+        }
         if(insensitive)
             atom = internAtomLowerN(s, k);
         else
             atom = internAtomN(s, k);
         free(s);
+        j++;
     } else {
         if(insensitive)
             atom = internAtomLowerN(buf + y0, i - y0);
