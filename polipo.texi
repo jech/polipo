@@ -1190,7 +1190,7 @@ access to the web, the following evades a firewall by using an
 encrypted compressed @code{ssh} link:
 @example
 $ ssh -f -C -L 8124:localhost:8123 trurl polipo
-$ polipo parentHosst=localhost parentPort=8124
+$ polipo parentHost=localhost parentPort=8124
 @end example
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
