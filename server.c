@@ -894,6 +894,7 @@ httpServerDoSide(HTTPConnectionPtr connection)
                 do_log(L_ERROR, "Couldn't register condition handler.\n");
             /* Fall through -- the client side will clean up. */
         }
+        client->flags |= CONN_SIDE_READER;
         do_stream(IO_READ | (done ? IO_IMMEDIATE : 0 ) | IO_NOTNOW,
                   client->fd, client->reqlen,
                   client->reqbuf, CHUNK_SIZE,

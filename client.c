@@ -137,6 +137,8 @@ httpClientAbort(HTTPConnectionPtr connection, int closed)
     }
 }
 
+static void httpClientDelayedFinish(HTTPConnectionPtr connection);
+
 /* s is 1 in order to linger the connection, 2 to close it straight away. */
 void
 httpClientFinish(HTTPConnectionPtr connection, int s)
@@ -152,11 +154,26 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     }
 
     httpConnectionDestroyBuf(connection);
+
+    connection->flags &= ~CONN_WRITER;
+
+    if(connection->flags & CONN_SIDE_READER) {
+        /* We're in POST or PUT and the reader isn't done yet.
+           We make sure the request is marked as failed, and
+           reschedule ourselves. */
+        assert(request && (connection->flags & CONN_READER));
+        if(request->error_code == 0) {
+            request->error_code = 500;
+            request->error_message = internAtom("Error message lost");
+        }
+        httpClientDelayedFinish(connection);
+        return;
+    }
+
     if(connection->timeout) 
         cancelTimeEvent(connection->timeout);
     connection->timeout = NULL;
 
-    connection->flags &= ~CONN_WRITER;
     if(request) {
         HTTPRequestPtr requestee;
 
@@ -262,6 +279,35 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     }
     connection->fd = -1;
     free(connection);
+}
+
+static int
+httpClientDelayedFinishHandler(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    httpClientFinish(connection, 1);
+    return 1;
+}
+
+static void
+httpClientDelayedFinish(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr handler;
+
+    handler = scheduleTimeEvent(1, httpClientDelayedFinishHandler,
+                                sizeof(connection), &connection);
+    if(!handler) {
+        do_log(L_ERROR, 
+               "Couldn't schedule delayed finish -- freeing memory.");
+        free_chunk_arenas();
+        handler = scheduleTimeEvent(1, httpClientDelayedFinishHandler,
+                                    sizeof(connection), &connection);
+        if(!handler) {
+            do_log(L_ERROR, 
+                   "Couldn't schedule delayed finish -- aborting.\n");
+            polipoExit();
+        }
+    }
 }
 
 /* Extremely baroque implementation of close: we need to synchronise
@@ -1429,22 +1475,28 @@ httpClientSideRequest(HTTPRequestPtr request)
     HTTPConnectionPtr connection = request->connection;
 
     if(request->from < 0 || request->to >= 0) {
-        httpClientDiscardBody(connection);
         httpClientNoticeError(request, 501,
                               internAtom("Partial requests not implemented"));
+        httpClientDiscardBody(connection);
         return 1;
     }
     if(connection->reqte != TE_IDENTITY) {
-        httpClientDiscardBody(connection);
         httpClientNoticeError(request, 501,
                               internAtom("Chunked requests not implemented"));
+        httpClientDiscardBody(connection);
         return 1;
     }
-
     if(connection->bodylen < 0) {
+        httpClientNoticeError(request, 502,
+                              internAtom("POST or PUT without "
+                                         "Content-Length"));
         httpClientDiscardBody(connection);
+        return 1;
+    }
+    if(connection->reqlen < 0) {
         httpClientNoticeError(request, 502,
                               internAtom("Incomplete POST or PUT"));
+        httpClientDiscardBody(connection);
         return 1;
     }
         
@@ -1461,23 +1513,23 @@ httpClientSideHandler(int status,
     HTTPRequestPtr requestee;
     HTTPConnectionPtr server;
     int push;
+    int code;
+    AtomPtr message = NULL;
+
+    assert(connection->flags & CONN_SIDE_READER);
 
     if((request->object->flags & OBJECT_ABORTED) || 
        !(request->object->flags & OBJECT_INPROGRESS)) {
-        httpClientDiscardBody(connection);
-        httpClientError(request, 
-                        request->object->code, 
-                        retainAtom(request->object->message));
-        return 1;
+        code = request->object->code;
+        message = retainAtom(request->object->message);
+        goto fail;
     }
         
     if(status < 0) {
         do_log_error(L_ERROR, -status, "Reading from client");
-        if(status == -EDOGRACEFUL)
-            httpClientFinish(connection, 1);
-        else
-            httpClientFinish(connection, 2);
-        return 1;
+        code = 502;
+        message = internAtomError(-status, "Couldn't read from client");
+        goto fail;
     }
 
     requestee = request->request;
@@ -1492,13 +1544,30 @@ httpClientSideHandler(int status,
     }
 
     if(server->reqoffset >= connection->bodylen) {
-        connection->flags &= ~CONN_READER;
+        connection->flags &= ~(CONN_READER | CONN_SIDE_READER);
         return 1;
     }
 
     assert(status);
     do_log(L_ERROR, "Incomplete client request.\n");
-    httpClientFinish(connection, 2);
+    code = 502;
+    message = internAtom("Incomplete client request");
+
+ fail:
+    request->error_code = code;
+    if(request->error_message)
+        releaseAtom(request->error_message);
+    request->error_message = message;
+    if(request->error_headers)
+        releaseAtom(request->error_headers);
+    request->error_headers = NULL;
+
+    if(request->request) {
+        shutdown(request->request->connection->fd, 2);
+        pokeFdEvent(request->request->connection->fd, -ESHUTDOWN, POLLOUT);
+    }
+    notifyObject(request->object);
+    connection->flags &= ~(CONN_READER | CONN_SIDE_READER);
     return 1;
 }
 

@@ -83,8 +83,9 @@ typedef struct _HTTPConnection {
 /* connection->flags */
 #define CONN_READER 1
 #define CONN_WRITER 2
-#define CONN_BIGBUF 4
-#define CONN_BIGREQBUF 8
+#define CONN_SIDE_READER 4
+#define CONN_BIGBUF 8
+#define CONN_BIGREQBUF 16
 
 /* request->method */
 #define METHOD_UNKNOWN -1
