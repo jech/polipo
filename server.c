@@ -999,8 +999,7 @@ httpServerContinueObjectHandler(int status, ObjectHandlerPtr ohandler)
 }
 
 /* s is 0 to keep the connection alive, 1 to shutdown the connection,
-   2 to shut it down straight away, and -1 to keep the connection
-   alive and keep the current request. */
+   and -1 to keep the connection alive and keep the current request. */
 void
 httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 {
