@@ -378,8 +378,8 @@ getHeaderValue(const char *restrict buf, int start,
     j = skipToEol(buf, i, &k);
     if(j < 0)
         return -1;
-    if(buf[j + 1] == ' ' || buf[j + 1] == '\t') {
-        i = j;
+    if(buf[j] == ' ' || buf[j] == '\t') {
+        i = j + 1;
         goto again;
     }
     *value_start_return = start;
@@ -528,8 +528,11 @@ parseHeaderLine(const char *restrict buf, int start,
     i = getNextToken(buf, start, &name_start, &name_end);
     if(i < 0 || buf[i] != ':')
         goto syntax;
+    i++;
+    while(buf[i] == ' ' || buf[i] == '\t')
+        i++;
 
-    i = getHeaderValue(buf, i + 2, &value_start, &value_end);
+    i = getHeaderValue(buf, i, &value_start, &value_end);
     if(i < 0)
         goto syntax;
 
