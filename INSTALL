@@ -22,7 +22,7 @@ following (whichever works):
 
 You can also use Polipo without installing:
 
-  $ make all
+  $ make
   $ nroff -man polipo.man | more
   $ ./polipo &
 
