@@ -1335,9 +1335,6 @@ parseUrl(const char *url, int len,
             if(j < 0) {
                 port = 80;
             } else {
-                if(j < len && url[j] == '/')
-                    i = j + 1;
-                else
                     i = j;
             }
         } else {
