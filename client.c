@@ -1518,10 +1518,10 @@ httpServeObject(HTTPConnectionPtr connection)
         }
     }
 
-    if(n >= CHUNK_SIZE - 4)
-        goto fail;
-
     n = snnprintf(connection->buf, n, CHUNK_SIZE, "\r\n\r\n");
+
+    if(n < 0)
+        goto fail;
     
     connection->offset = request->from;
 
