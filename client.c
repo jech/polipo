@@ -1256,9 +1256,8 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
     if((object->flags & OBJECT_SUPERSEDED) &&
        request->request && request->request->can_mutate) {
         ObjectPtr new_object = retainObject(request->request->can_mutate);
-        if(object->requestor == request) {
+        if(object->requestor == request && new_object->requestor == NULL) {
             object->requestor = NULL;
-            assert(new_object->requestor == NULL);
             new_object->requestor = request;
         }
         releaseObject(object);
