@@ -105,204 +105,206 @@ printString(FILE *out, char *string, int html)
 static void
 printVariable(FILE *out, ConfigVariablePtr var, int html)
 {
-  int i;
+    int i;
 
-  switch(var->type) {
-  case CONFIG_INT: fprintf(out, "%d", *var->value.i); break;
-  case CONFIG_OCTAL: fprintf(out, "0%o", *var->value.i); break;
-  case CONFIG_HEX: fprintf(out, "0x%x", *var->value.i); break;
-  case CONFIG_TIME:
-    {
-      int v = *var->value.i;
-      if(v == 0) {
-	fprintf(out, "0s");
-      } else {
-	if(v >= 3600 * 24) fprintf(out, "%dd", v/(3600*24));
-	v = v % (3600 * 24);
-	if(v >= 3600) fprintf(out, "%dh", v / 3600);
-	v = v % 3600;
-	if(v >= 60) fprintf(out, "%dm", v / 60);
-	v = v % 60;
-	if(v > 0) fprintf(out, "%ds", v);
-      }
+    switch(var->type) {
+    case CONFIG_INT: fprintf(out, "%d", *var->value.i); break;
+    case CONFIG_OCTAL: fprintf(out, "0%o", *var->value.i); break;
+    case CONFIG_HEX: fprintf(out, "0x%x", *var->value.i); break;
+    case CONFIG_TIME:
+        {
+            int v = *var->value.i;
+            if(v == 0) {
+                fprintf(out, "0s");
+            } else {
+                if(v >= 3600 * 24) fprintf(out, "%dd", v/(3600*24));
+                v = v % (3600 * 24);
+                if(v >= 3600) fprintf(out, "%dh", v / 3600);
+                v = v % 3600;
+                if(v >= 60) fprintf(out, "%dm", v / 60);
+                v = v % 60;
+                if(v > 0) fprintf(out, "%ds", v);
+            }
+        }
+        break;
+    case CONFIG_BOOLEAN:
+        switch(*var->value.i) {
+        case 0: fprintf(out, "false"); break;
+        case 1: fprintf(out, "true"); break;
+        default: fprintf(out, "???"); break;
+        }
+        break;
+    case CONFIG_TRISTATE:
+        switch(*var->value.i) {
+        case 0: fprintf(out, "false"); break;
+        case 1: fprintf(out, "maybe"); break;
+        case 2: fprintf(out, "true"); break;
+        default: fprintf(out, "???"); break;
+        }
+        break;
+    case CONFIG_TETRASTATE:
+        switch(*var->value.i) {
+        case 0: fprintf(out, "false"); break;
+        case 1: fprintf(out, "reluctantly"); break;
+        case 2: fprintf(out, "happily"); break;
+        case 3: fprintf(out, "true"); break;
+        default: fprintf(out, "???"); break;
+        }
+        break;
+    case CONFIG_PENTASTATE:
+        switch(*var->value.i) {
+        case 0: fprintf(out, "no"); break;
+        case 1: fprintf(out, "reluctantly"); break;
+        case 2: fprintf(out, "maybe"); break;
+        case 3: fprintf(out, "happily"); break;
+        case 4: fprintf(out, "true"); break;
+        default: fprintf(out, "???"); break;
+        }
+        break;
+    case CONFIG_FLOAT: fprintf(out, "%f", *var->value.f); break;
+    case CONFIG_ATOM: case CONFIG_ATOM_LOWER:
+        if(*var->value.a) {
+            if((*var->value.a)->length > 0)
+                printString(out, (*var->value.a)->string, html);
+            else fprintf(out, "(empty)");
+        } else
+            fprintf(out, "(none)");
+        break;
+    case CONFIG_INT_LIST:
+        if((*var->value.il) == NULL)
+            fprintf(out, "(not set)");
+        else if((*var->value.il)->length == 0)
+            fprintf(out, "(empty list)");
+        else {
+            for(i = 0; i < (*var->value.il)->length; i++) {
+                int from = (*var->value.il)->ranges[i].from;
+                int to = (*var->value.il)->ranges[i].to;
+                assert(from <= to);
+                if(from == to)
+                    fprintf(out, "%d", from);
+                else
+                    fprintf(out, "%d-%d", from, to);
+                if(i < (*var->value.il)->length - 1)
+                    fprintf(out, ", ");
+            }
+        }
+        break;
+    case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
+        if((*var->value.al) == NULL)
+            fprintf(out, "(not set)");
+        else if((*var->value.al)->length == 0)
+            fprintf(out, "(empty list)");
+        else {
+            for(i = 0; i < (*var->value.al)->length; i++) {
+                AtomPtr atom = (*var->value.al)->list[i];
+                if(atom) {
+                    if(atom->length > 0)
+                        printString(out, atom->string, html);
+                    else
+                        fprintf(out, "(empty)");
+                } else
+                    fprintf(out, "(none)");
+                if(i < (*var->value.al)->length - 1)
+                    fprintf(out, ", ");
+            }
+        }
+        break;
+    default: abort();
     }
-    break;
-  case CONFIG_BOOLEAN:
-    switch(*var->value.i) {
-    case 0: fprintf(out, "false"); break;
-    case 1: fprintf(out, "true"); break;
-    default: fprintf(out, "???"); break;
-    }
-    break;
-  case CONFIG_TRISTATE:
-    switch(*var->value.i) {
-    case 0: fprintf(out, "false"); break;
-    case 1: fprintf(out, "maybe"); break;
-    case 2: fprintf(out, "true"); break;
-    default: fprintf(out, "???"); break;
-    }
-    break;
-  case CONFIG_TETRASTATE:
-    switch(*var->value.i) {
-    case 0: fprintf(out, "false"); break;
-    case 1: fprintf(out, "reluctantly"); break;
-    case 2: fprintf(out, "happily"); break;
-    case 3: fprintf(out, "true"); break;
-    default: fprintf(out, "???"); break;
-    }
-    break;
-  case CONFIG_PENTASTATE:
-    switch(*var->value.i) {
-    case 0: fprintf(out, "no"); break;
-    case 1: fprintf(out, "reluctantly"); break;
-    case 2: fprintf(out, "maybe"); break;
-    case 3: fprintf(out, "happily"); break;
-    case 4: fprintf(out, "true"); break;
-    default: fprintf(out, "???"); break;
-    }
-    break;
-  case CONFIG_FLOAT: fprintf(out, "%f", *var->value.f); break;
-  case CONFIG_ATOM: case CONFIG_ATOM_LOWER:
-    if(*var->value.a) {
-      if((*var->value.a)->length > 0)
-	printString(out, (*var->value.a)->string, html);
-      else fprintf(out, "(empty)");
-    } else
-      fprintf(out, "(none)");
-    break;
-  case CONFIG_INT_LIST:
-    if((*var->value.il) == NULL)
-      fprintf(out, "(not set)");
-    else if((*var->value.il)->length == 0)
-      fprintf(out, "(empty list)");
-    else {
-      for(i = 0; i < (*var->value.il)->length; i++) {
-	int from = (*var->value.il)->ranges[i].from;
-	int to = (*var->value.il)->ranges[i].to;
-	assert(from <= to);
-	if(from == to)
-	  fprintf(out, "%d", from);
-	else
-	  fprintf(out, "%d-%d", from, to);
-	if(i < (*var->value.il)->length - 1)
-	  fprintf(out, ", ");
-      }
-    }
-    break;
-  case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
-    if((*var->value.al) == NULL)
-      fprintf(out, "(not set)");
-    else if((*var->value.al)->length == 0)
-      fprintf(out, "(empty list)");
-    else {
-      for(i = 0; i < (*var->value.al)->length; i++) {
-	AtomPtr atom = (*var->value.al)->list[i];
-	if(atom) {
-	  if(atom->length > 0)
-	    printString(out, atom->string, html);
-	  else
-	    fprintf(out, "(empty)");
-	} else
-	  fprintf(out, "(none)");
-	if(i < (*var->value.al)->length - 1)
-	  fprintf(out, ", ");
-      }
-    }
-    break;
-  default: abort();
-  }
 }
 
 static void
 printVariableForm(FILE *out, ConfigVariablePtr var)
 {
-  char *disabled = "";
-  int i;
+    char *disabled = "";
+    int i;
+    
+    if(!var->setter) disabled = "disabled=true";
 
-  if(!var->setter) disabled = "disabled=true";
-
-  printf("<form method=POST action=\"config?\">");
+    printf("<form method=POST action=\"config?\">");
   
-  switch(var->type) {
-  case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
-  case CONFIG_TIME: case CONFIG_FLOAT: case CONFIG_ATOM:
-  case CONFIG_ATOM_LOWER: case CONFIG_INT_LIST:
-  case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
-    printf("<input value=\"");
-    printVariable(out, var, 1);
-    printf("\" size=10 name=%s %s>\n", var->name->string, disabled);
-    break;
+    switch(var->type) {
+    case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
+    case CONFIG_TIME: case CONFIG_FLOAT: case CONFIG_ATOM:
+    case CONFIG_ATOM_LOWER: case CONFIG_INT_LIST:
+    case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
+        printf("<input value=\"");
+        printVariable(out, var, 1);
+        printf("\" size=10 name=%s %s>\n", var->name->string, disabled);
+        break;
     
-  case CONFIG_BOOLEAN:
-    {
-      static char *states[] = {"false", "true"};
-      
-      printf("<select name=%s %s>", var->name->string, disabled);
-      for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
-	if(*var->value.i == i) {
-	  fprintf(out, "<option selected>%s</option>", states[i]);
-	} else {
-	  fprintf(out, "<option>%s</option>", states[i]);
-	}
-      }
-      printf("</select>");
-      printf("<INPUT type=\"submit\" value=\"set\"\n>");
-      break;
-    }
+    case CONFIG_BOOLEAN:
+        {
+            static char *states[] = {"false", "true"};
+            
+            printf("<select name=%s %s>", var->name->string, disabled);
+            for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
+                if(*var->value.i == i) {
+                    fprintf(out, "<option selected>%s</option>", states[i]);
+                } else {
+                    fprintf(out, "<option>%s</option>", states[i]);
+                }
+            }
+            printf("</select>");
+            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            break;
+        }
     
-  case CONFIG_TRISTATE:
-    {
-      static char *states[] = {"false", "maybe", "true"};
-      
-      printf("<select name=%s %s>", var->name->string, disabled);
-      for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
-	if(*var->value.i == i) {
-	  fprintf(out, "<option selected>%s</option>", states[i]);
-	} else {
-	  fprintf(out, "<option>%s</option>", states[i]);
-	}
-      }
-      printf("</select>");
-      printf("<INPUT type=\"submit\" value=\"set\"\n>");
-      break;
-    }
+    case CONFIG_TRISTATE:
+        {
+            static char *states[] = {"false", "maybe", "true"};
+            
+            printf("<select name=%s %s>", var->name->string, disabled);
+            for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
+                if(*var->value.i == i) {
+                    fprintf(out, "<option selected>%s</option>", states[i]);
+                } else {
+                    fprintf(out, "<option>%s</option>", states[i]);
+                }
+            }
+            printf("</select>");
+            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            break;
+        }
 
-  case CONFIG_TETRASTATE:
-    {
-      static char *states[] = {"false", "reluctantly", "happily", "true"};
-      
-      printf("<select name=%s %s>", var->name->string, disabled);
-      for(i=0; i <sizeof(states) / sizeof(states[0]); i++) {
-	if(*var->value.i == i) {
-	  fprintf(out, "<option selected>%s</option>", states[i]);
-	} else {
-	  fprintf(out, "<option>%s</option>", states[i]);
-	}
-      }
-      printf("</select>");
-      printf("<INPUT type=\"submit\" value=\"set\"\n>");
-      break;
-    }
+    case CONFIG_TETRASTATE:
+        {
+            static char *states[] =
+                {"false", "reluctantly", "happily", "true"};
+            
+            printf("<select name=%s %s>", var->name->string, disabled);
+            for(i=0; i <sizeof(states) / sizeof(states[0]); i++) {
+                if(*var->value.i == i) {
+                    fprintf(out, "<option selected>%s</option>", states[i]);
+                } else {
+                    fprintf(out, "<option>%s</option>", states[i]);
+                }
+            }
+            printf("</select>");
+            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            break;
+        }
 
-  case CONFIG_PENTASTATE:
-    {
-      static char *states[] = {"no", "reluctantly", "maybe", "happily", "true"};
+    case CONFIG_PENTASTATE:
+        {
+            static char *states[] =
+                {"no", "reluctantly", "maybe", "happily", "true"};
 
-      printf("<select name=%s %s>", var->name->string, disabled);
-      for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
-	if(*var->value.i == i) {
-	  fprintf(out, "<option selected>%s</option>", states[i]);
-	} else {
-	  fprintf(out, "<option>%s</option>", states[i]);
-	}
-      }
-      printf("</select>");
-      printf("<INPUT type=\"submit\" value=\"set\"\n>");
-      break;
+            printf("<select name=%s %s>", var->name->string, disabled);
+            for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
+                if(*var->value.i == i) {
+                    fprintf(out, "<option selected>%s</option>", states[i]);
+                } else {
+                    fprintf(out, "<option>%s</option>", states[i]);
+                }
+            }
+            printf("</select>");
+            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            break;
+        }
+    default: abort();
     }
-  default: abort();
-  }
-  printf("</form>");
+    printf("</form>");
 }
 
 
@@ -337,7 +339,8 @@ printConfigVariables(FILE *out, int html)
 	      "<td>description</td>");
     }
 
-    /* for the moment configFile and CHUNK_SIZE are not really configuration variables */
+    /* configFile is not a config variable, for obvious bootstrapping reasons.
+       CHUNK_SIZE is hardwired for now. */
 
     fprintf(out,
 	    html ?
@@ -354,13 +357,12 @@ printConfigVariables(FILE *out, int html)
     
     var = configVariables;
     while(var != NULL) {
-
       if(html) {
-	if(entryno%2)
-	  fprintf(out, "<tr class=odd>");
-	else
-	  fprintf(out, "<tr class=even>");
-	fprintf(out, "<td>");
+          if(entryno % 2)
+              fprintf(out, "<tr class=odd>");
+          else
+              fprintf(out, "<tr class=even>");
+          fprintf(out, "<td>");
       }
 
       fprintf(out, "%s", var->name->string);
