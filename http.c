@@ -26,6 +26,9 @@ int disableProxy = 0;
 AtomPtr proxyName = NULL;
 int proxyPort = 8123;
 
+int clientTimeout = 120;
+int serverTimeout = 90;
+
 AtomPtr authRealm = NULL;
 AtomPtr authCredentials = NULL;
 
@@ -51,6 +54,8 @@ int proxyOffline = 0;
 int relaxTransparency = 0;
 AtomPtr proxyAddress = NULL;
 
+static int timeoutSetter(ConfigVariablePtr var, void *value);
+
 void
 preinitHttp()
 {
@@ -68,6 +73,10 @@ preinitHttp()
                     "The IP address on which the proxy listens.");
     CONFIG_VARIABLE(proxyName, CONFIG_ATOM_LOWER,
                     "The name under which the proxy is known.");
+    CONFIG_VARIABLE_SETTABLE(clientTimeout, CONFIG_TIME, 
+                             timeoutSetter, "Client-side timeout.");
+    CONFIG_VARIABLE_SETTABLE(serverTimeout, CONFIG_TIME,
+                             timeoutSetter, "Server-side timeout.");
     CONFIG_VARIABLE(authRealm, CONFIG_ATOM,
                     "Authentication realm.");
     CONFIG_VARIABLE(authCredentials, CONFIG_ATOM,
@@ -85,6 +94,15 @@ preinitHttp()
     preinitHttpParser();
 }
 
+static int
+timeoutSetter(ConfigVariablePtr var, void *value)
+{
+    configIntSetter(var, value);
+    if(clientTimeout <= serverTimeout)
+        clientTimeout = serverTimeout + 1;
+    return 1;
+}
+
 void
 initHttp()
 {
@@ -96,6 +114,12 @@ initHttp()
     initHttpParser();
 
     atom100Continue = internAtom("100-continue");
+
+    if(clientTimeout <= serverTimeout) {
+        clientTimeout = serverTimeout + 1;
+        do_log(L_WARN, "Value of clientTimeout too small -- setting to %d.\n",
+               clientTimeout);
+    }
 
     if(authCredentials != NULL && authRealm == NULL)
         authRealm = internAtom("Polipo");
@@ -690,7 +714,6 @@ httpCondition(ObjectPtr object, HTTPConditionPtr condition)
     return rc;
 }
 
-int
 httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       int code, AtomPtr message, int close, AtomPtr headers,
                       char *url, int url_len, char *etag)

@@ -121,6 +121,7 @@ typedef struct _HTTPConnection {
 extern int disableProxy;
 extern AtomPtr proxyName;
 extern int proxyPort;
+extern int clientTimeout, serverTimeout;
 extern AtomPtr proxyAddress;
 extern int proxyOffline;
 extern int relaxTransparency;

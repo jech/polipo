@@ -94,7 +94,7 @@ httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
 
     connection = httpMakeConnection();
 
-    timeout = scheduleTimeEvent(120, httpTimeoutHandler,
+    timeout = scheduleTimeEvent(clientTimeout, httpTimeoutHandler,
                                 sizeof(connection), &connection);
     if(!timeout) {
         close(fd);
@@ -197,7 +197,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     if(!s) {
         assert(connection->fd > 0);
         connection->serviced++;
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, clientTimeout);
         if(!connection->flags & CONN_READER) {
             if(connection->reqlen == 0) {
                 if(connection->reqbuf) {
@@ -206,7 +206,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
                 }
             }
             connection->flags |= CONN_READER;
-            httpSetTimeout(connection, 60);
+            httpSetTimeout(connection, clientTimeout);
             do_stream_buf(IO_READ | IO_NOTNOW |
                           (connection->reqlen ? IO_IMMEDIATE : 0),
                           connection->fd, connection->reqlen,
@@ -411,7 +411,7 @@ httpClientHandler(int status,
                            internAtom("Couldn't find end of headers"));
         return 1;
     }
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, clientTimeout);
     return 0;
 }
 
@@ -463,7 +463,7 @@ httpClientRawErrorHeaders(HTTPConnectionPtr connection,
         return 1;
     }
 
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, clientTimeout);
     do_stream(IO_WRITE, fd, 0, connection->buf, n, 
               close > 0 ? httpErrorStreamHandler :
               close == 0 ? httpErrorNocloseStreamHandler :
@@ -949,7 +949,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     }
 
     if(connection->bodylen > 0) {
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, clientTimeout);
         do_stream_buf(IO_READ | IO_NOTNOW,
                       connection->fd, connection->reqlen,
                       &connection->reqbuf, CHUNK_SIZE,
@@ -967,7 +967,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         connection->reqbegin = 0;
     }
 
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, clientTimeout);
     /* We need to delay in order to make sure the previous request
        gets queued on the server side.  IO_NOTNOW isn't strong enough
        for that due to IO_IMMEDIATE. */
@@ -1706,7 +1706,7 @@ httpServeObject(HTTPConnectionPtr connection)
     }
 
     connection->offset = request->from;
-    httpSetTimeout(connection, 120);
+    httpSetTimeout(connection, clientTimeout);
     do_log(D_CLIENT_DATA, "Serving on 0x%x for 0x%x: offset %d len %d\n",
            (unsigned)connection, (unsigned)object,
            connection->offset, len);
@@ -1815,7 +1815,7 @@ httpServeChunk(HTTPConnectionPtr connection)
             }
             unlockChunk(object, i);
             if(connection->te == TE_CHUNKED) {
-                httpSetTimeout(connection, 120);
+                httpSetTimeout(connection, clientTimeout);
                 do_stream(IO_WRITE | IO_CHUNKED | IO_END,
                           connection->fd, 0, NULL, 0,
                           httpServeObjectFinishHandler, connection);
@@ -1885,7 +1885,7 @@ httpServeChunk(HTTPConnectionPtr connection)
                                 object->request_closure);
         }
         if(len2 == 0) {
-            httpSetTimeout(connection, 120);
+            httpSetTimeout(connection, clientTimeout);
             do_log(D_CLIENT_DATA, 
                    "Serving on 0x%x for 0x%x: offset %d len %d\n",
                    (unsigned)connection, (unsigned)object,
@@ -1898,7 +1898,7 @@ httpServeChunk(HTTPConnectionPtr connection)
                       object->chunks[i].data + j, len,
                       httpServeObjectStreamHandler, connection);
         } else {
-            httpSetTimeout(connection, 120);
+            httpSetTimeout(connection, clientTimeout);
             do_log(D_CLIENT_DATA, 
                    "Serving on 0x%x for 0x%x: offset %d len %d + %d\n",
                    (unsigned)connection, (unsigned)object,
@@ -1984,7 +1984,7 @@ httpServeObjectStreamHandlerCommon(int kind, int status,
     assert(!request->chandler);
 
     if(status == 0 && !streamRequestDone(srequest)) {
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, clientTimeout);
         return 0;
     }
 

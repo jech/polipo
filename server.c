@@ -416,7 +416,7 @@ httpServerConnection(HTTPServerPtr server)
 
     do_log(D_SERVER_CONN, "C... %s:%d.\n",
            connection->server->name, connection->server->port);
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, serverTimeout);
     connection->connecting = CONNECTING_DNS;
     do_gethostbyname(server->name, 0,
                      httpServerConnectionDnsHandler,
@@ -465,7 +465,7 @@ httpServerConnectionDnsHandler(int status, GethostbynameRequestPtr request)
             return 1;
         }
             
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, serverTimeout);
         do_gethostbyname(request->addr->string + 1, request->count + 1,
                          httpServerConnectionDnsHandler,
                          connection);
@@ -473,7 +473,7 @@ httpServerConnectionDnsHandler(int status, GethostbynameRequestPtr request)
     }
 
     connection->connecting = CONNECTING_CONNECT;
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, serverTimeout);
     do_connect(retainAtom(request->addr), connection->server->addrindex,
                connection->server->port,
                httpServerConnectionHandler, connection);
@@ -1154,7 +1154,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         server->persistent += 1;
         if(server->persistent > 0)
             server->numslots = MIN(server->maxslots, serverSlots);
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, serverTimeout);
         /* See httpServerTrigger */
         if(connection->pipelined ||
            (server->version == HTTP_11 && server->pipeline <= 0) ||
@@ -1199,7 +1199,7 @@ httpServerReply(HTTPConnectionPtr connection, int immediate)
         }
     }
 
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, serverTimeout);
     do_stream_buf(IO_READ | (immediate ? IO_IMMEDIATE : 0) | IO_NOTNOW,
                   connection->fd, connection->len,
                   &connection->buf, CHUNK_SIZE,
@@ -1546,12 +1546,12 @@ httpServerHandler(int status,
         connection->reqbuf = NULL;
         shutdown(connection->fd, 2);
         pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN | POLLOUT);
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, serverTimeout);
         return 1;
     }
 
     if(status == 0 && !streamRequestDone(srequest)) {
-        httpSetTimeout(connection, 60);
+        httpSetTimeout(connection, serverTimeout);
         return 0;
     }
     
@@ -1596,7 +1596,7 @@ httpServerSendRequest(HTTPConnectionPtr connection)
         return -1;
     }
 
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, serverTimeout);
     do_stream(IO_WRITE, connection->fd, 0,
               connection->reqbuf, connection->reqlen,
               httpServerHandler, connection);
@@ -2384,7 +2384,7 @@ httpServerReadData(HTTPConnectionPtr connection, int immediate)
         }
     }
 
-    httpSetTimeout(connection, 60);
+    httpSetTimeout(connection, serverTimeout);
     do_stream_buf(IO_READ | IO_NOTNOW |
                   ((immediate && connection->len) ? IO_IMMEDIATE : 0),
                   connection->fd, connection->len,
