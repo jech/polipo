@@ -1,0 +1,59 @@
+Polipo installation instructions -*-text-*-
+********************************
+
+  $ make all
+  $ su -c 'make install'
+  $ man polipo
+  $ polipo &
+
+If you want Polipo to put itself into the background, you may replace
+the last line with:
+
+  $ polipo daemonise=true
+
+On SVR4 systems (Solaris, HP/UX), replace the first line with
+whichever works:
+
+  $ make PLATFORM_DEFINES=-DSVR4 all
+  $ make PLATOFM_DEFINES=-DSVR4 LDLIBS='-lsocket -lnsl -lresolv' all
+
+Please see the comments in the Makefile for more details.
+
+You can also use Polipo without installing:
+
+  $ make all
+  $ nroff -man polipo.man | more
+  $ ./polipo &
+
+You should then configure your user-agent (web browser) to use the
+proxy on `http://localhost:8123/'.
+
+You may make Polipo smaller by a few bytes by disabling features you
+don't need; see the Makefile for details.
+
+If you want to use an on-disk cache, you will need to create its root
+directory:
+
+  $ mkdir /var/cache/polipo/
+
+You should then arrange for cron to run the following on a regular
+basis:
+
+  killall -USR1 polipo
+  polipo -x
+  killall -USR2 polipo
+
+If you want to use a configuration file, you should put it in one of
+the locations `/etc/polipo/config' or `~/.polipo'; you can also use
+the `-c' flag to put it in a non-standard location.  See the file
+the file `config.sample' for an example.
+
+You might also want to create a forbidden URLs file, which you should
+put either in one of `/etc/polipo/forbidden' or `~/.polipo-forbidden';
+you can set the variable `forbiddenFile' in your config file if you
+want to put it in a non-standard location.  See `forbidden.sample' for
+an example.
+
+
+                                        Juliusz Chroboczek
+                                        <jch@pps.jussieu.fr>

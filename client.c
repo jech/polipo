@@ -1,0 +1,1846 @@
+/*
+Copyright (c) 2003, 2004 by Juliusz Chroboczek
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+#include "polipo.h"
+
+static int 
+httpAcceptAgain(TimeEventHandlerPtr event)
+{
+    FdEventHandlerPtr newevent;
+    int fd = *(int*)event->data;
+
+    newevent = schedule_accept(fd, httpAccept, NULL);
+    if(newevent == NULL) {
+        free_chunk_arenas();
+        newevent = schedule_accept(fd, httpAccept, NULL);
+        if(newevent == NULL) {
+            do_log(L_ERROR, "Couldn't schedule accept.\n");
+            polipoExit();
+        }
+    }
+    return 1;
+}
+
+int
+httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
+{
+    int rc;
+    HTTPConnectionPtr connection;
+    TimeEventHandlerPtr timeout;
+
+    if(fd < 0) {
+        if(-fd == EINTR || -fd == EAGAIN || -fd == EWOULDBLOCK)
+            return 0;
+        do_log_error(L_ERROR, -fd, "Couldn't establish listening socket");
+        if(-fd == EMFILE || -fd == ENOMEM || -fd == ENOBUFS) {
+            TimeEventHandlerPtr again = NULL;
+            do_log(L_WARN, "Refusing client connections for one second.\n");
+            free_chunk_arenas();
+            again = scheduleTimeEvent(1, httpAcceptAgain, 
+                                      sizeof(request->fd), &request->fd);
+            if(!again) {
+                do_log(L_ERROR, "Couldn't schedule accept -- sleeping.\n");
+                sleep(1);
+                again = scheduleTimeEvent(1, httpAcceptAgain, 
+                                          sizeof(request->fd), &request->fd);
+                if(!again) {
+                    do_log(L_ERROR, "Couldn't schedule accept -- aborting.\n");
+                    polipoExit();
+                }
+            }
+            return 1;
+        } else {
+            polipoExit();
+            return 1;
+        }
+    }
+
+    if(allowedNets) {
+        if(netAddressMatch(fd, allowedNets) != 1) {
+            do_log(L_WARN, "Refusing connection from unauthorised net\n");
+            close(fd);
+            return 0;
+        }
+    }
+
+    rc = setNonblocking(fd, 1);
+    if(rc < 0) {
+        do_log_error(L_WARN, errno, "Couldn't set non blocking mode");
+        close(fd);
+        return 0;
+    }
+    rc = setNodelay(fd, 1);
+    if(rc < 0) 
+        do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
+
+    connection = httpMakeConnection();
+
+    timeout = scheduleTimeEvent(120, httpTimeoutHandler,
+                                sizeof(connection), &connection);
+    if(!timeout) {
+        close(fd);
+        free(connection);
+        return 0;
+    }
+
+    connection->fd = fd;
+    connection->timeout = timeout;
+
+    do_log(D_CLIENT_CONN, "Accepted client connection 0x%x\n",
+           (unsigned)connection);
+
+    connection->flags = CONN_READER;
+
+    do_stream_buf(IO_READ | IO_NOTNOW, connection->fd, 0,
+                  &connection->reqbuf, CHUNK_SIZE,
+                  httpClientHandler, connection);
+    return 0;
+}
+
+/* Abort a client connection.  It is only safe to abort the requests
+   if we know the connection is closed. */
+void
+httpClientAbort(HTTPConnectionPtr connection, int closed)
+{
+    HTTPRequestPtr request = connection->request;
+
+    pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLOUT);
+    if(closed) {
+        while(request) {
+            if(request->ohandler) {
+                request->error_code = 500;
+                request->error_message = internAtom("Connection finishing");
+                abortObjectHandler(request->ohandler);
+                request->ohandler = NULL;
+            }
+            request = request->next;
+        }
+    }
+}
+
+/* s is 1 in order to linger the connection, 2 to close it straight away. */
+void
+httpClientFinish(HTTPConnectionPtr connection, int s)
+{
+    HTTPRequestPtr request = connection->request;
+
+    assert(!(request && request->request 
+             && request->request->request != request));
+
+    if(s == 0) {
+        if(!request || !request->persistent)
+            s = 1;
+    }
+
+    if(connection->buf)
+        dispose_chunk(connection->buf);
+    connection->buf = NULL;
+
+    if(connection->timeout) 
+        cancelTimeEvent(connection->timeout);
+    connection->timeout = NULL;
+
+    connection->flags &= ~CONN_WRITER;
+    if(request) {
+        HTTPRequestPtr requestee;
+
+        requestee = request->request;
+        if(requestee) {
+            request->request = NULL;
+            requestee->request = NULL;
+        }
+        if(requestee)
+            httpServerClientReset(requestee);
+        if(request->ohandler) {
+            request->error_code = 500;
+            request->error_message = internAtom("Connection finishing");
+            abortObjectHandler(request->ohandler);
+            request->ohandler = NULL;
+        }
+            
+        if(request->object) {
+            if(request->object->requestor == request)
+                request->object->requestor = NULL;
+            releaseObject(request->object);
+            request->object = NULL;
+        }
+        httpDequeueRequest(connection);
+        httpDestroyRequest(request);
+        request = NULL;
+
+    }
+
+    connection->len = -1;
+    connection->offset = 0;
+    connection->te = TE_IDENTITY;
+    connection->reqte = TE_UNKNOWN;
+
+    if(!s) {
+        assert(connection->fd > 0);
+        connection->serviced++;
+        httpSetTimeout(connection, 60);
+        if(!connection->flags & CONN_READER) {
+            if(connection->reqlen == 0) {
+                if(connection->reqbuf) {
+                    dispose_chunk(connection->reqbuf);
+                    connection->reqbuf = NULL;
+                }
+            }
+            connection->flags |= CONN_READER;
+            httpSetTimeout(connection, 60);
+            do_stream_buf(IO_READ | IO_NOTNOW |
+                          (connection->reqlen ? IO_IMMEDIATE : 0),
+                          connection->fd, connection->reqlen,
+                          &connection->reqbuf, CHUNK_SIZE,
+                          httpClientHandler, connection);
+        }
+        /* The request has already been validated when it first got
+           into the queue */
+        if(connection->request)
+            httpClientNoticeRequest(connection->request, 1);
+        return;
+    }
+    
+    do_log(D_CLIENT_CONN, "Closing client connection 0x%x\n",
+           (unsigned)connection);
+
+    while(1) {
+        HTTPRequestPtr requestee;
+        request = connection->request;
+        if(!request)
+            break;
+        requestee = request->request;
+        request->request = NULL;
+        if(requestee) {
+            requestee->request = NULL;
+            httpServerClientReset(requestee);
+        }
+        if(request->ohandler)
+            abortObjectHandler(request->ohandler);
+        request->ohandler = NULL;
+        if(request->object->requestor == request)
+            request->object->requestor = NULL;
+        httpDequeueRequest(connection);
+        httpDestroyRequest(request);
+    }
+    if(connection->flags & CONN_READER) {
+        httpSetTimeout(connection, 10);
+        if(connection->fd < 0) return;
+        if(s >= 2) {
+            pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
+        } else {
+            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLIN);
+        }
+        return;
+    }
+    if(connection->reqbuf) {
+        dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+    }
+    if(connection->timeout)
+        cancelTimeEvent(connection->timeout);
+    connection->timeout = NULL;
+    if(connection->fd >= 0) {
+        if(s >= 2)
+            close(connection->fd);
+        else
+            lingeringClose(connection->fd);
+    }
+    connection->fd = -1;
+    free(connection);
+}
+
+/* Extremely baroque implementation of close: we need to synchronise
+   between the writer and the reader.  */
+
+static char client_shutdown_buffer[17];
+
+static int httpClientDelayedShutdownHandler(TimeEventHandlerPtr);
+
+static int
+httpClientDelayedShutdown(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr handler;
+
+    assert(connection->flags & CONN_READER);
+    handler = scheduleTimeEvent(1, httpClientDelayedShutdownHandler,
+                                sizeof(connection), &connection);
+    if(!handler) {
+        do_log(L_ERROR, 
+               "Couldn't schedule delayed shutdown -- freeing memory.");
+        free_chunk_arenas();
+        handler = scheduleTimeEvent(1, httpClientDelayedShutdownHandler,
+                                    sizeof(connection), &connection);
+        if(!handler) {
+            do_log(L_ERROR, 
+                   "Couldn't schedule delayed shutdown -- aborting.\n");
+            polipoExit();
+        }
+    }
+    return 1;
+}
+
+static int
+httpClientShutdownHandler(int status,
+                          FdEventHandlerPtr event, StreamRequestPtr request)
+{
+    HTTPConnectionPtr connection = request->data;
+
+    assert(connection->flags & CONN_READER);
+
+    if(!(connection->flags & CONN_WRITER)) {
+        connection->flags &= ~CONN_READER;
+        connection->reqlen = 0;
+        if(connection->reqbuf) {
+            dispose_chunk(connection->reqbuf);
+            connection->reqbuf = NULL;
+        }
+        if(status && status != -EDOGRACEFUL)
+            httpClientFinish(connection, 2);
+        else
+            httpClientFinish(connection, 1);
+        return 1;
+    }
+
+    httpClientDelayedShutdown(connection);
+    return 1;
+}
+
+static int 
+httpClientDelayedShutdownHandler(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    assert(connection->flags & CONN_READER);
+
+    if(!(connection->flags & CONN_WRITER)) {
+        connection->flags &= ~CONN_READER;
+        connection->reqlen = 0;
+        if(connection->reqbuf) {
+            dispose_chunk(connection->reqbuf);
+            connection->reqbuf = NULL;
+        }
+        httpClientFinish(connection, 1);
+        return 1;
+    }
+    do_stream(IO_READ | IO_NOTNOW, connection->fd, 
+              0, client_shutdown_buffer, 17, 
+              httpClientShutdownHandler, connection);
+    return 1;
+}
+
+int
+httpClientHandler(int status,
+                  FdEventHandlerPtr event, StreamRequestPtr request)
+{
+    HTTPConnectionPtr connection = request->data;
+    int i, body;
+
+    assert(connection->flags & CONN_READER);
+
+    /* There's no point trying to do something with this request if
+       the client has shut the connection down -- HTTP doesn't do
+       half-open connections. */
+    if(status != 0) {
+        connection->reqlen = 0;
+        if(connection->reqbuf) {
+            dispose_chunk(connection->reqbuf);
+            connection->reqbuf = NULL;
+        }
+        if(!(connection->flags & CONN_WRITER)) {
+            connection->flags &= ~CONN_READER;
+            if(status > 0 || status == -ECONNRESET || status == -EDOSHUTDOWN)
+                httpClientFinish(connection, 2);
+            else
+                httpClientFinish(connection, 1);
+            return 1;
+        }
+        httpClientAbort(connection, status > 0 || status == -ECONNRESET);
+        connection->flags &= ~CONN_READER;
+        return 1;
+    }
+
+    i = findEndOfHeaders(connection->reqbuf, 0, request->offset, &body);
+    connection->reqlen = request->offset;
+
+    if(i >= 0) {
+        connection->reqbegin = i;
+        httpClientHandlerHeaders(event, request, connection);
+        return 1;
+    }
+
+    if(status) {
+        if(connection->reqlen > 0) {
+            if(connection->serviced <= 0)
+                do_log(L_ERROR, "Client dropped connection.\n");
+            else
+                do_log(D_CLIENT_CONN, "Client dropped idle connection.\n");
+        }
+        connection->flags &= ~CONN_READER;
+        if(!connection->request)
+            httpClientFinish(connection, 2);
+        else
+            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLOUT);
+        return 1;
+    }
+
+    if(connection->reqlen >= CHUNK_SIZE) {
+        do_log(L_ERROR, "Couldn't find end of client's headers.\n");
+        connection->reqlen = 0;
+        dispose_chunk(connection->reqbuf); 
+        connection->reqbuf = NULL;
+        httpClientNewError(connection, METHOD_UNKNOWN, 0, 400, 
+                           internAtom("Couldn't find end of headers"));
+        return 1;
+    }
+    httpSetTimeout(connection, 60);
+    return 0;
+}
+
+int
+httpClientRawErrorHeaders(HTTPConnectionPtr connection,
+                          int code, AtomPtr message,
+                          int close, AtomPtr headers)
+{
+    int fd = connection->fd;
+    int n;
+    char *url; int url_len;
+    char *etag;
+
+    assert(connection->flags & CONN_WRITER);
+    assert(code != 0);
+
+    if(connection->request) 
+        close = close || !connection->request->persistent;
+    else
+        close = 1;
+
+    if(connection->request && connection->request->object) {
+        url = connection->request->object->key;
+        url_len = connection->request->object->key_size;
+        etag = connection->request->object->etag;
+    } else {
+        url = NULL;
+        url_len = 0;
+        etag = NULL;
+    }
+
+    if(connection->buf == NULL) {
+        connection->buf = get_chunk();
+        if(connection->buf == NULL) {
+            httpClientFinish(connection, 1);
+            return 1;
+        }
+    }
+
+    n = httpWriteErrorHeaders(connection->buf, CHUNK_SIZE, 0,
+                              connection->request &&
+                              connection->request->method != METHOD_HEAD,
+                              code, message, close, headers,
+                              url, url_len, etag);
+    if(n <= 0) {
+        httpClientFinish(connection, 1);
+        return 1;
+    }
+
+    httpSetTimeout(connection, 60);
+    if(close) {
+        do_stream(IO_WRITE, fd, 0, connection->buf, n, 
+                  httpErrorStreamHandler, connection);
+    } else {
+        do_stream(IO_WRITE, fd, 0, connection->buf, n, 
+                  httpErrorNocloseStreamHandler, connection);
+    }
+
+    return 1;
+}
+
+int
+httpClientRawError(HTTPConnectionPtr connection, int code, AtomPtr message,
+                   int close)
+{
+    return httpClientRawErrorHeaders(connection, code, message, close, NULL);
+}
+
+int
+httpClientNoticeErrorHeaders(HTTPRequestPtr request, int code, AtomPtr message,
+                             AtomPtr headers)
+{
+    if(request->error_message)
+        releaseAtom(request->error_message);
+    if(request->error_headers)
+        releaseAtom(request->error_headers);
+    request->error_code = code;
+    request->error_message = message;
+    request->error_headers = headers;
+    httpClientNoticeRequest(request, 0);
+    return 1;
+}
+
+int
+httpClientNoticeError(HTTPRequestPtr request, int code, AtomPtr message)
+{
+    return httpClientNoticeErrorHeaders(request, code, message, NULL);
+}
+
+int
+httpClientError(HTTPRequestPtr request, int code, AtomPtr message)
+{
+    if(request->error_message)
+        releaseAtom(request->error_message);
+    request->error_code = code;
+    request->error_message = message;
+    if(request->ohandler) {
+        abortObjectHandler(request->ohandler);
+        request->ohandler = NULL;
+    } else if(request->object)
+        notifyObject(request->object);
+    return 1;
+}
+
+/* This may be called from object handlers. */
+int
+httpClientLeanError(HTTPRequestPtr request, int code, AtomPtr message)
+{
+    if(request->error_message)
+        releaseAtom(request->error_message);
+    request->error_code = code;
+    request->error_message = message;
+    return 1;
+}
+
+
+int
+httpClientNewError(HTTPConnectionPtr connection, int method, int persist,
+                   int code, AtomPtr message)
+{
+    HTTPRequestPtr request;
+    request = httpMakeRequest();
+    if(request == NULL) {
+        do_log(L_ERROR, "Couldn't allocate error request.\n");
+        httpClientFinish(connection, 1);
+        return 1;
+    }
+    request->method = method;
+    request->persistent = persist;
+    request->error_code = code;
+    request->error_message = message;
+
+    httpQueueRequest(connection, request);
+    httpClientNoticeRequest(request, 0);
+    return 1;
+}
+        
+int
+httpErrorStreamHandler(int status,
+                       FdEventHandlerPtr event,
+                       StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+
+    if(status == 0 && !streamRequestDone(srequest))
+        return 0;
+
+    httpClientFinish(connection, 1);
+    return 1;
+}
+
+int
+httpErrorNocloseStreamHandler(int status,
+                              FdEventHandlerPtr event,
+                              StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+
+    if(status == 0 && !streamRequestDone(srequest))
+        return 0;
+
+    httpClientFinish(connection, 0);
+    return 1;
+}
+
+int
+httpClientHandlerHeaders(FdEventHandlerPtr event, StreamRequestPtr srequest,
+                         HTTPConnectionPtr connection)
+{
+    HTTPRequestPtr request;
+    int rc;
+    int method, version;
+    AtomPtr url = NULL;
+    int start;
+    int code;
+    AtomPtr message;
+
+    start = 0;
+    /* Work around clients working around NCSA lossage. */
+    if(connection->reqbuf[0] == '\n')
+        start = 1;
+    else if(connection->reqbuf[0] == '\r' && connection->reqbuf[1] == '\n')
+        start = 2;
+
+    httpSetTimeout(connection, -1);
+    rc = httpParseClientFirstLine(connection->reqbuf, start,
+                                  &method, &url, &version);
+    if(rc <= 0) {
+        do_log(L_ERROR, "Couldn't parse client's request line\n");
+        code = 400;
+        message =  internAtom("Error in request line");
+        goto fail;
+    }
+
+    do_log(D_CLIENT_REQ, "Client request: ");
+    do_log_n(D_CLIENT_REQ, connection->reqbuf, rc - 1);
+    do_log(D_CLIENT_REQ, "\n");
+
+    if(version != HTTP_10 && version != HTTP_11) {
+        do_log(L_ERROR, "Unknown client HTTP version\n");
+        code = 400;
+        message = internAtom("Error in first request line");
+        goto fail;
+    }
+
+    if(method == METHOD_UNKNOWN) {
+        code = 501;
+        message =  internAtom("Method not implemented");
+        goto fail;
+    }
+
+    request = httpMakeRequest();
+    if(request == NULL) {
+        do_log(L_ERROR, "Couldn't allocate client request.\n");
+        code = 500;
+        message = internAtom("Couldn't allocate client request");
+        goto fail;
+    }
+
+    if(connection->version != HTTP_UNKNOWN && version != connection->version) {
+        do_log(L_WARN, "Client version changed!\n");
+    }
+
+    connection->version = version;
+    request->method = method;
+    request->persistent = 1;
+    request->cache_control = no_cache_control;
+    request->requested = 0;
+    httpQueueRequest(connection, request);
+    connection->reqbegin = rc;
+    return httpClientRequest(request, url);
+
+ fail:
+    if(url) releaseAtom(url);
+    shutdown(connection->fd, 0);
+    connection->reqlen = 0;
+    connection->reqbegin = 0;
+    dispose_chunk(connection->reqbuf); 
+    connection->reqbuf = NULL;
+    connection->flags &= ~CONN_READER;
+    httpClientNewError(connection, METHOD_UNKNOWN, 0, code, message);
+    return 1;
+
+}
+
+static int
+httpClientRequestDelayed(TimeEventHandlerPtr event)
+{
+    HTTPRequestPtr request = *(HTTPRequestPtr*)event->data;
+    AtomPtr url;
+    url = internAtomN(request->object->key, request->object->key_size);
+    if(url == NULL) {
+        do_log(L_ERROR, "Couldn't allocate url.\n");
+        abortObject(request->object, 503, internAtom("Couldn't allocate url"));
+        return 1;
+    }
+    httpClientRequest(request, url);
+    return 1;
+}
+
+int
+delayedHttpClientRequest(HTTPRequestPtr request)
+{
+    TimeEventHandlerPtr event;
+    event = scheduleTimeEvent(-1, httpClientRequestDelayed,
+                              sizeof(request), &request);
+    if(!event)
+        return -1;
+    return 1;
+}
+
+int
+httpClientRequest(HTTPRequestPtr request, AtomPtr url)
+{
+    HTTPConnectionPtr connection = request->connection;
+    ObjectPtr object;
+    int i;
+    int body_len, body_te;
+    AtomPtr headers;
+    CacheControlRec cache_control;
+    AtomPtr via, expect, auth;
+    HTTPConditionPtr condition;
+    HTTPRangeRec range;
+    int type;
+    RequestFunction requestfn;
+
+    assert(!request->ohandler);
+    assert(connection->reqbuf);
+
+    i = httpParseHeaders(1, url,
+                         connection->reqbuf, connection->reqbegin, request,
+                         &headers, &body_len, 
+                         &cache_control, &condition, &body_te,
+                         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                         &expect, &range, NULL, NULL, &via, &auth);
+    if(i < 0) {
+        releaseAtom(url);
+        do_log(L_ERROR, "Couldn't parse client headers.\n");
+        shutdown(connection->fd, 0);
+        request->persistent = 0;
+        connection->flags &= ~CONN_READER;
+        httpClientNoticeError(request, 503,
+                              internAtom("Couldn't parse client headers"));
+        return 1;
+    }
+
+    connection->reqbegin = i;
+
+    if(body_len < 0) {
+        if(request->method == METHOD_GET || request->method == METHOD_HEAD)
+            body_len = 0;
+    }
+    connection->bodylen = body_len;
+    connection->reqte = body_te;
+
+    if(authRealm) {
+        AtomPtr message = NULL;
+        AtomPtr challenge = NULL;
+        int code = checkClientAuth(auth, url, &message, &challenge);
+        if(auth) {
+            releaseAtom(auth);
+            auth = NULL;
+        }
+        if(expect) {
+            releaseAtom(expect);
+            expect = NULL;
+        }
+        if(code) {
+            if(expect) releaseAtom(expect);
+            request->force_error = 1;
+            httpClientDiscardBody(connection);
+            httpClientNoticeErrorHeaders(request, code, message, challenge);
+            return 1;
+        }
+    }
+
+    if(auth) {
+        releaseAtom(auth);
+        auth = NULL;
+    }
+
+    if(expect) {
+        if(expect == atom100Continue) {
+            request->wait_continue = 1;
+        } else {
+            httpClientDiscardBody(connection);
+            httpClientNoticeError(request, 417,
+                                  internAtomF("Expectation %s not supported",
+                                              expect->string));
+            releaseAtom(expect);
+            return 1;
+        }
+        releaseAtom(expect);
+    }
+
+    request->from = range.from < 0 ? 0 : range.from;
+    request->to = range.to;
+    request->cache_control = cache_control;
+    request->via = via;
+    request->headers = headers;
+    request->condition = condition;
+    request->object = NULL;
+
+    if(connection->serviced > 500)
+        request->persistent = 0;
+
+    if(request->method == METHOD_CONNECT) {
+        if(connection->flags & CONN_WRITER) {
+            /* For now */
+            httpClientDiscardBody(connection);
+            httpClientNoticeError(request, 500,
+                                  internAtom("Pipelined CONNECT "
+                                             "not supported"));
+            return 1;
+        }
+        connection->flags &= ~CONN_READER;
+        do_tunnel(connection->fd, connection->reqbuf, 
+                  connection->reqbegin, connection->reqlen, url);
+        connection->fd = -1;
+        connection->reqbuf = NULL;
+        connection->reqlen = 0;
+        connection->reqbegin = 0;
+        httpClientFinish(connection, 2);
+        return 1;
+    }
+
+    if(request->method == METHOD_POST || request->method == METHOD_PUT) {
+        ObjectPtr object;
+        do {
+            object = findObject(OBJECT_HTTP, url->string, url->length);
+            if(object) {
+                privatiseObject(object, 0);
+                releaseObject(object);
+            }
+        } while(object);
+        request->object = makeObject(OBJECT_HTTP, url->string, url->length,
+                                     0, 0, httpServerRequest, NULL);
+        if(request->object == NULL) {
+            httpClientDiscardBody(connection);
+            httpClientNoticeError(request, 503,
+                                  internAtom("Couldn't allocate object"));
+            return 1;
+        }
+        return httpClientSideRequest(request);
+    }
+
+    requestfn = httpServerRequest;
+    type = OBJECT_HTTP;
+
+    if(cache_control.flags & CACHE_AUTHORIZATION) {
+        do {
+            object = makeObject(type, url->string, url->length, 0, 0,
+                                requestfn, NULL);
+            if(object && object->flags != OBJECT_INITIAL) {
+                if(!(object->cache_control & CACHE_PUBLIC)) {
+                    privatiseObject(object, 0);
+                    releaseObject(object);
+                    object = NULL;
+                } else
+                    break;
+            }
+        } while(object == NULL);
+        if(object)
+            object->flags |= OBJECT_LINEAR;
+    } else {
+        object = findObject(type, url->string, url->length);
+        if(!object)
+            object = makeObject(type, url->string, url->length, 1, 1,
+                                requestfn, NULL);
+    }
+    releaseAtom(url);
+    url = NULL;
+
+    if(!object) {
+        do_log(L_ERROR, "Couldn't allocate object.\n");
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 503,
+                              internAtom("Couldn't allocate object"));
+        return 1;
+    }
+
+    if(urlIsLocal(object->key, object->key_size)) {
+        object->flags |= OBJECT_LOCAL;
+        object->request = httpLocalRequest;
+    } else if(!checkVia(proxyName, via)) {
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 504, internAtom("Proxy loop detected"));
+        return 1;
+    }
+
+    request->object = object;
+
+    httpClientDiscardBody(connection);
+    httpClientNoticeRequest(request, 0);
+    return 1;
+}
+
+int
+httpClientDiscardBody(HTTPConnectionPtr connection)
+{
+    assert(connection->request);
+    assert(connection->reqoffset == 0);
+
+    if(connection->reqte != TE_IDENTITY)
+        goto fail;
+
+    if(connection->request->persistent && connection->bodylen < 0)
+        goto fail;
+
+    if(connection->bodylen + connection->reqbegin < connection->reqlen) {
+        connection->reqbegin += connection->bodylen;
+        connection->bodylen = 0;
+    } else {
+        connection->bodylen -= connection->reqlen - connection->reqbegin;
+        connection->reqbegin = 0;
+        connection->reqlen = 0;
+        dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+    }
+
+    if(connection->bodylen > 0) {
+        httpSetTimeout(connection, 60);
+        do_stream_buf(IO_READ | IO_NOTNOW,
+                      connection->fd, connection->reqlen,
+                      &connection->reqbuf, CHUNK_SIZE,
+                      httpClientDiscardHandler, connection);
+        return 1;
+    }
+
+    if(connection->reqlen > connection->reqbegin) {
+        memmove(connection->reqbuf, connection->reqbuf + connection->reqbegin,
+                connection->reqlen - connection->reqbegin);
+        connection->reqlen -= connection->reqbegin;
+        connection->reqbegin = 0;
+    } else {
+        connection->reqlen = 0;
+        connection->reqbegin = 0;
+    }
+    httpSetTimeout(connection, 60);
+    /* As we only notice new requests after that, the IO_NOTNOW is
+       necessary in order to prevent starvation if a client is
+       pipelining large numbers of requests. */
+    if(connection->reqlen > 0) {
+        do_stream(IO_READ | IO_NOTNOW | IO_IMMEDIATE,
+                  connection->fd, connection->reqlen,
+                  connection->reqbuf, CHUNK_SIZE,
+                  httpClientHandler, connection);
+    } else {
+        if(connection->reqbuf)
+            dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+        do_stream_buf(IO_READ | IO_NOTNOW,
+                      connection->fd, 0,
+                      &connection->reqbuf, CHUNK_SIZE,
+                      httpClientHandler, connection);
+    }
+    return 1;
+
+ fail:
+    shutdown(connection->fd, 0);
+    connection->request->persistent = 0;
+    connection->flags &= ~CONN_READER;
+    return 1;
+}
+
+int
+httpClientDiscardHandler(int status,
+                         FdEventHandlerPtr event, StreamRequestPtr request)
+{
+    HTTPConnectionPtr connection = request->data;
+
+    assert(connection->flags & CONN_READER);
+    if(status < 0) {
+        if(status != -EPIPE)
+            do_log_error(L_ERROR, -status, "Couldn't read from client");
+        connection->bodylen = -1;
+        return httpClientDiscardBody(connection);
+    }
+
+    assert(request->offset > connection->reqlen);
+    connection->reqlen = request->offset;
+
+    httpClientDiscardBody(connection);
+    return 1;
+}
+
+int
+httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
+{
+    HTTPConnectionPtr connection = request->connection;
+    ObjectPtr object = request->object;
+    int serveNow = (request == connection->request);
+    int validate = 0;
+    int conditional = 0;
+    int local, haveData;
+    int rc;
+
+    assert(!request->ohandler);
+
+    if(request->error_code) {
+        if(request->force_error || REQUEST_SIDE(request) ||
+           request->object == NULL ||
+           (relaxTransparency < 1 && !proxyOffline)) {
+            if(serveNow) {
+                connection->flags |= CONN_WRITER;
+                return httpClientRawErrorHeaders(connection,
+                                                 request->error_code, 
+                                                 retainAtom(request->
+                                                            error_message),
+                                                 0, request->error_headers);
+            } else {
+                return 1;
+            }
+        }
+    }
+
+    if(REQUEST_SIDE(request)) {
+        assert(!request->requested);
+        if(serveNow) {
+            assert(!request->ohandler);
+            request->ohandler =
+                registerObjectHandler(request->object, httpClientGetHandler,
+                                      sizeof(request), &request);
+            if(request->ohandler == NULL) {
+                do_log(L_ERROR, "Couldn't register object handler.\n");
+                httpClientRawError(connection, 500,
+                                   internAtom("Couldn't register "
+                                              "object handler"),
+                                   0);
+                return 1;
+            }
+            connection->flags |= CONN_WRITER;
+            rc = object->request(request->object,
+                                 request->method,
+                                 request->from, request->to, 
+                                 request,
+                                 request->object->request_closure);
+        }
+        return 1;
+    }
+
+    local = urlIsLocal(object->key, object->key_size);
+    objectFillFromDisk(object, request->from,
+                       request->method == METHOD_HEAD ? 0 : 1);
+
+    if(request->condition && request->condition->ifrange) {
+        if(!object->etag || 
+           strcmp(object->etag, request->condition->ifrange) != 0) {
+            request->from = 0;
+            request->to = -1;
+        }
+    }
+
+    if(object->flags & OBJECT_DYNAMIC) {
+        request->from = 0;
+        request->to = -1;
+    }
+
+    if(request->method == METHOD_HEAD)
+        haveData = !(request->object->flags & OBJECT_INITIAL);
+    else
+        haveData = 
+            (request->object->length >= 0 && 
+             request->object->length <= request->from) ||
+            (objectHoleSize(request->object, request->from) == 0);
+
+    if(request->requested)
+        validate = 0;
+    else if(novalidate || (!local && proxyOffline))
+        validate = 0;
+    else if(local)
+        validate = 
+            objectMustRevalidate(request->object, &request->cache_control);
+    else if(request->cache_control.flags & CACHE_ONLY_IF_CACHED)
+        validate = 0;
+    else if(request->object->flags & OBJECT_FAILED)
+        validate = !relaxTransparency;
+    else if(objectMustRevalidate((relaxTransparency <= 1 ? 
+                                  request->object : NULL),
+                                 &request->cache_control))
+        validate = 1;
+    else
+        validate = 0;
+
+    if(request->cache_control.flags & CACHE_ONLY_IF_CACHED) {
+        validate = 0;
+        if(!haveData)
+                return httpClientRawError(connection, 504,
+                                          internAtom("Object not in cache"),
+                                          0);
+    }
+
+    if(!(request->object->flags & OBJECT_VALIDATING) &&
+       ((!validate && haveData) || (request->object->flags & OBJECT_FAILED))) {
+        if(serveNow) {
+            connection->flags |= CONN_WRITER;
+            lockChunk(request->object, request->from / CHUNK_SIZE);
+            return httpServeObject(connection);
+        } else {
+            return 1;
+        }
+    }
+
+    if(request->requested && !(request->object->flags & OBJECT_INPROGRESS)) {
+        /* This can happen either because the server side ran out of
+           memory, or because it is using HEAD validation.  We mark
+           the object to be fetched again. */
+        request->requested = 0;
+    }
+
+    if(serveNow) {
+        connection->flags |= CONN_WRITER;
+        if(!local && proxyOffline)
+            return httpClientRawError(connection, 502, 
+                                      internAtom("Disconnected operation "
+                                                 "and object not in cache"),
+                                      0);
+        request->ohandler =
+            registerObjectHandler(request->object, httpClientGetHandler, 
+                                  sizeof(request), &request);
+        if(request->ohandler == NULL) {
+            do_log(L_ERROR, "Couldn't register object handler.\n");
+            return httpClientRawError(connection, 503,
+                                      internAtom("Couldn't register "
+                                                 "object handler"), 0);
+        }
+    }
+
+    if(request->object->flags & OBJECT_VALIDATING)
+        return 1;
+
+    conditional = (haveData && request->method == METHOD_GET);
+    if(!mindlesslyCacheVary && (request->object->cache_control & CACHE_VARY))
+        conditional = conditional && (request->object->etag != NULL);
+
+    request->object->flags |= OBJECT_VALIDATING;
+    rc = request->object->request(request->object,
+                                  conditional ? METHOD_CONDITIONAL_GET : 
+                                  request->method,
+                                  request->from, request->to, request,
+                                  request->object->request_closure);
+    if(rc < 0) {
+        unregisterObjectHandler(request->ohandler);
+        request->ohandler = NULL;
+        request->object->flags &= ~OBJECT_VALIDATING;
+        request->object->flags |= OBJECT_FAILED;
+        return httpClientRawError(connection, 503,
+                                  internAtom("Couldn't schedule get"), 0);
+    }
+    return 1;
+}
+
+int
+httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
+{
+    ObjectPtr object = ohandler->object;
+    HTTPRequestPtr request = *(HTTPRequestPtr*)ohandler->data;
+    HTTPConnectionPtr connection = request->connection;
+    int rc;
+
+    assert(request == connection->request);
+
+    if(status < 0) {
+        object->flags &= ~OBJECT_VALIDATING; /* for now */
+        if(request->request && request->request->request == request)
+            httpServerClientReset(request->request);
+        lockChunk(object, request->from / CHUNK_SIZE);
+        request->ohandler = NULL;
+        rc = delayedHttpServeObject(connection);
+        if(rc < 0) {
+            unlockChunk(object, request->from / CHUNK_SIZE);
+            do_log(L_ERROR, "Couldn't schedule serving.\n");
+            abortObject(object, 503, internAtom("Couldn't schedule serving"));
+        }
+        return 1;
+    }
+
+    if(object->flags & OBJECT_VALIDATING)
+        return 0;
+
+    if(request->error_code) {
+        lockChunk(object, request->from / CHUNK_SIZE);
+        request->ohandler = NULL;
+        rc = delayedHttpServeObject(connection);
+        if(rc < 0) {
+            unlockChunk(object, request->from / CHUNK_SIZE);
+            do_log(L_ERROR, "Couldn't schedule serving.\n");
+            abortObject(object, 503, internAtom("Couldn't schedule serving"));
+        }
+        return 1;
+    }
+
+    if(object->flags & (OBJECT_INITIAL | OBJECT_VALIDATING)) {
+        if(object->flags & (OBJECT_INPROGRESS | OBJECT_VALIDATING)) {
+            return 0;
+        } else {
+            if(request->error_code)
+                abortObject(object, 
+                            request->error_code, 
+                            retainAtom(request->error_message));
+                else
+                    abortObject(object, 500,
+                                internAtom("Error message lost in transit"));
+        }
+    }
+
+    if(request->object->flags & OBJECT_DYNAMIC) {
+        if(objectHoleSize(request->object, 0) == 0) {
+            request->from = 0;
+            request->to = -1;
+        } else {
+            /* We really should request again if that is not the case */
+        }
+    }
+
+    lockChunk(object, request->from / CHUNK_SIZE);
+    request->ohandler = NULL;
+    rc = delayedHttpServeObject(connection);
+    if(rc < 0) {
+        unlockChunk(object, request->from / CHUNK_SIZE);
+        do_log(L_ERROR, "Couldn't schedule serving.\n");
+        abortObject(object, 503, internAtom("Couldn't schedule serving"));
+    }
+    return 1;
+}
+
+int
+httpClientSideRequest(HTTPRequestPtr request)
+{
+    ObjectPtr object = request->object;
+    HTTPConnectionPtr connection = request->connection;
+
+    if(urlIsLocal(object->key, object->key_size)) {
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 503,
+                              internAtom("Local PUT/POST not implemented"));
+        return 1;
+    }
+    if(request->from < 0 || request->to >= 0) {
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 503,
+                              internAtom("Partial requests not implemented"));
+        return 1;
+    }
+    if(connection->reqte != TE_IDENTITY) {
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 411,
+                              internAtom("Chunked requests not implemented"));
+        return 1;
+    }
+
+    if(connection->bodylen < 0) {
+        httpClientDiscardBody(connection);
+        httpClientNoticeError(request, 503,
+                              internAtom("Partial requests not implemented"));
+        return 1;
+    }
+        
+    return httpClientNoticeRequest(request, 0);
+}
+
+int 
+httpClientSideHandler(int status,
+                      FdEventHandlerPtr event,
+                      StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+    HTTPRequestPtr request = connection->request;
+    HTTPRequestPtr requestee = request->request;
+    HTTPConnectionPtr server = requestee->connection;
+    int push;
+
+    if((request->object->flags & OBJECT_ABORTED) || 
+       !(request->object->flags & OBJECT_INPROGRESS)) {
+        httpClientDiscardBody(connection);
+        httpClientError(request, 503, internAtom("Post aborted"));
+        return 1;
+    }
+        
+    if(status < 0) {
+        do_log_error(L_ERROR, -status, "Reading from client");
+        if(status == -EDOGRACEFUL)
+            httpClientFinish(connection, 1);
+        else
+            httpClientFinish(connection, 2);
+        return 1;
+    }
+
+    push = MIN(srequest->offset - connection->reqlen, 
+               connection->bodylen - connection->reqoffset);
+    if(push > 0) {
+        connection->reqlen += push;
+        httpServerDoSide(server);
+        return 1;
+    }
+
+    if(server->reqoffset >= connection->bodylen) {
+        connection->flags &= ~CONN_READER;
+        return 1;
+    }
+
+    assert(status);
+    do_log(L_ERROR, "Incomplete client request.\n");
+    connection->flags &= ~CONN_READER;
+    httpClientRawError(connection, 502,
+                       internAtom("Incomplete client request"), 1);
+    return 1;
+}
+
+int 
+httpServeObject(HTTPConnectionPtr connection)
+{
+    HTTPRequestPtr request = connection->request;
+    ObjectPtr object = request->object;
+    int i = request->from / CHUNK_SIZE;
+    int j = request->from % CHUNK_SIZE;
+    int n, len;
+    int condition_result;
+
+    assert(!(object->flags & OBJECT_VALIDATING));
+
+    object->atime = current_time.tv_sec;
+    objectMetadataChanged(object, 0);
+
+    httpSetTimeout(connection, -1);
+
+    if((request->error_code && relaxTransparency <= 0) ||
+       object->flags & OBJECT_INITIAL) {
+        unlockChunk(object, i);
+        return httpClientRawError(connection,
+                                  request->error_code, 
+                                  retainAtom(request->error_message), 0);
+    }
+
+    if(!(object->flags & OBJECT_INPROGRESS) && object->code == 0) {
+        if(object->flags & OBJECT_INITIAL) {
+            unlockChunk(object, i);
+            return httpClientRawError(connection, 503,
+                                      internAtom("Error message lost"), 0);
+                                      
+        } else {
+            unlockChunk(object, i);
+            do_log(L_ERROR, "Internal proxy error: object has no code.\n");
+            return httpClientRawError(connection, 500,
+                                      internAtom("Internal proxy error: "
+                                                 "object has no code"), 0);
+        }
+    }
+
+    condition_result = httpCondition(object, request->condition);
+
+    if(condition_result == CONDITION_FAILED) {
+        unlockChunk(object, i);
+        return httpClientRawError(connection, 412,
+                                  internAtom("Precondition failed"), 0);
+    } else if(condition_result == CONDITION_NOT_MODIFIED) {
+        unlockChunk(object, i);
+        return httpClientRawError(connection, 304,
+                                  internAtom("Not modified"), 0);
+    }
+
+    objectFillFromDisk(object, request->from,
+                       (request->method == METHOD_HEAD ||
+                        condition_result != CONDITION_MATCH) ? 0 : 1);
+
+    if(((object->flags & OBJECT_LINEAR) &&
+        (object->requestor != connection->request)) ||
+       ((object->flags & OBJECT_SUPERSEDED) &&
+        !(object->flags & OBJECT_LINEAR))) {
+        if(request->request) {
+            request->request->request = NULL;
+            request->request = NULL;
+        }
+        object = makeObject(OBJECT_HTTP,
+                            object->key, object->key_size, 1, 0,
+                            object->request, NULL);
+        if(request->object->requestor == request)
+            request->object->requestor = NULL;
+        unlockChunk(request->object, i);
+        releaseObject(request->object);
+        request->object = NULL;
+        if(object == NULL) {
+            do_log(L_ERROR, "Couldn't allocate object.");
+            return httpClientRawError(connection, 
+                                      501, 
+                                      internAtom("Couldn't allocate object"), 
+                                      1);
+        }
+        if(urlIsLocal(object->key, object->key_size)) {
+            object->flags |= OBJECT_LOCAL;
+            object->request = httpLocalRequest;
+        }
+        request->object = object;
+        connection->flags &= ~CONN_WRITER;
+        return httpClientNoticeRequest(request, 1);
+    }
+
+    if(!(object->flags & OBJECT_INITIAL) && !object->headers) {
+        /* Aborted object */
+        unlockChunk(object, i);
+        return httpClientRawError(connection, object->code,
+                                  retainAtom(object->message), 0);
+    }
+
+    if(connection->buf == NULL)
+        connection->buf = get_chunk();
+    if(connection->buf == NULL) {
+        do_log(L_ERROR, "Couldn't allocate client buffer.\n");
+        connection->flags &= ~CONN_WRITER;
+        httpClientFinish(connection, 1);
+        return 1;
+    }
+
+    if(object->length >= 0 && request->to >= object->length)
+        request->to = -1;
+
+    if(request->from > 0 || request->to >= 0) {
+        if(request->method == METHOD_HEAD) {
+            request->to = request->from;
+        } else if(request->to < 0) {
+            if(object->length >= 0)
+                request->to = object->length;
+        }
+    }
+
+    connection->len = 0;
+
+    if((request->from <= 0 && request->to < 0) || 
+       request->method == METHOD_HEAD) {
+        n = snnprintf(connection->buf, 0, CHUNK_SIZE,
+                      "HTTP/1.1 %d %s",
+                      object->code, atomString(object->message));
+    } else {
+        if(request->from > request->to) {
+            unlockChunk(object, i);
+            return httpClientRawError(connection, 416,
+                                      internAtom("Requested range "
+                                                 "not satisfiable"),
+                                      0);
+        } else {
+            n = snnprintf(connection->buf, 0, CHUNK_SIZE,
+                          "HTTP/1.1 206 Partial content");
+        }
+    }
+
+    n = httpWriteObjectHeaders(connection->buf, n, CHUNK_SIZE,
+                               object, request->from, request->to);
+    if(n < 0)
+        goto fail;
+
+    if(request->method != METHOD_HEAD && 
+       condition_result != CONDITION_NOT_MODIFIED &&
+       request->to < 0 && object->length < 0) {
+        if(connection->version == HTTP_11) {
+            connection->te = TE_CHUNKED;
+            n = snnprintf(connection->buf, n, CHUNK_SIZE ,
+                          "\r\nTransfer-Encoding: chunked");
+        } else {
+            request->persistent = 0;
+        }
+    }
+        
+    if(object->age < current_time.tv_sec) {
+        n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                      "\r\nAge: %d",
+                      (int)(current_time.tv_sec - object->age));
+    }
+    n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                  "\r\nConnection: %s",
+                  request->persistent?"keep-alive":"close");
+
+    if(!(object->flags & OBJECT_LOCAL)) {
+        if((object->flags & OBJECT_FAILED) && !proxyOffline) {
+            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                          "\r\nWarning: 111 %s:%d Revalidation failed",
+                          proxyName->string, proxyPort);
+            if(request->error_code)
+                n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                              " (%d %s)",
+                              request->error_code, 
+                              atomString(request->error_message));
+        } else if(proxyOffline && 
+                  objectMustRevalidate(object, &request->cache_control)) {
+            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                          "\r\nWarning: 112 %s:%d Disconnected operation",
+                          proxyName->string, proxyPort);
+        } else if(objectIsStale(object, &request->cache_control)) {
+            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                          "\r\nWarning: 110 %s:%d Object is stale",
+                          proxyName->string, proxyPort);
+        } else if(object->expires < 0 &&
+                  object->age < current_time.tv_sec - 24 * 3600) {
+            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                          "\r\nWarning: 113 %s:%d Heuristic expiration",
+                          proxyName->string, proxyPort);
+        }
+    }
+
+    if(n >= CHUNK_SIZE - 4)
+        goto fail;
+
+    n = snnprintf(connection->buf, n, CHUNK_SIZE, "\r\n\r\n");
+    
+    connection->offset = request->from;
+
+    if(request->method == METHOD_HEAD || 
+       condition_result == CONDITION_NOT_MODIFIED ||
+       (object->flags & OBJECT_ABORTED)) {
+        len = 0;
+    } else {
+        if(i < object->numchunks) {
+            if(object->chunks[i].size <= j)
+                len = 0;
+            else
+                len = object->chunks[i].size - j;
+        } else {
+            len = 0;
+        }
+        if(request->to >= 0)
+            len = MIN(len, request->to - request->from);
+    }
+
+    connection->offset = request->from;
+    httpSetTimeout(connection, 120);
+    do_log(D_CLIENT_DATA, "Serving on 0x%x for 0x%x: offset %d len %d\n",
+           (unsigned)connection, (unsigned)object,
+           connection->offset, len);
+    do_stream_h(IO_WRITE |
+                (connection->te == TE_CHUNKED && len > 0 ? IO_CHUNKED : 0),
+                connection->fd, 0, 
+                connection->buf, n,
+                object->chunks[i].data + j, len,
+                httpServeObjectStreamHandler, connection);
+    return 1;
+
+ fail:
+    unlockChunk(object, i);
+    return httpClientRawError(connection, 500,
+                              internAtom("No space for headers"), 0);
+}
+
+static int
+httpServeObjectDelayed(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    httpServeObject(connection);
+    return 1;
+}
+
+int
+delayedHttpServeObject(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr event;
+
+    assert(connection->request->object->chunks[connection->request->from / 
+                                               CHUNK_SIZE].locked > 0);
+    assert(!(connection->request->object->flags & OBJECT_VALIDATING));
+
+    event = scheduleTimeEvent(-1, httpServeObjectDelayed,
+                              sizeof(connection), &connection);
+    if(!event) return -1;
+    return 1;
+}
+
+static int
+httpServeObjectFinishHandler(int status,
+                             FdEventHandlerPtr event,
+                             StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+    HTTPRequestPtr request = connection->request;
+
+    (void)request;
+    assert(!request->ohandler);
+
+    if(status == 0 && !streamRequestDone(srequest))
+        return 0;
+
+    httpSetTimeout(connection, -1);
+
+    if(status < 0) {
+        do_log(L_ERROR, "Couldn't terminate chunked reply\n");
+        httpClientFinish(connection, 1);
+    } else {
+        httpClientFinish(connection, 0);
+    }
+    return 1;
+}
+
+int
+httpServeChunk(HTTPConnectionPtr connection)
+{
+    HTTPRequestPtr request = connection->request;
+    ObjectPtr object = request->object;
+    int i = connection->offset / CHUNK_SIZE;
+    int j = connection->offset - (i * CHUNK_SIZE);
+    int to, len, len2, end;
+    int rc;
+
+    if(object->flags & OBJECT_ABORTED)
+        goto fail_no_unlock;
+
+    if(object->length >= 0 && request->to >= 0)
+        to = MIN(request->to, object->length);
+    else if(object->length >= 0)
+        to = object->length;
+    else if(request->to >= 0)
+        to = request->to;
+    else
+        to = -1;
+
+    lockChunk(object, i);
+    len = 0;
+    if(i < object->numchunks)
+        len = object->chunks[i].size - j;
+
+    if(request->method != METHOD_HEAD && 
+       len < CHUNK_SIZE && connection->offset + len < to) {
+        objectFillFromDisk(object, connection->offset + len, 2);
+        len = object->chunks[i].size - j;
+    }
+
+    if(to >= 0)
+        len = MIN(len, to - connection->offset);
+
+    if(len <= 0) {
+        if(to >= 0 && connection->offset >= to) {
+            if(request->ohandler) {
+                unregisterObjectHandler(request->ohandler);
+                request->ohandler = NULL;
+            }
+            unlockChunk(object, i);
+            if(connection->te == TE_CHUNKED) {
+                httpSetTimeout(connection, 120);
+                do_stream(IO_WRITE | IO_CHUNKED | IO_END,
+                          connection->fd, 0, NULL, 0,
+                          httpServeObjectFinishHandler, connection);
+            } else {
+                httpClientFinish(connection,
+                                 !(object->length >= 0 &&
+                                   connection->offset >= object->length));
+            }
+            return 1;
+        } else {
+            if(!request->ohandler) {
+                request->ohandler =
+                    registerObjectHandler(object, 
+                                          httpServeObjectHandler,
+                                          sizeof(connection), &connection);
+                if(!request->ohandler) {
+                    do_log(L_ERROR, "Couldn't register object handler\n");
+                    goto fail;
+                }
+            }
+            if(!(object->flags & OBJECT_INPROGRESS)) {
+                if(object->flags & OBJECT_SUPERSEDED) {
+                    goto fail;
+                }
+                if(REQUEST_SIDE(request)) goto fail;
+                rc = object->request(object, request->method,
+                                     connection->offset, -1, request,
+                                     object->request_closure);
+                if(rc <= 0) goto fail;
+            }
+            return 1;
+        }
+    } else {
+        /* len > 0 */
+        if(request->method != METHOD_HEAD)
+            objectFillFromDisk(object, (i + 1) * CHUNK_SIZE, 1);
+        if(request->ohandler) {
+            unregisterObjectHandler(request->ohandler);
+            request->ohandler = NULL;
+        }
+        len2 = 0;
+        if(j + len == CHUNK_SIZE && object->numchunks > i + 1) {
+            len2 = object->chunks[i + 1].size;
+            if(to >= 0)
+                len2 = MIN(len2, to - (i + 1) * CHUNK_SIZE);
+        }
+        /* Lock early -- httpServerRequest may get_chunk */
+        if(len2 > 0)
+            lockChunk(object, i + 1);
+        if(object->length >= 0 && 
+           connection->offset + len + len2 == object->length)
+            end = 1;
+        else
+            end = 0;
+        /* Prefetch */
+        if(!(object->flags & OBJECT_INPROGRESS) && !REQUEST_SIDE(request)) {
+            if(object->chunks[i].size < CHUNK_SIZE &&
+               to >= 0 && connection->offset + len + 1 < to)
+                object->request(object, request->method,
+                                connection->offset + len, -1, request,
+                                object->request_closure);
+            else if(i + 1 < object->numchunks &&
+                    object->chunks[i + 1].size == 0 &&
+                    to >= 0 && (i + 1) * CHUNK_SIZE + 1 < to)
+                object->request(object, request->method,
+                                (i + 1) * CHUNK_SIZE, -1, request,
+                                object->request_closure);
+        }
+        if(len2 == 0) {
+            httpSetTimeout(connection, 120);
+            do_log(D_CLIENT_DATA, 
+                   "Serving on 0x%x for 0x%x: offset %d len %d\n",
+                   (unsigned)connection, (unsigned)object,
+                   connection->offset, len);
+            /* IO_NOTNOW in order to give other clients a chance to run. */
+            do_stream(IO_WRITE | IO_NOTNOW |
+                      (connection->te == TE_CHUNKED ? IO_CHUNKED : 0) |
+                      (end ? IO_END : 0),
+                      connection->fd, 0, 
+                      object->chunks[i].data + j, len,
+                      httpServeObjectStreamHandler, connection);
+        } else {
+            httpSetTimeout(connection, 120);
+            do_log(D_CLIENT_DATA, 
+                   "Serving on 0x%x for 0x%x: offset %d len %d + %d\n",
+                   (unsigned)connection, (unsigned)object,
+                   connection->offset, len, len2);
+            do_stream_2(IO_WRITE | IO_NOTNOW |
+                        (connection->te == TE_CHUNKED ? IO_CHUNKED : 0) |
+                        (end ? IO_END : 0),
+                        connection->fd, 0, 
+                        object->chunks[i].data + j, len,
+                        object->chunks[i + 1].data, len2,
+                        httpServeObjectStreamHandler2, connection);
+        }            
+        return 1;
+    }
+
+    abort();
+
+ fail:
+    unlockChunk(object, i);
+ fail_no_unlock:
+    if(request->ohandler)
+        unregisterObjectHandler(request->ohandler);
+    request->ohandler = NULL;
+    httpClientFinish(connection, 1);
+    return 1;
+}
+
+static int
+httpServeChunkDelayed(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    httpServeChunk(connection);
+    return 1;
+}
+
+int
+delayedHttpServeChunk(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr event;
+    event = scheduleTimeEvent(-1, httpServeChunkDelayed,
+                              sizeof(connection), &connection);
+    if(!event) return -1;
+    return 1;
+}
+
+int
+httpServeObjectHandler(int status, ObjectHandlerPtr ohandler)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)ohandler->data;
+    HTTPRequestPtr request = connection->request;
+    int rc;
+
+    unlockChunk(request->object, connection->offset / CHUNK_SIZE);
+
+    if((request->object->flags & OBJECT_ABORTED) || status < 0) {
+        shutdown(connection->fd, 1);
+        httpSetTimeout(connection, 10);
+        /* httpServeChunk will take care of the error. */
+    }
+
+    httpSetTimeout(connection, -1);
+
+    request->ohandler = NULL;
+    rc = delayedHttpServeChunk(connection);
+    if(rc < 0) {
+        do_log(L_ERROR, "Couldn't schedule serving.\n");
+        abortObject(request->object, 503, 
+                    internAtom("Couldn't schedule serving"));
+    }
+    return 1;
+}
+
+static int
+httpServeObjectStreamHandlerCommon(int kind, int status,
+                                   FdEventHandlerPtr event,
+                                   StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+    HTTPRequestPtr request = connection->request;
+    int condition_result = httpCondition(request->object, request->condition);
+    int i = connection->offset / CHUNK_SIZE;
+
+    assert(!request->ohandler);
+
+    if(status == 0 && !streamRequestDone(srequest)) {
+        httpSetTimeout(connection, 60);
+        return 0;
+    }
+
+    httpSetTimeout(connection, -1);
+
+    unlockChunk(request->object, i);
+    if(kind == 2)
+        unlockChunk(request->object, i + 1);
+
+    if(status) {
+        if(status < 0) {
+            do_log_error(status == -ECONNRESET ? D_IO : L_ERROR, 
+                         -status, "Couldn't write to client");
+            if(status == -EIO || status == -ESHUTDOWN)
+                httpClientFinish(connection, 2);
+            else
+                httpClientFinish(connection, 1);
+        } else {
+            do_log(D_IO, "Couldn't write to client: short write.\n");
+            httpClientFinish(connection, 2);
+        }
+        return 1;
+    }
+
+    if(srequest->operation & IO_CHUNKED) {
+        assert(srequest->offset > 2);
+        connection->offset += srequest->offset - 2;
+    } else {
+        connection->offset += srequest->offset;
+    }
+    request->requested = 0;
+
+    if(request->object->flags & OBJECT_ABORTED) {
+        httpClientFinish(connection, 1);
+        return 1;
+    }
+
+    if(connection->request->method == METHOD_HEAD ||
+       condition_result == CONDITION_NOT_MODIFIED) {
+        httpClientFinish(connection, 0);
+        return 1;
+    }
+
+    if(srequest->operation & IO_END)
+        httpClientFinish(connection, 0);
+    else {
+        if(connection->buf)
+            dispose_chunk(connection->buf);
+        connection->buf = NULL;
+        httpServeChunk(connection);
+    }
+    return 1;
+}
+
+int
+httpServeObjectStreamHandler(int status,
+                             FdEventHandlerPtr event,
+                             StreamRequestPtr srequest)
+{
+    return httpServeObjectStreamHandlerCommon(1, status, event, srequest);
+}
+
+int
+httpServeObjectStreamHandler2(int status,
+                              FdEventHandlerPtr event,
+                              StreamRequestPtr srequest)
+{
+    return httpServeObjectStreamHandlerCommon(2, status, event, srequest);
+}

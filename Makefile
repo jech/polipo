@@ -1,0 +1,125 @@
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man
+INFODIR = $(PREFIX)/info
+LOCAL_ROOT = /usr/share/polipo/www
+DISK_CACHE_ROOT = /var/cache/polipo
+
+# CDEBUGFLAGS = -O
+
+# CC = gcc
+# CDEBUGFLAGS = -O -g -Wall -std=gnu99
+CDEBUGFLAGS = -O -g -Wall
+# CDEBUGFLAGS = -Os -Wall
+# CDEBUGFLAGS = -g -Wall
+
+# CC = c89
+# CC = c99
+# CDEBUGFLAGS=-O
+
+# To compile with icc, you need -restrict.  (Their bug.)
+
+# CC=icc
+# CDEBUGFLAGS = -O -restrict
+
+# On System V (Solaris, HP/UX) you need the following:
+
+# PLATFORM_DEFINES = -DSVR4
+
+# On Solaris, you need the following:
+
+# LDLIBS = -lsocket -lnsl -lresolv
+
+FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
+               -DDISK_CACHE_ROOT=\"$(DISK_CACHE_ROOT)/\"
+
+# You may optionally also add any of the following to DEFINES:
+#
+#  -DNO_DISK_CACHE to compile out the on-disk cache and local web server;
+#  -DNO_IPv6 to avoid using the RFC 3493 API and stick to stock
+#      Berkeley sockets;
+#  -DHAVE_IPv6 to use the RFC 3493 API;
+#  -DNO_FANCY_RESOLVER to compile out the asynchronous name resolution
+#      code;
+#  -DNO_STANDARD_RESOLVER to compile out the code that falls back to
+#      gethostbyname/getaddrinfo when DNS requests fail.
+#  -DNO_TUNNEL to compile out the code that handles CONNECT requests.
+
+DEFINES = $(FILE_DEFINES) $(PLATFORM_DEFINES)
+
+CFLAGS = $(MD5INCLUDES) $(CDEBUGFLAGS) $(DEFINES) $(EXTRA_DEFINES)
+
+SRCS = util.c event.c io.c chunk.c atom.c object.c log.c diskcache.c main.c \
+       config.c local.c http.c client.c server.c auth.c tunnel.c \
+       http_parse.c parse_time.c dns.c forbidden.c \
+       md5import.c md5.c ftsimport.c fts_compat.c
+
+OBJS = util.o event.o io.o chunk.o atom.o object.o log.o diskcache.o main.o \
+       config.o local.o http.o client.o server.o auth.o tunnel.o \
+       http_parse.o parse_time.o dns.o forbidden.o \
+       md5import.o ftsimport.o \
+
+polipo: $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o polipo $(OBJS) $(MD5LIBS) $(LDLIBS)
+
+ftsimport.o: ftsimport.c fts_compat.c
+
+md5import.o: md5import.c md5.c
+
+all: polipo polipo.info html/index.html localindex.html
+
+install: install.binary install.man
+
+install.binary: all
+	mkdir -p $(TARGET)$(BINDIR)
+	mkdir -p $(TARGET)$(LOCAL_ROOT)
+	mkdir -p $(TARGET)$(LOCAL_ROOT)/doc
+	rm -f $(TARGET)$(BINDIR)/polipo
+	cp -f polipo $(TARGET)$(BINDIR)/
+	cp -f html/* $(TARGET)$(LOCAL_ROOT)/doc
+	cp -f localindex.html $(TARGET)$(LOCAL_ROOT)/index.html
+
+install.man: all
+	mkdir -p $(TARGET)$(MANDIR)/man1
+	mkdir -p $(TARGET)$(INFODIR)
+	cp -f polipo.man $(TARGET)$(MANDIR)/man1/polipo.1
+	cp polipo.info $(TARGET)$(INFODIR)/
+	install-info --info-dir=$(INFODIR) polipo.info
+
+
+polipo.info: polipo.texi
+	makeinfo polipo
+
+html/index.html: polipo.texi
+	mkdir -p html
+	makeinfo --html -o html polipo.texi
+
+polipo.html: polipo.texi
+	makeinfo --html --no-split --no-headers -o polipo.html polipo.texi
+
+polipo.pdf: polipo.texi
+	texi2pdf polipo.texi
+
+polipo.ps.gz: polipo.ps
+	gzip -c polipo.ps > polipo.ps.gz
+
+polipo.ps: polipo.dvi
+	dvips -Pwww -o polipo.ps polipo.dvi
+
+polipo.dvi: polipo.texi
+	texi2dvi polipo.texi
+
+polipo.man.html: polipo.man
+	groff -man -Thtml polipo.man > polipo.man.html
+
+TAGS: $(SRCS)
+	etags $(SRCS)
+
+clean:
+	-rm -f polipo *.o *~ core TAGS gmon.out
+	-rm -f polipo.cp polipo.fn polipo.log polipo.vr
+	-rm -f polipo.cps polipo.info* polipo.pg polipo.toc polipo.vrs
+	-rm -f polipo.aux polipo.dvi polipo.ky polipo.ps polipo.tp
+	-rm -f polipo.dvi polipo.ps polipo.ps.gz polipo.pdf polipo.html
+	-rm -rf ./html/
+	-rm -f polipo.man.html
