@@ -2047,9 +2047,11 @@ httpServerHandlerHeaders(int eof,
         /* Signal the client side to switch to the new object -- see
            httpClientGetHandler.  If it doesn't, we'll give up on this
            request below. */
+        new_object->flags |= OBJECT_MUTATING;
         request->can_mutate = new_object;
         notifyObject(old_object);
         request->can_mutate = NULL;
+        new_object->flags &= ~OBJECT_MUTATING;
         old_object->flags &= ~OBJECT_INPROGRESS;
         if(request->object != new_object) {
             if(request->request)

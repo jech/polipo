@@ -1270,7 +1270,7 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
     if(object->requestor != request && !(object->flags & OBJECT_ABORTED)) {
         /* Make sure we don't serve an object that is stale for us
            unless we're the requestor. */
-        if((object->flags & OBJECT_LINEAR) ||
+        if((object->flags & (OBJECT_LINEAR | OBJECT_MUTATING)) ||
            objectMustRevalidate(object, &request->cache_control)) {
            if(object->flags & OBJECT_INPROGRESS)
                return 0;

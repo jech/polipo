@@ -128,6 +128,8 @@ extern int log2ObjectHashTableSize;
 #define OBJECT_DYNAMIC 1024
 /* The object has been transcoded */
 #define OBJECT_TRANSCODED 2048
+/* Used for synchronisation between client and server. */
+#define OBJECT_MUTATING 4096
 
 /* object->cache_control and connection->cache_control */
 /* RFC 2616 14.9 */
