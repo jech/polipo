@@ -520,10 +520,10 @@ chooseBodyOffset(int n, ObjectPtr object)
         body_offset = 1024;
     else if(n <= 1024)
         body_offset = 2048;
-    else if(n < 4096)
+    else if(n < 2048)
         body_offset = 4096;
-    else
-        body_offset = CHUNK_SIZE;
+    else body_offset = ((n + 4095) / 4096 + 1) * 4096;
+
 
     if(length >= 64 * 1024)
         body_offset = MAX(body_offset, 1024);
@@ -531,7 +531,6 @@ chooseBodyOffset(int n, ObjectPtr object)
         body_offset = MAX(body_offset, 2048);
     if(length >= 1024 * 1024)
         body_offset = MAX(body_offset, 4096);
-    body_offset = MIN(body_offset, CHUNK_SIZE);
     return body_offset;
 }
  
@@ -542,47 +541,56 @@ static int
 writeHeaders(int fd, int *body_offset_return,
              ObjectPtr object, char *chunk, int chunk_len)
 {
-    char buf[CHUNK_SIZE];
+    char small_buf[2048];
     int n;
     int rc;
     int body_offset = *body_offset_return;
+    char *buf;
+    int bufsize;
 
     if(object->flags & OBJECT_LOCAL)
         return -1;
 
-    n = snnprintf(buf, 0, CHUNK_SIZE, "HTTP/1.1 %3d %s",
+    buf = small_buf;
+    bufsize = 2048;
+
+ format_again:
+    n = snnprintf(buf, 0, bufsize, "HTTP/1.1 %3d %s",
                   object->code, object->message->string);
 
-    n = httpWriteObjectHeaders(buf, n, CHUNK_SIZE, object, 0, -1);
+    n = httpWriteObjectHeaders(buf, n, bufsize, object, 0, -1);
     if(n < 0)
-        return -1;
+        goto overflow;
 
-    n = snnprintf(buf, n, CHUNK_SIZE, "\r\nX-Polipo-Location: ");
-    n = snnprint_n(buf, n, CHUNK_SIZE, object->key, object->key_size);
+    n = snnprintf(buf, n, bufsize, "\r\nX-Polipo-Location: ");
+    n = snnprint_n(buf, n, bufsize, object->key, object->key_size);
 
     if(object->age >= 0 && object->age != object->date) {
-        n = snnprintf(buf, n, CHUNK_SIZE, "\r\nX-Polipo-Date: ");
-        n = format_time(buf, n, CHUNK_SIZE, object->age);
+        n = snnprintf(buf, n, bufsize, "\r\nX-Polipo-Date: ");
+        n = format_time(buf, n, bufsize, object->age);
     }
 
     if(object->atime >= 0) {
-        n = snnprintf(buf, n, CHUNK_SIZE, "\r\nX-Polipo-Access: ");
-        n = format_time(buf, n, CHUNK_SIZE, object->atime);
+        n = snnprintf(buf, n, bufsize, "\r\nX-Polipo-Access: ");
+        n = format_time(buf, n, bufsize, object->atime);
     }
 
     if(body_offset < 0)
         body_offset = chooseBodyOffset(n, object);
 
+    if(body_offset > bufsize)
+        goto overflow;
+
     if(body_offset > 0 && body_offset != n + 4)
-        n = snnprintf(buf, n, CHUNK_SIZE, "\r\nX-Polipo-Body-Offset: %d",
+        n = snnprintf(buf, n, bufsize, "\r\nX-Polipo-Body-Offset: %d",
                       body_offset);
 
-    n = snnprintf(buf, n, CHUNK_SIZE, "\r\n\r\n");
+    n = snnprintf(buf, n, bufsize, "\r\n\r\n");
 
     if(body_offset < 0)
         body_offset = n;
     if(n > body_offset)
-        return -2;
+        goto fail2;
 
     if(n < body_offset)
         memset(buf + n, 0, body_offset - n);
@@ -603,13 +611,37 @@ writeHeaders(int fd, int *body_offset_return,
         goto again;
 
     if(rc < body_offset)
-        return -1;
+        goto fail;
     if(object->length >= 0 && 
        rc - body_offset >= object->length)
         object->flags |= OBJECT_DISK_ENTRY_COMPLETE;
 
     *body_offset_return = body_offset;
+    if(buf != small_buf)
+        free(buf);
     return rc;
+
+ overflow:
+    if(buf == small_buf) {
+        buf = malloc(bigBufferSize);
+        if(!buf) {
+            do_log(L_ERROR, "Couldn't allocate big buffer.\n");
+            goto fail;
+        }
+        bufsize = bigBufferSize;
+        goto format_again;
+    }
+    /* fall through */
+
+ fail:
+    if(buf != small_buf)
+        free(buf);
+    return -1;
+
+ fail2:
+    if(buf != small_buf)
+        free(buf);
+    return -1;
 }
 
 typedef struct _MimeEntry {
@@ -753,7 +785,9 @@ int
 validateEntry(ObjectPtr object, int fd, 
               int *body_offset_return, off_t *offset_return)
 {
-    char buf[CHUNK_SIZE];
+    char small_buf[2048];
+    char *buf = small_buf;
+    int bufsize = 2048;
     int rc, n;
     int dummy;
     int code;
@@ -777,30 +811,50 @@ validateEntry(ObjectPtr object, int fd,
         return 0;
 
  again:
-    rc = read(fd, buf, CHUNK_SIZE);
+    rc = read(fd, buf, bufsize);
     if(rc < 0) {
         if(errno == EINTR)
             goto again;
         do_log_error(L_ERROR, errno, "Couldn't read disk entry");
-        return -1;
+        goto fail;
     }
     offset = rc;
 
+ parse_again:
     n = findEndOfHeaders(buf, 0, rc, &dummy);
     if(n < 0) {
+        if(buf == small_buf) {
+            buf = malloc(bigBufferSize);
+            if(!buf) {
+                do_log(L_ERROR, "Couldn't allocate big buffer.\n");
+                goto fail;
+            }
+            bufsize = bigBufferSize;
+            memcpy(buf, small_buf, offset);
+        again2:
+            rc = read(fd, buf + offset, bufsize - offset);
+            if(rc < 0) {
+                if(errno == EINTR)
+                    goto again2;
+                do_log_error(L_ERROR, errno, "Couldn't read disk entry");
+                goto fail;
+            }
+            offset += rc;
+            goto parse_again;
+        }
         do_log(L_ERROR, "Couldn't parse disk entry.\n");
-        return -1;
+        goto fail;
     }
 
     rc = httpParseServerFirstLine(buf, &code, &dummy, &message);
     if(rc < 0) {
         do_log(L_ERROR, "Couldn't parse disk entry.\n");
-        return -1;
+        goto fail;
     }
 
     if(object->code != 0 && object->code != code) {
         releaseAtom(message);
-        return -1;
+        goto fail;
     }
 
     rc = httpParseHeaders(0, NULL, buf, rc, NULL,
@@ -811,7 +865,7 @@ validateEntry(ObjectPtr object, int fd,
                           NULL, NULL, &location, &via, NULL);
     if(rc < 0) {
         releaseAtom(message);
-        return -1;
+        goto fail;
     }
     if(body_offset < 0)
         body_offset = n;
@@ -919,6 +973,8 @@ validateEntry(ObjectPtr object, int fd,
         }
     }
 
+    if(buf != small_buf)
+        free(buf);
     if(body_offset_return) *body_offset_return = body_offset;
     if(offset_return) *offset_return = offset;
     return dirty;
@@ -928,6 +984,11 @@ validateEntry(ObjectPtr object, int fd,
     if(etag) free(etag);
     if(location) free(location);
     if(via) releaseAtom(via);
+    /* fall through */
+
+ fail:
+    if(buf != small_buf)
+        free(buf);
     return -1;
 }
 
