@@ -261,7 +261,7 @@ httpServerAbort(HTTPConnectionPtr connection, int fail,
         }
     }
     releaseAtom(message);
-    if(connection->connecting != CONNECTING_DNS)
+    if(!connection->connecting)
         httpServerFinish(connection, 1, 0);
 }
 
@@ -293,7 +293,7 @@ httpServerClientReset(HTTPRequestPtr request)
 {
     if(request->connection && 
        request->connection->fd >= 0 &&
-       request->connection->connecting != CONNECTING_DNS &&
+       !request->connection->connecting &&
        request->connection->request == request)
         pokeFdEvent(request->connection->fd, -ECLIENTRESET, POLLIN | POLLOUT);
 }
