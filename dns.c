@@ -114,8 +114,8 @@ parseResolvConf(char *filename)
 
     f = fopen(filename, "r");
     if(f == NULL) {
-        do_log_error(L_ERROR, -errno, "DNS: couldn't open %s", filename);
-        goto done;
+        do_log_error(L_ERROR, errno, "DNS: couldn't open %s", filename);
+        return 0;
     }
 
     while(1) {
@@ -156,7 +156,6 @@ parseResolvConf(char *filename)
         break;
     }
 
- done:
     fclose(f);
     if(nameserver) {
         dnsNameServer = nameserver;
