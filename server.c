@@ -27,6 +27,7 @@ int smallRequestTime = 10;
 int replyUnpipelineTime = 20;
 int replyUnpipelineSize = 1024 * 1024;
 int pipelineAdditionalRequests = 1;
+int maxPipelineTrain = 10;
 AtomPtr parentHost = NULL;
 int parentPort = 8123;
 int pmmFirstSize = 0, pmmSize = 0;
@@ -51,9 +52,8 @@ preinitServer(void)
                              "Estimated time for a pipeline break.");
     CONFIG_VARIABLE_SETTABLE(replyUnpipelineSize, CONFIG_INT, configIntSetter,
                     "Size for a pipeline break.");
-    CONFIG_VARIABLE_SETTABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
-                             configIntSetter,
-                             "Pipeline requests on an active connection.");
+    CONFIG_VARIABLE(pipelineAdditionalRequests, CONFIG_TRISTATE,
+                    "Pipeline requests on an active connection.");
     CONFIG_VARIABLE(pmmFirstSize, CONFIG_INT,
                     "The size of the first PMM chunk.");
     CONFIG_VARIABLE(pmmSize, CONFIG_INT,
@@ -695,11 +695,11 @@ httpServerTrigger(HTTPServerPtr server)
                 n = 0;
         } else if(server->pipeline == 1) {
             if(connection->pipelined == 0)
-                n = 2;
+                n = MIN(2, maxPipelineTrain);
             else
                 n = 0;
         } else {
-            n = 10;
+            n = maxPipelineTrain;
         }
     
         idle = !connection->pipelined;
