@@ -181,10 +181,22 @@ free_chunks()
    This gives better locality, but is mostly useful in order to have
    very fast dipose/get sequences. */
 
-/* If you change this, you'll need to provide a replacement for ffs()
-   below. */
+#ifndef LONG_LONG_ARENA_BITMAPS
+#ifndef LONG_ARENA_BITMAPS
 typedef unsigned int ChunkBitmap;
+#define BITMAP_FFS(bitmap) (ffs(bitmap))
+#else
+typedef unsigned long ChunkBitmap;
+#define BITMAP_FFS(bitmap) (ffsl(bitmap))
+#endif
+#else
+typedef unsigned long long ChunkBitmap;
+#define BITMAP_FFS(bitmap) (ffsll(bitmap))
+#endif
+
 #define ARENA_CHUNKS ((int)sizeof(ChunkBitmap) * 8)
+#define EMPTY_BITMAP (~(ChunkBitmap)0)
+#define BITMAP_BIT(i) (((ChunkBitmap)1) << (i))
 
 static int pagesize;
 typedef struct _ChunkArena {
@@ -224,7 +236,7 @@ initChunks(void)
         polipoExit();
     }
     for(i = 0; i < numArenas; i++) {
-        chunkArenas[i].bitmap = ~(ChunkBitmap)0;
+        chunkArenas[i].bitmap = EMPTY_BITMAP;
         chunkArenas[i].chunks = NULL;
     }
     currentArena = NULL;
@@ -279,8 +291,8 @@ get_chunk()
         if(!arena)
             return NULL;
     }
-    i = ffs(arena->bitmap) - 1;
-    arena->bitmap &= ~(1 << i);
+    i = BITMAP_FFS(arena->bitmap) - 1;
+    arena->bitmap &= ~BITMAP_BIT(i);
     if(arena->bitmap != 0)
         currentArena = arena;
     else
@@ -306,7 +318,7 @@ maybe_get_chunk()
             return NULL;
     }
     i = ffs(arena->bitmap) - 1;
-    arena->bitmap &= ~(1 << i);
+    arena->bitmap &= ~BITMAP_BIT(i);
     if(arena->bitmap != 0)
         currentArena = arena;
     else
@@ -335,7 +347,7 @@ dispose_chunk(void *chunk)
     assert(arena && arena->chunks);
 
     i = CHUNK_ARENA_INDEX(chunk, arena);
-    arena->bitmap |= (1 << i);
+    arena->bitmap |= BITMAP_BIT(i);
     used_chunks--;
     currentArena = arena;
 }
@@ -348,7 +360,7 @@ free_chunk_arenas()
 
     for(i = 0; i < numArenas; i++) {
         arena = &(chunkArenas[i]);
-        if(arena->bitmap == (ChunkBitmap)~0 && arena->chunks) {
+        if(arena->bitmap == EMPTY_BITMAP && arena->chunks) {
             rc = munmap(arena->chunks, CHUNK_SIZE * ARENA_CHUNKS);
             if(rc < 0) {
                 do_log_error(L_ERROR, errno, "Couldn't unmap memory");
