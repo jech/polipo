@@ -8,9 +8,14 @@ Polipo 0.10 (unreleased):
         timeouts.
         Made logging configurable at runtime (thanks to Frank Behrens).
         Implemented the infrastructure for asynchronous handling of 
-        forbidden URLs and support for Squid-style redirectors.
-        Implemented User-configurable uncacheable URLs (thanks to
-        Joachim Haga).
+        forbidden URLs.
+        Implemented the ability to redirect instead of returning an
+        error for forbidden URLs.
+        Implemented support for Squid-style redirectors.
+        Implemented User-configurable uncacheable URLs, analogous to
+        forbidden URLs (thanks to Joachim Haga).
+        Implemented the ability to avoid caching pages with cookies
+        and redirects.
 
 27 December 2004: Polipo 0.9.7:
 
