@@ -1093,7 +1093,8 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
                 memmove(connection->buf, connection->buf + offset,
                         connection->len - offset);
                 connection->len = connection->len - offset;
-                if(connection->len <= CHUNK_SIZE)
+                if((connection->flags & CONN_BIGBUF) &&
+                   connection->len <= CHUNK_SIZE)
                     httpConnectionUnbigify(connection);
             }
         } else {
