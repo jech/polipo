@@ -1567,7 +1567,8 @@ httpClientSideHandler(int status,
         pokeFdEvent(request->request->connection->fd, -ESHUTDOWN, POLLOUT);
     }
     notifyObject(request->object);
-    connection->flags &= ~(CONN_READER | CONN_SIDE_READER);
+    connection->flags &= ~CONN_SIDE_READER;
+    httpClientDiscardBody(connection);
     return 1;
 }
 
