@@ -595,7 +595,7 @@ depends on the browser.  Many user-agents will transparently use
 Polipo if the environment variable @samp{http_proxy} points at it;
 e.g.@:
 @example
-$ export http_proxy=http://localhost:8132/
+$ export http_proxy=http://localhost:8123/
 @end example
 Netscape Navigator, Mozilla and probably other browsers require that
 you configure them manually through their @emph{Preferences} menu.
