@@ -34,6 +34,9 @@ int httpErrorStreamHandler(int status,
 int httpErrorNocloseStreamHandler(int status,
                                   FdEventHandlerPtr event,
                                   StreamRequestPtr request);
+int httpErrorNofinishStreamHandler(int status,
+                                   FdEventHandlerPtr event,
+                                   StreamRequestPtr request);
 int httpClientRequest(HTTPRequestPtr request, AtomPtr url);
 int httpClientDiscardBody(HTTPConnectionPtr connection);
 int httpClientDiscardHandler(int, FdEventHandlerPtr, StreamRequestPtr);

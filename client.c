@@ -428,10 +428,12 @@ httpClientRawErrorHeaders(HTTPConnectionPtr connection,
     assert(connection->flags & CONN_WRITER);
     assert(code != 0);
 
-    if(connection->request) 
-        close = close || !connection->request->persistent;
-    else
-        close = 1;
+    if(close >= 0) {
+        if(connection->request)
+            close = close || !connection->request->persistent;
+        else
+            close = 1;
+    }
 
     if(connection->request && connection->request->object) {
         url = connection->request->object->key;
@@ -454,22 +456,21 @@ httpClientRawErrorHeaders(HTTPConnectionPtr connection,
     n = httpWriteErrorHeaders(connection->buf, CHUNK_SIZE, 0,
                               connection->request &&
                               connection->request->method != METHOD_HEAD,
-                              code, message, close, headers,
+                              code, message, close > 0, headers,
                               url, url_len, etag);
     if(n <= 0) {
         shutdown(connection->fd, 1);
-        httpClientFinish(connection, 1);
+        if(close >= 0)
+            httpClientFinish(connection, 1);
         return 1;
     }
 
     httpSetTimeout(connection, 60);
-    if(close) {
-        do_stream(IO_WRITE, fd, 0, connection->buf, n, 
-                  httpErrorStreamHandler, connection);
-    } else {
-        do_stream(IO_WRITE, fd, 0, connection->buf, n, 
-                  httpErrorNocloseStreamHandler, connection);
-    }
+    do_stream(IO_WRITE, fd, 0, connection->buf, n, 
+              close > 0 ? httpErrorStreamHandler :
+              close == 0 ? httpErrorNocloseStreamHandler :
+              httpErrorNofinishStreamHandler,
+              connection);
 
     return 1;
 }
@@ -575,6 +576,19 @@ httpErrorNocloseStreamHandler(int status,
         return 0;
 
     httpClientFinish(connection, 0);
+    return 1;
+}
+
+int
+httpErrorNofinishStreamHandler(int status,
+                               FdEventHandlerPtr event,
+                               StreamRequestPtr srequest)
+{
+    HTTPConnectionPtr connection = srequest->data;
+
+    if(status == 0 && !streamRequestDone(srequest))
+        return 0;
+
     return 1;
 }
 
@@ -757,13 +771,6 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
     if(expect) {
         if(expect == atom100Continue) {
             request->wait_continue = 1;
-        } else {
-            httpClientDiscardBody(connection);
-            httpClientNoticeError(request, 417,
-                                  internAtomF("Expectation %s not supported",
-                                              expect->string));
-            releaseAtom(expect);
-            return 1;
         }
         releaseAtom(expect);
     }
@@ -1155,6 +1162,27 @@ delayedHttpClientNoticeRequest(HTTPRequestPtr request)
 }
 
 int
+httpClientContinueDelayed(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    httpClientRawError(connection, 100,
+                       internAtom("Continue"),
+                       -1);
+    return 1;
+}
+
+int
+delayedHttpClientContinue(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr event;
+    event = scheduleTimeEvent(-1, httpClientContinueDelayed,
+                              sizeof(connection), &connection);
+    if(!event)
+        return -1;
+    return 1;
+}
+
+int
 httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
 {
     ObjectPtr object = ohandler->object;
@@ -1195,6 +1223,14 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
             abortObject(object, 503, internAtom("Couldn't schedule serving"));
         }
         return 1;
+    }
+
+    if(request->wait_continue) {
+        if(request->request && request->request->wait_continue == 0) {
+            request->wait_continue = 0;
+            delayedHttpClientContinue(connection);
+        }
+        return 0;
     }
 
     /* See httpServerHandlerHeaders */
