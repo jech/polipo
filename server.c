@@ -1920,6 +1920,9 @@ httpServerHandlerHeaders(int eof,
         }
         if(urlIsLocal(new_object->key, new_object->key_size))
             new_object->flags |= OBJECT_LOCAL;
+        old_object->flags |= OBJECT_SUPERSEDED;
+        old_object->flags &= ~OBJECT_INPROGRESS;
+        new_object->flags |= OBJECT_INPROGRESS;
     } else {
         new_object = object;
     }
@@ -2037,12 +2040,10 @@ httpServerHandlerHeaders(int eof,
         supersedeObject(old_object);
     }
     if(new_object != old_object) {
-        notifyObject(old_object);
-        old_object->flags &= ~(OBJECT_INPROGRESS | OBJECT_VALIDATING);
-        new_object->flags |= OBJECT_INPROGRESS;
-        request->object = new_object;
-        releaseObject(old_object);
+        old_object->flags &= ~OBJECT_VALIDATING;
+        releaseNotifyObject(old_object);
         old_object = NULL;
+        request->object = new_object;
         object = new_object;
     } else {
         objectMetadataChanged(new_object, 0);

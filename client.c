@@ -1164,9 +1164,6 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
 
     assert(request == connection->request);
 
-    if(request->request)
-        assert(request->object->flags & OBJECT_INPROGRESS);
-
     if(status < 0) {
         object->flags &= ~OBJECT_VALIDATING; /* for now */
         if(request->request && request->request->request == request)
