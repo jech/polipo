@@ -1360,6 +1360,10 @@ objectFillFromDisk(ObjectPtr object, int offset, int chunks)
         if(object->size < o + rc)
             object->size = o + rc;
 
+        if(entry->object->length >= 0 && entry->size < 0 &&
+           entry->offset - entry->body_offset == entry->object->length)
+            entry->size = entry->object->length;
+            
         if(rc < CHUNK_SIZE - j) {
             /* Paranoia: the read may have been interrupted half-way. */
             if(entry->size < 0) {

@@ -72,12 +72,12 @@
 # Uncomment this if you want to contact IPv4 hosts only (and make DNS
 # queries somewhat faster):
 
-# queryIPv6 = no
+# dnsQueryIPv6 = no
 
 # Uncomment this if you want Polipo to prefer IPv4 to IPv6 for
 # double-stack hosts:
 
-# queryIPv6 = reluctantly
+# dnsQueryIPv6 = reluctantly
 
 # Uncomment this to disable Polipo's DNS resolver and use the system's
 # default resolver instead.  If you do that, Polipo will freeze during

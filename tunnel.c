@@ -190,7 +190,7 @@ tunnelConnectionHandler(int status,
     int rc;
 
     if(status < 0) {
-        tunnelError(tunnel, 504, internAtom("Couldn't connect"));
+        tunnelError(tunnel, 504, internAtomError(-status, "Couldn't connect"));
         return 1;
     }
 
@@ -318,7 +318,7 @@ tunnelDispatch(TunnelPtr tunnel)
             tunnel->flags |= TUNNEL_READER2;
             bufRead(tunnel->fd2, &tunnel->buf2, tunnelRead2Handler, tunnel);
         }
-        if(!(tunnel->flags & TUNNEL_WRITER2) &&
+        if(!(tunnel->flags & (TUNNEL_WRITER2 | TUNNEL_EPIPE2)) &&
            !circularBufferEmpty(&tunnel->buf1)) {
             tunnel->flags |= TUNNEL_WRITER2;
             bufWrite(tunnel->fd2, &tunnel->buf1, tunnelWrite2Handler, tunnel);

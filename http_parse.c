@@ -30,8 +30,8 @@ static int getNextTokenInList(const char *buf, int i,
                               int *end_return);
 
 static AtomPtr atomConnection, atomProxyConnection, atomContentLength,
-    atomHost, atomAcceptEncoding, atomAcceptRange, atomTE,
-    atomNegotiate, atomReferer, atomProxyAuthenticate, atomProxyAuthorization,
+    atomHost, atomAcceptRange, atomTE,
+    atomReferer, atomProxyAuthenticate, atomProxyAuthorization,
     atomKeepAlive, atomTrailers, atomUpgrade, atomDate, atomExpires,
     atomIfModifiedSince, atomIfUnmodifiedSince, atomIfRange, atomLastModified,
     atomIfMatch, atomIfNoneMatch, atomAge, atomTransferEncoding, 
@@ -66,10 +66,8 @@ initHttpParser()
     A(atomProxyConnection, "proxy-connection");
     A(atomContentLength, "content-length");
     A(atomHost, "host");
-    A(atomAcceptEncoding, "accept-encoding");
     A(atomAcceptRange, "accept-range");
     A(atomTE, "te");
-    A(atomNegotiate, "negotiate");
     A(atomReferer, "referer");
     A(atomProxyAuthenticate, "proxy-authenticate");
     A(atomProxyAuthorization, "proxy-authorization");
@@ -860,8 +858,7 @@ httpParseHeaders(int client, AtomPtr url,
                 }
             }
         } else if(name == atomConnection || name == atomHost ||
-                  name == atomAcceptEncoding || name == atomAcceptRange ||
-                  name == atomTE || name == atomNegotiate ||
+                  name == atomAcceptRange || name == atomTE ||
                   name == atomProxyAuthenticate ||
                   name == atomKeepAlive ||
                   atomListMember(name, censoredHeaders)) {

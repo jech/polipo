@@ -1407,11 +1407,9 @@ httpServeObject(HTTPConnectionPtr connection)
         return httpClientNoticeRequest(request, 1);
     }
 
-    if(!(object->flags & OBJECT_INITIAL) && !object->headers) {
-        /* Aborted object */
+    if(object->flags & OBJECT_ABORTED) {
         unlockChunk(object, i);
-        return httpClientRawError(connection, object->code,
-                                  retainAtom(object->message), 0);
+        return httpClientNoticeError(request, object->code, object->message);
     }
 
     if(connection->buf == NULL)

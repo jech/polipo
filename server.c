@@ -355,12 +355,9 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
         request->request = NULL;
         requestor->request = NULL;
         object->flags &= ~(OBJECT_INPROGRESS | OBJECT_VALIDATING);
-        if(request->request) {
-            request->request->request = NULL;
-            request->request = NULL;
-        }
         releaseNotifyObject(object);
         httpDestroyRequest(request);
+        return 1;
     }
 
     if(request->wait_continue) {
@@ -433,13 +430,15 @@ httpServerConnectionDnsHandler(int status, GethostbynameRequestPtr request)
 
     if(status <= 0) {
         AtomPtr message;
-        message = internAtomF("Host %s lookup failed: %s", 
-                              request->name->string,
+        message = internAtomF("Host %s lookup failed: %s",
+                              request->name ?
+                              request->name->string : "(unknown)",
                               request->error_message ?
                               request->error_message->string :
                               pstrerror(-status));
         do_log(L_ERROR, "Host %s lookup failed: %s (%d).\n", 
-               request->name->string,
+               request->name ?
+               request->name->string : "(unknown)",
                request->error_message ?
                request->error_message->string :
                pstrerror(-status), -status);
@@ -1288,6 +1287,8 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     if(object->flags & OBJECT_INPROGRESS)
         return 1;
 
+    assert(requestor->request == NULL);
+
     if(requestor->requested)
         return 0;
 
@@ -1664,6 +1665,7 @@ httpServerHandlerHeaders(int eof,
     CacheControlRec cache_control;
     int age = -1;
     time_t date, last_modified, expires;
+    struct timeval *init_time;
     char *etag;
     AtomPtr via, new_via;
     int expect_body;
@@ -1818,14 +1820,11 @@ httpServerHandlerHeaders(int eof,
         do_log(L_UNCACHEABLE, " (%d)\n", cache_control.flags);
     }
 
-    if(age >= 0) {
-        if(age >= current_time.tv_sec)
-            age = 0;
-        else
-            age = MIN(current_time.tv_sec - age, current_time.tv_sec);
-    } else {
-        age = current_time.tv_sec;
-    }
+    if(request->time0.tv_sec != null_time.tv_sec)
+        init_time = &request->time0;
+    else
+        init_time = &current_time;
+    age = MIN(init_time->tv_sec - age, init_time->tv_sec);
 
     if(request->method == METHOD_HEAD || 
        code < 200 || code == 204 || code == 304)

@@ -266,6 +266,12 @@ do_gethostbyname(char *origname,
     int done, rc;
 
     memset(&request, 0, sizeof(request));
+    request.name = NULL;
+    request.addr = NULL;
+    request.error_message = NULL;
+    request.count = count;
+    request.handler = handler;
+    request.data = data;
 
     if(n <= 0 || n > 131) {
         if(n <= 0) {
@@ -297,11 +303,6 @@ do_gethostbyname(char *origname,
     }
 
     request.name = name;
-    request.addr = NULL;
-    request.error_message = NULL;
-    request.count = count;
-    request.handler = handler;
-    request.data = data;
 
     object = findObject(OBJECT_DNS, name->string, name->length);
     if(object == NULL || objectMustRevalidate(object, NULL)) {

@@ -216,6 +216,7 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
 {
     int rc;
     int filedes[2];
+    pid_t pid;
     sigset_t ss, old_mask;
 
     if(object->flags & OBJECT_INPROGRESS)
@@ -254,8 +255,8 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
         return;
     }
     
-    rc = fork();
-    if(rc < 0) {
+    pid = fork();
+    if(pid < 0) {
         do_log_error(L_ERROR, errno, "Couldn't fork");
         abortObject(object, 503, internAtomError(errno, "Couldn't fork"));
         close(filedes[0]);
@@ -270,10 +271,8 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
         return;
     }
 
-    if(rc > 0) {
-        int pid = rc;
+    if(pid > 0) {
         SpecialRequestPtr request;
-
         close(filedes[1]);
         do {
             rc = sigprocmask(SIG_SETMASK, &old_mask, NULL);

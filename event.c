@@ -68,8 +68,7 @@ timeval_minus(struct timeval *d, struct timeval *s1, struct timeval *s2)
 int
 timeval_minus_usec(struct timeval *s1, struct timeval *s2)
 {
-    return (s1->tv_sec - s2->tv_sec) * 1000000 + 
-        s1->tv_usec - s2->tv_usec;
+    return (s1->tv_sec - s2->tv_sec) * 1000000 + s1->tv_usec - s2->tv_usec;
 }
 
 static void

@@ -25,7 +25,7 @@ typedef struct _SpecialRequest {
     int fd;
     void *buf;
     int offset;
-    int pid;
+    pid_t pid;
 } SpecialRequestRec, *SpecialRequestPtr;
 
 void preinitLocal(void);
