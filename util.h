@@ -59,6 +59,7 @@ char* lwrcpy(char *dst, const char *src, int n);
 int lwrcmp(const char *as, const char *bs, int n) ATTRIBUTE ((pure));
 int strcasecmp_n(const char *string, const char *buf, int n)
      ATTRIBUTE ((pure));
+int atoi_n(const char *restrict string, int n, int len, int *value_return);
 int isWhitespace(const char *string) ATTRIBUTE((pure));
 #ifndef HAVE_MEMRCHR
 void *memrchr(const void *s, int c, size_t n) ATTRIBUTE ((pure));

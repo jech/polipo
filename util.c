@@ -153,6 +153,23 @@ strcasecmp_n(const char *string, const char *buf, int n)
         return -1;
 }
 
+int
+atoi_n(const char *restrict string, int n, int len, int *value_return)
+{
+    int i = n;
+    int val = 0;
+
+    if(i >= len || !digit(string[i]))
+        return -1;
+
+    while(i < len && digit(string[i])) {
+        val = val * 10 + (string[i] - '0');
+        i++;
+    }
+    *value_return = val;
+    return i;
+}
+
 int 
 isWhitespace(const char *string)
 {
