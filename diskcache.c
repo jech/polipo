@@ -1547,6 +1547,7 @@ mergeDobjects(DiskObjectPtr dst, DiskObjectPtr src)
         dst->body_offset = src->body_offset;
     } else
         free(src->filename);
+    free(src->location);
     if(dst->length < 0)
         dst->length = src->length;
     if(dst->size < 0)
@@ -1968,6 +1969,7 @@ indexDiskObjects(const char *root, int recursive)
                 printf("</tr>\n");
             }
             dobjects = dobject->next;
+            free(dobject->location);
             free(dobject->filename);
             free(dobject);
         }
@@ -2066,7 +2068,7 @@ expireFile(char *filename, struct stat *sb,
 
     if(!preciseExpiry) {
         t = sb->st_mtime;
-        if(t > current_time.tv_sec) {
+        if(t > current_time.tv_sec + 1) {
             do_log(L_WARN, "File %s has access time in the future.\n",
                    filename);
             t = current_time.tv_sec;
@@ -2128,6 +2130,7 @@ expireFile(char *filename, struct stat *sb,
             (*truncated)++;
         }
     }
+    free(dobject->location);
     free(dobject->filename);
     free(dobject);
 }
@@ -2146,8 +2149,6 @@ expireDiskObjects()
        diskCacheRoot->length <= 0 || diskCacheRoot->string[0] != '/')
         return;
 
-    gettimeofday(&current_time, NULL);
-
     fts_argv[0] = diskCacheRoot->string;
     fts_argv[1] = NULL;
     fts = fts_open(fts_argv, FTS_LOGICAL, NULL);
@@ -2155,6 +2156,8 @@ expireDiskObjects()
         do_log_error(L_ERROR, errno, "Couldn't fts_open disk cache");
     } else {
         while(1) {
+            gettimeofday(&current_time, NULL);
+
             fe = fts_read(fts);
             if(!fe) break;
 

@@ -1167,14 +1167,18 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
     if(object->flags & (OBJECT_INITIAL | OBJECT_VALIDATING)) {
         if(object->flags & (OBJECT_INPROGRESS | OBJECT_VALIDATING)) {
             return 0;
-        } else {
+        } else if(object->flags & OBJECT_FAILED) {
             if(request->error_code)
                 abortObject(object, 
                             request->error_code, 
                             retainAtom(request->error_message));
-                else
-                    abortObject(object, 500,
-                                internAtom("Error message lost in transit"));
+            else {
+                abortObject(object, 500,
+                            internAtom("Error message lost in transit"));
+            }
+        } else {
+            /* The request was pruned by httpServerDiscardRequests */
+            httpClientNoticeRequest(request, 0);
         }
     }
 

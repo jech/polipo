@@ -66,11 +66,8 @@ objects, and reload the forbidden URLs file.
 .B SIGTERM, SIGINT, SIGHUP
 write out all in-memory objects to disk and quit.
 .SH SECURITY
-Polipo is probably not secure at the moment.  By default, Polipo will
-only listen on the loopback interface.
-
 The internal web server will follow symbolic links that point outside
-the local document tree.  You can run Polipo in a chroot jail if that
+the local document tree.  You should run Polipo in a chroot jail if that
 is a problem.
 
 There is no reason to run Polipo as root.

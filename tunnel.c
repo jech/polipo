@@ -388,7 +388,7 @@ tunnelWrite1Handler(int status,
                    FdEventHandlerPtr event, StreamRequestPtr request)
 {
     TunnelPtr tunnel = request->data;
-    if(status < 0 || (tunnel->flags & TUNNEL_EPIPE1)) {
+    if(status || (tunnel->flags & TUNNEL_EPIPE1)) {
         tunnel->flags |= TUNNEL_EPIPE1;
         if(status < 0 && status != -EPIPE)
             do_log_error(L_ERROR, -status, "Couldn't write to client");
@@ -406,7 +406,7 @@ tunnelWrite2Handler(int status,
                    FdEventHandlerPtr event, StreamRequestPtr request)
 {
     TunnelPtr tunnel = request->data;
-    if(status < 0 || (tunnel->flags & TUNNEL_EPIPE2)) {
+    if(status || (tunnel->flags & TUNNEL_EPIPE2)) {
         tunnel->flags |= TUNNEL_EPIPE2;
         if(status < 0 && status != -EPIPE)
             do_log_error(L_ERROR, -status, "Couldn't write to server");

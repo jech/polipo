@@ -81,7 +81,7 @@ THE SOFTWARE.
 #if defined __GLIBC__
 #define HAVE_TIMEGM
 #define HAVE_TM_GMTOFF
-//#define HAVE_FTS
+#define HAVE_FTS
 #define HAVE_SETENV
 #define HAVE_ASPRINTF
 #if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)

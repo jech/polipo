@@ -1,6 +1,9 @@
 Polipo installation instructions -*-text-*-
 ********************************
 
+1. Building and running polipo
+******************************
+
   $ make all
   $ su -c 'make install'
   $ man polipo
@@ -9,15 +12,13 @@ Polipo installation instructions -*-text-*-
 If you want Polipo to put itself into the background, you may replace
 the last line with:
 
-  $ polipo daemonise=true
+  $ polipo daemonise=true logFile="/var/log/polipo.log"
 
-On SVR4 systems (Solaris, HP/UX), replace the first line with
-whichever works:
+On SVR4 systems (Solaris, HP/UX), you will need to use one of the
+following (whichever works):
 
   $ make PLATFORM_DEFINES=-DSVR4 all
-  $ make PLATOFM_DEFINES=-DSVR4 LDLIBS='-lsocket -lnsl -lresolv' all
-
-Please see the comments in the Makefile for more details.
+  $ make PLATFORM_DEFINES=-DSVR4 LDLIBS='-lsocket -lnsl -lresolv' all
 
 You can also use Polipo without installing:
 
@@ -25,11 +26,20 @@ You can also use Polipo without installing:
   $ nroff -man polipo.man | more
   $ ./polipo &
 
-You should then configure your user-agent (web browser) to use the
-proxy on `http://localhost:8123/'.
+2. Configuring your user-agent
+******************************
 
-You may make Polipo smaller by a few bytes by disabling features you
-don't need; see the Makefile for details.
+Once polipo is running, configure your user-agent (web browser) to use
+the proxy on `http://localhost:8123/'.  Depending on the user-agent,
+this is done either by setting the environment variable http_proxy,
+e.g.
+
+  $ http_proxy=http://localhost:8123; export http_proxy
+
+or by using the browser's ``preferences'' menu.
+
+3. Configuring polipo
+*********************
 
 If you want to use an on-disk cache, you will need to create its root
 directory:
@@ -40,13 +50,14 @@ You should then arrange for cron to run the following on a regular
 basis:
 
   killall -USR1 polipo
+  sleep 1
   polipo -x
   killall -USR2 polipo
 
 If you want to use a configuration file, you should put it in one of
 the locations `/etc/polipo/config' or `~/.polipo'; you can also use
 the `-c' flag to put it in a non-standard location.  See the file
-the file `config.sample' for an example.
+`config.sample' for an example.
 
 You might also want to create a forbidden URLs file, which you should
 put either in one of `/etc/polipo/forbidden' or `~/.polipo-forbidden';

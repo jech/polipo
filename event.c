@@ -591,6 +591,9 @@ workToDo()
     struct timeval sleep_time;
     int rc;
 
+    if(exitFlag)
+        return 1;
+
     timeToSleep(&sleep_time);
     gettimeofday(&current_time, NULL);
     if(timeval_cmp(&sleep_time, &current_time) <= 0)

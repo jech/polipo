@@ -1475,6 +1475,7 @@ its in-memory cache after performing the purge.  The safe way of
 performing a purge is therefore:
 @example
 $ kill -USR1 @var{polipo-pid}
+$ sleep 1
 $ polipo -x
 $ kill -USR2 @var{polipo-pid}
 @end example

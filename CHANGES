@@ -1,3 +1,11 @@
+6 April 2004: Polipo 0.9.3:
+        Fix incorrect handling of EPIPE when tunnelling; this could
+        cause crashes if a peer closed a connection when we're
+        writing.
+        Fix a race condition that could cause ``error message lost in
+        transit'' errors if a request was cancelled during connect.
+        Check for exitFlag in workToDo: faster reaction to signals.
+
 28 March 2004: Polipo 0.9.2:
         Fixed a bug that could cause crashes when writing out small
         objects (thanks to Frank Behrens).

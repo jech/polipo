@@ -12,10 +12,16 @@
 ### *******************
 
 # Uncomment one of these if you want to allow remote clients to
-# connect (you better be firewalled):
+# connect:
 
 # proxyAddress = "::0"        # both IPv4 and IPv6
 # proxyAddress = "0.0.0.0"    # IPv4 only
+
+# If you do that, you'll want to restrict the set of hosts allowed to
+# connect:
+
+# allowedClients = "134.157.168.57"
+# allowedClients = "134.157.168.0/24"
 
 # Uncomment this if you want your Polipo to identify itself by
 # something else than the host name:

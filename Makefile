@@ -88,7 +88,7 @@ install.man: all
 
 
 polipo.info: polipo.texi
-	makeinfo polipo
+	makeinfo polipo.texi
 
 html/index.html: polipo.texi
 	mkdir -p html
