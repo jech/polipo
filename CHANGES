@@ -3,6 +3,10 @@ Polipo 0.9.6 (unreleased):
         Fixed two possible crashes when relaxTransparency is not false.
         Modified the config file parser to make it possible to have
         backslashes in atoms.
+        Fixed a violated invariant (leading to a crash) when 
+        superseding objects.
+        Fixed a possible crash in ClientFinish when a pipelined
+        request carries no object.
 
 17 June 2004: Polipo 0.9.5:
         Implemented upstream proxy authentication (HTTP Basic only).
