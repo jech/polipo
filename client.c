@@ -993,6 +993,8 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     return 1;
 
  fail:
+    shutdown(connection->fd, 0);
+    connection->request->persistent = 0;
     connection->flags &= ~CONN_READER;
     shutdown(connection->fd, 0);
     httpClientFinish(connection, 1);
@@ -1006,27 +1008,26 @@ httpClientDelayed(TimeEventHandlerPtr event)
 
      /* IO_NOTNOW is unfortunate, but needed to avoid starvation if a
         client is pipelining a lot of requests. */
-    if(connection->reqlen > 0) {
-        do_stream(IO_READ | IO_IMMEDIATE,
-                  connection->fd, connection->reqlen,
-                  connection->reqbuf, CHUNK_SIZE,
-                  httpClientHandler, connection);
-    } else {
-        if(connection->reqbuf)
-            dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
-        do_stream_buf(IO_READ,
-                      connection->fd, 0,
-                      &connection->reqbuf, CHUNK_SIZE,
-                      httpClientHandler, connection);
-    }
-    return 1;
-
- fail:
-    shutdown(connection->fd, 0);
-    connection->request->persistent = 0;
-    connection->flags &= ~CONN_READER;
-    return 1;
+     if(connection->reqlen > 0) {
+         int bufsize;
+         if((connection->flags & CONN_BIGREQBUF) &&
+            connection->reqlen < CHUNK_SIZE)
+             httpConnectionUnbigifyReqbuf(connection);
+         /* Don't read new requests if buffer is big. */
+         bufsize = (connection->flags & CONN_BIGREQBUF) ?
+             connection->reqlen : CHUNK_SIZE;
+         do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
+                   connection->fd, connection->reqlen,
+                   connection->reqbuf, bufsize,
+                   httpClientHandler, connection);
+     } else {
+         httpConnectionDestroyReqbuf(connection);
+         do_stream_buf(IO_READ | IO_NOTNOW,
+                       connection->fd, 0,
+                       &connection->reqbuf, CHUNK_SIZE,
+                       httpClientHandler, connection);
+     }
+     return 1;
 }
 
 int
