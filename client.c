@@ -584,8 +584,6 @@ httpErrorNofinishStreamHandler(int status,
                                FdEventHandlerPtr event,
                                StreamRequestPtr srequest)
 {
-    HTTPConnectionPtr connection = srequest->data;
-
     if(status == 0 && !streamRequestDone(srequest))
         return 0;
 
