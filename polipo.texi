@@ -716,6 +716,7 @@ The local interface is disabled if @code{disableLocalInterface} is true.
 @cindex proxy name
 @cindex via
 @cindex loopback address
+@cindex security
 
 There are three fundamental values that control how Polipo speaks to
 clients.  The variable @code{proxyAddress}, defines the IP address on
@@ -724,8 +725,8 @@ address} @code{"127.0.0.1"}, meaning that Polipo will listen on the
 IPv4 loopback interface (the local host) only.  By setting this
 variable to a global IP address or to one of the special values
 @code{"::"} or @code{"0.0.0.0"}, it is possible to allow Polipo to
-serve remote clients.  Considering the current state of the code,
-however, doing this is likely to be a security hole.
+serve remote clients.  This is likely to be a security hole unless you
+set @code{allowedClients} to a reasonable value (@pxref{Access control}).
 
 Note that the type of address that you specify for @code{proxyAddress}
 will determine whether Polipo listens to IPv4 or IPv6.  Currently, the
@@ -911,7 +912,7 @@ for the same information, and @samp{Accept-Language} simply carries a
 prioritised list of languages, which is not enough to usefully
 describe a literate users' preferences.  A typical French user, for
 example, will prefer an English-language original to a French
-(mis-)translation, but prefer a French original to while still wanting to see French language texts
+(mis-)translation, while still wanting to see French language texts
 when they are original.  Such a situation cannot be described by the
 @samp{Accept-Language} header.
 
