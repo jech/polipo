@@ -1211,8 +1211,11 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
 
     assert(request == connection->request);
 
-    if(request->request)
+    if(request->request) {
         assert(request->object->flags & OBJECT_INPROGRESS);
+        assert(!request->request->object ||
+               request->request->object == request->object);
+    }
 
     if(status < 0) {
         object->flags &= ~OBJECT_VALIDATING; /* for now */
@@ -1256,14 +1259,28 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
     if((object->flags & OBJECT_SUPERSEDED) &&
        request->request && request->request->can_mutate) {
         ObjectPtr new_object = retainObject(request->request->can_mutate);
-        if(object->requestor == request && new_object->requestor == NULL) {
+        if(object->requestor == request) {
+            if(new_object->requestor == NULL)
+                new_object->requestor = request;
             object->requestor = NULL;
-            new_object->requestor = request;
         }
+        request->ohandler = NULL;
         releaseObject(object);
-        object = new_object;
         request->object = new_object;
         request->request->object = new_object;
+        /* We're handling the wrong object now.  It's simpler to
+           rebuild the whole data structure from scratch rather than
+           trying to compensate. */
+        rc = delayedHttpClientNoticeRequest(request);
+        if(rc < 0) {
+            do_log(L_ERROR, "Couldn't schedule noticing of request.");
+            abortObject(object, 500,
+                        internAtom("Couldn't schedule "
+                                   "noticing of request"));
+            /* We're probably out of memory.  What can we do? */
+            shutdown(connection->fd, 1);
+        }
+        return 1;
     }
 
     if(object->requestor != request && !(object->flags & OBJECT_ABORTED)) {
