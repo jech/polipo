@@ -14,6 +14,8 @@ Polipo 0.9.6 (unreleased):
         thanks to Joachim Haga).
         Abort when the config file couldn't be parsed (thanks to
         Joachim Haga).
+        Fixed error handling in POST and PUT requests, which could
+        cause a crash on an I/O error.
 
 17 June 2004: Polipo 0.9.5:
         Implemented upstream proxy authentication (HTTP Basic only).
