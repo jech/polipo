@@ -2042,12 +2042,14 @@ httpServerHandlerHeaders(int eof,
         }
         request->object = new_object;
         releaseNotifyObject(old_object);
-        notifyObject(new_object);
         old_object = NULL;
         object = new_object;
     } else {
         objectMetadataChanged(new_object, 0);
     }
+
+    new_object->flags &= ~OBJECT_VALIDATING;
+    notifyObject(new_object);
 
     if(!expect_body) {
         httpServerFinish(connection, 0, rc);
