@@ -430,11 +430,13 @@ httpClientRawErrorHeaders(HTTPConnectionPtr connection,
     assert(connection->flags & CONN_WRITER);
     assert(code != 0);
 
-    if(connection->request) 
-        close = close || !connection->request->persistent;
-    else
-        close = 1;
-
+    if(close >= 0) {
+        if(connection->request)
+            close = 
+                close || !(connection->request->flags & REQUEST_PERSISTENT);
+        else
+            close = 1;
+    }
     if(connection->request && connection->request->object) {
         url = connection->request->object->key;
         url_len = connection->request->object->key_size;
@@ -1313,9 +1315,10 @@ httpClientGetHandler(int status, ConditionHandlerPtr chandler)
         return 1;
     }
 
-    if(request->wait_continue) {
-        if(request->request && request->request->wait_continue == 0) {
-            request->wait_continue = 0;
+    if(request->flags & REQUEST_WAIT_CONTINUE) {
+        if(request->request && 
+           !(request->request->flags & REQUEST_WAIT_CONTINUE)) {
+            request->flags &= ~REQUEST_WAIT_CONTINUE;
             delayedHttpClientContinue(connection);
         }
         return 0;
