@@ -22,10 +22,10 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
-typedef struct _ForbiddenDomain {
+typedef struct _Domain {
     int length;
     char domain[1];
-} ForbiddenDomainRec, *ForbiddenDomainPtr;
+} DomainRec, *DomainPtr;
 
 AtomPtr forbiddenFile = NULL;
 AtomPtr forbiddenUrl = NULL;
@@ -34,12 +34,13 @@ int forbiddenRedirectCode = 302;
 AtomPtr redirector = NULL;
 int redirectorRedirectCode = 302;
 
-ForbiddenDomainPtr *forbiddenDomains;
-int have_forbiddenDomains = 0;
-int have_forbiddenRegex = 0;
-static regex_t forbiddenRegex;
+DomainPtr *forbiddenDomains = NULL;
+regex_t *forbiddenRegex = NULL;
 
-static char *regex;
+/* these three are only used internally by {parse,read}DomainFile */
+/* to avoid having to pass it all as parameters */
+static DomainPtr *domains;
+static char *regexbuf;
 static int rlen, rsize, dlen, dsize;
 
 static pid_t redirector_pid = 0;
@@ -73,8 +74,8 @@ atomSetterForbidden(ConfigVariablePtr var, void *value)
     return configAtomSetter(var, value);
 }
 
-int
-readForbiddenFile(char *filename)
+void
+readDomainFile(char *filename)
 {
     FILE *in;
     char buf[512];
@@ -85,7 +86,7 @@ readForbiddenFile(char *filename)
     if(in == NULL) {
         if(errno != ENOENT)
             do_log_error(L_ERROR, errno, "Couldn't open forbidden file");
-        return -1;
+        return;
     }
 
     while(1) {
@@ -122,57 +123,153 @@ readForbiddenFile(char *filename)
 
         if(is_regex) {
             while(rlen + i - start + 8 >= rsize) {
-                char *new_regex;
-                new_regex = realloc(regex, rsize * 2 + 1);
-                if(new_regex == NULL) {
-                    do_log(L_ERROR, "Couldn't allocate forbidden regex.\n");
-                    fclose(in);
-                    return -1;
+                char *new_regexbuf;
+                new_regexbuf = realloc(regexbuf, rsize * 2 + 1);
+                if(new_regexbuf == NULL) {
+                    do_log(L_ERROR, "Couldn't reallocate forbidden regex.\n");
+		    fclose(in);
+		    return;
                 }
-                regex = new_regex;
+                regexbuf = new_regexbuf;
                 rsize = rsize * 2 + 1;
             }
             if(rlen != 0)
-                rlen = snnprintf(regex, rlen, rsize, "|");
-            rlen = snnprintf(regex, rlen, rsize, "(");
-            rlen = snnprint_n(regex, rlen, rsize, buf + start, i - start);
-            rlen = snnprintf(regex, rlen, rsize, ")");
+                rlen = snnprintf(regexbuf, rlen, rsize, "|");
+            rlen = snnprintf(regexbuf, rlen, rsize, "(");
+            rlen = snnprint_n(regexbuf, rlen, rsize, buf + start, i - start);
+            rlen = snnprintf(regexbuf, rlen, rsize, ")");
         } else {
-            ForbiddenDomainPtr new_domain;
+            DomainPtr new_domain;
             if(dlen >= dsize - 1) {
-                ForbiddenDomainPtr *new_domains;
-                new_domains = realloc(forbiddenDomains, (dsize * 2 + 1) * 
-                                      sizeof(ForbiddenDomainPtr));
+                DomainPtr *new_domains;
+                new_domains = realloc(domains, (dsize * 2 + 1) * 
+                                      sizeof(DomainPtr));
                 if(new_domains == NULL) {
                     do_log(L_ERROR, 
                            "Couldn't reallocate forbidden domains.\n");
-                    fclose(in);
-                    return -1;
+		    fclose(in);
+		    return;
                 }
-                forbiddenDomains = new_domains;
+                domains = new_domains;
                 dsize = dsize * 2 + 1;
             }
-            new_domain = malloc(sizeof(ForbiddenDomainRec) - 1 + i - start);
+            new_domain = malloc(sizeof(DomainRec) - 1 + i - start);
             if(new_domain == NULL) {
                 do_log(L_ERROR, "Couldn't allocate forbidden domain.\n");
-                fclose(in);
-                return -1;
+		fclose(in);
+		return;
             }
             new_domain->length = i - start;
             memcpy(new_domain->domain, buf + start, i - start);
-            forbiddenDomains[dlen++] = new_domain;
+            domains[dlen++] = new_domain;
         }
     }
     fclose(in);
-    return 1;
+    return;
+}
+
+void
+parseDomainFile(AtomPtr file, DomainPtr **ptrToDomains, regex_t **ptrToRegex)
+{
+    int rc;
+
+    if(*ptrToDomains) {
+        DomainPtr *domain = *ptrToDomains;
+        while(*domain) {
+            free(*domain);
+            domain++;
+        }
+        free(*ptrToDomains);
+	*ptrToDomains = NULL;
+    }
+
+    if(*ptrToRegex) {
+        regfree(*ptrToRegex);
+	*ptrToRegex = NULL;
+    }
+
+    if(!file || file->length == 0)
+        return;
+
+    domains = malloc(64 * sizeof(DomainPtr));
+    if(domains == NULL) {
+        do_log(L_ERROR, "Couldn't allocate forbidden domains.\n");
+        return;
+    }
+    dlen = 0;
+    dsize = 64;
+
+    regexbuf = malloc(512);
+    if(regexbuf == NULL) {
+        do_log(L_ERROR, "Couldn't allocate forbidden regex.\n");
+        free(domains);
+        return;
+    }
+    rlen = 0;
+    rsize = 512;
+
+    struct stat ss;
+    rc = stat(file->string, &ss);
+    if(rc < 0) {
+        if(errno != ENOENT)
+            do_log_error(L_WARN, errno, "Couldn't stat forbidden file");
+    } else {
+        if(!S_ISDIR(ss.st_mode))
+            readDomainFile(file->string);
+        else {
+            char *fts_argv[2];
+            FTS *fts;
+            FTSENT *fe;
+            fts_argv[0] = file->string;
+            fts_argv[1] = NULL;
+            fts = fts_open(fts_argv, FTS_LOGICAL, NULL);
+            if(fts) {
+                while(1) {
+                    fe = fts_read(fts);
+                    if(!fe) break;
+                    if(fe->fts_info != FTS_D && fe->fts_info != FTS_DP &&
+                       fe->fts_info != FTS_DC && fe->fts_info != FTS_DNR)
+                        readDomainFile(fe->fts_accpath);
+                }
+                fts_close(fts);
+            } else {
+                do_log_error(L_ERROR, errno,
+                             "Couldn't scan forbidden directory");
+            }
+        }
+    }
+
+    if(dlen > 0) {
+        domains[dlen] = NULL;
+    } else {
+        free(domains);
+        domains = NULL;
+    }
+
+    regex_t *regex;
+
+    if(rlen > 0) {
+	regex = malloc(sizeof(regex_t));
+        rc = regcomp(regex, regexbuf, REG_EXTENDED | REG_NOSUB);
+        if(rc != 0) {
+            do_log(L_ERROR, "Couldn't compile forbidden regex: %d.\n", rc);
+	    free(regex);
+	    regex = NULL;
+        }
+    } else {
+	regex = NULL;
+    }
+    free(regexbuf);
+
+    *ptrToDomains = domains;
+    *ptrToRegex = regex;
+
+    return;
 }
 
 void
 initForbidden(void)
 {
-    int rc;
-    struct stat ss;
-
     redirectorKill();
 
     if(forbiddenFile)
@@ -193,94 +290,13 @@ initForbidden(void)
             forbiddenFile = internAtom("/etc/polipo/forbidden");
     }
 
-    if(have_forbiddenDomains) {
-        ForbiddenDomainPtr *domain = forbiddenDomains;
-        while(*domain) {
-            free(*domain);
-            domain++;
-        }
-        free(forbiddenDomains);
-        have_forbiddenDomains = 0;
-    }
+    parseDomainFile(forbiddenFile, &forbiddenDomains, &forbiddenRegex);
 
-    if(have_forbiddenRegex) {
-        regfree(&forbiddenRegex);
-        have_forbiddenRegex = 0;
-    }
-
-    if(!forbiddenFile || forbiddenFile->length == 0)
-        return;
-
-    forbiddenDomains = malloc(64 * sizeof(ForbiddenDomainPtr));
-    if(forbiddenDomains == NULL) {
-        do_log(L_ERROR, "Couldn't allocate forbidden domains.\n");
-        return;
-    }
-    dlen = 0;
-    dsize = 64;
-
-    regex = malloc(512);
-    if(regex == NULL) {
-        do_log(L_ERROR, "Couldn't allocate forbidden regex.\n");
-        free(forbiddenDomains);
-        forbiddenDomains = NULL;
-        return;
-    }
-    rlen = 0;
-    rsize = 512;
-
-    rc = stat(forbiddenFile->string, &ss);
-    if(rc < 0) {
-        if(errno != ENOENT)
-            do_log_error(L_WARN, errno, "Couldn't stat forbidden file");
-    } else {
-        if(!S_ISDIR(ss.st_mode))
-            readForbiddenFile(forbiddenFile->string);
-        else {
-            char *fts_argv[2];
-            FTS *fts;
-            FTSENT *fe;
-            fts_argv[0] = forbiddenFile->string;
-            fts_argv[1] = NULL;
-            fts = fts_open(fts_argv, FTS_LOGICAL, NULL);
-            if(fts) {
-                while(1) {
-                    fe = fts_read(fts);
-                    if(!fe) break;
-                    if(fe->fts_info != FTS_D && fe->fts_info != FTS_DP &&
-                       fe->fts_info != FTS_DC && fe->fts_info != FTS_DNR)
-                        readForbiddenFile(fe->fts_accpath);
-                }
-                fts_close(fts);
-            } else {
-                do_log_error(L_ERROR, errno,
-                             "Couldn't scan forbidden directory");
-            }
-        }
-    }
-
-    if(dlen > 0) {
-        forbiddenDomains[dlen] = NULL;
-        have_forbiddenDomains = 1;
-    } else {
-        free(forbiddenDomains);
-        forbiddenDomains = NULL;
-    }
-
-    if(rlen > 0) {
-        rc = regcomp(&forbiddenRegex, regex, REG_EXTENDED | REG_NOSUB);
-        if(rc != 0) {
-            do_log(L_ERROR, "Couldn't compile forbidden regex: %d.\n", rc);
-        } else {
-            have_forbiddenRegex = 1;
-        }
-    }
-    free(regex);
     return;
 }
 
 int
-urlIsForbidden(AtomPtr url)
+urlIsMatched(AtomPtr url, DomainPtr *domains, regex_t *regex)
 {
     if(url->length < 8)
         return 0;
@@ -288,14 +304,14 @@ urlIsForbidden(AtomPtr url)
     if(memcmp(url->string, "http://", 7) != 0)
         return 0;
 
-    if(have_forbiddenDomains) {
+    if(domains) {
         int i;
-        ForbiddenDomainPtr *domain;
+        DomainPtr *domain;
         for(i = 8; i < url->length; i++) {
             if(url->string[i] == '/')
                 break;
         }
-        domain = forbiddenDomains;
+        domain = domains;
         while(*domain) {
             if((*domain)->length <= (i - 7) &&
                (url->string[i - (*domain)->length - 1] == '.' ||
@@ -307,8 +323,8 @@ urlIsForbidden(AtomPtr url)
             domain++;
         }
     }
-    if(have_forbiddenRegex) {
-        if(!regexec(&forbiddenRegex, url->string, 0, NULL, 0))
+    if(regex) {
+        if(!regexec(regex, url->string, 0, NULL, 0))
             return 1;
     }
     return 0;
@@ -321,7 +337,7 @@ urlForbidden(AtomPtr url,
              int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
              void *closure)
 {
-    int forbidden = urlIsForbidden(url);
+    int forbidden = urlIsMatched(url, forbiddenDomains, forbiddenRegex);
     int code = 0;
     AtomPtr message = NULL, headers = NULL;
 
