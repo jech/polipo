@@ -513,14 +513,20 @@ really_do_gethostbyname(AtomPtr name, ObjectPtr object)
     switch(rc) {
     case 0: error = 0; break;
     case EAI_FAMILY:
+#ifdef EAI_ADDRFAMILY
     case EAI_ADDRFAMILY:
-    case EAI_SOCKTYPE: error = EAFNOSUPPORT; break;
+#endif
+    case EAI_SOCKTYPE:
+        error = EAFNOSUPPORT; break;
     case EAI_BADFLAGS: error = EINVAL; break;
     case EAI_SERVICE: error = EDNS_NO_RECOVERY; break;
 #ifdef EAI_NONAME
-    case EAI_NONAME: error = EDNS_NO_ADDRESS; break;
+    case EAI_NONAME:
 #endif
-    case EAI_NODATA: error= EDNS_NO_ADDRESS; break;
+#ifdef EAI_NODATA
+    case EAI_NODATA:
+#endif
+        error = EDNS_NO_ADDRESS; break;
     case EAI_FAIL: error = EDNS_NO_RECOVERY; break;
     case EAI_AGAIN: error = EDNS_TRY_AGAIN; break;
 #ifdef EAI_MEMORY

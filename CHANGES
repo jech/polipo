@@ -1,3 +1,12 @@
+10 May 2004: Polipo 0.9.4:
+        Fixed a bug (introduced in 0.9.3) that could cause a crash
+        when the download of an object was interrupted and then immediately
+        restarted.
+        Fixed a bug that could cause stale non-200 repliles to be
+        served.
+        Fixed compilation on FreeBSD 5.2.1 (from Samuel Tardieu).
+        Fixed definition of *_ROOT in diskcache.c
+
 6 April 2004: Polipo 0.9.3:
         Fix incorrect handling of EPIPE when tunnelling; this could
         cause crashes if a peer closed a connection when we're

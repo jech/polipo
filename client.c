@@ -1114,13 +1114,33 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
                                   request->from, request->to, request,
                                   request->object->request_closure);
     if(rc < 0) {
-        unregisterObjectHandler(request->ohandler);
+        if(request->ohandler)
+            unregisterObjectHandler(request->ohandler);
         request->ohandler = NULL;
         request->object->flags &= ~OBJECT_VALIDATING;
         request->object->flags |= OBJECT_FAILED;
         return httpClientRawError(connection, 503,
                                   internAtom("Couldn't schedule get"), 0);
     }
+    return 1;
+}
+
+static int
+httpClientNoticeRequestDelayed(TimeEventHandlerPtr event)
+{
+    HTTPRequestPtr request = *(HTTPRequestPtr*)event->data;
+    httpClientNoticeRequest(request, 0);
+    return 1;
+}
+
+int
+delayedHttpClientNoticeRequest(HTTPRequestPtr request)
+{
+    TimeEventHandlerPtr event;
+    event = scheduleTimeEvent(-1, httpClientNoticeRequestDelayed,
+                              sizeof(request), &request);
+    if(!event)
+        return -1;
     return 1;
 }
 
@@ -1178,7 +1198,21 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
             }
         } else {
             /* The request was pruned by httpServerDiscardRequests */
-            httpClientNoticeRequest(request, 0);
+            if(ohandler == request->ohandler) {
+                int rc;
+                request->ohandler = NULL;
+                rc = delayedHttpClientNoticeRequest(request);
+                if(rc < 0)
+                    abortObject(object, 500,
+                                internAtom("Couldn't allocate "
+                                           "delayed notice request"));
+                else
+                    return 1;
+            } else {
+                abortObject(object, 500,
+                            internAtom("Wrong request pruned -- "
+                                       "this shouldn't happen"));
+            }
         }
     }
 

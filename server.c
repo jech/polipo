@@ -1115,7 +1115,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
             server->numslots = MIN(server->maxslots, serverMaxSlots);
         if(connection->request) {
             HTTPRequestPtr req;
-            do_log(L_WARN, "Restarting pipeline to %s:%d.\n",
+            do_log(D_SERVER_CONN, "Restarting pipeline to %s:%d.\n",
                    server->name, server->port);
             if(server->pipeline == 2)
                 server->pipeline -= 20;
@@ -1849,8 +1849,7 @@ httpServerHandlerHeaders(int eof,
             object->flags |= OBJECT_DYNAMIC;
             supersede = 1;
         }
-    } else if((code == 200 || code == 206) && 
-              !(object->flags & OBJECT_INITIAL)) {
+    } else if(!(object->flags & OBJECT_INITIAL)) {
         if((object->last_modified < 0 || last_modified < 0) &&
            (!object->etag || !etag))
             supersede = 1;

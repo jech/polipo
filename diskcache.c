@@ -51,11 +51,11 @@ static DiskCacheEntryRec negativeEntry = {
 };
 
 #ifndef LOCAL_ROOT
-#define LOCAL_ROOT "/var/cache/polipo/"
+#define LOCAL_ROOT "/usr/share/polipo/www/"
 #endif
 
 #ifndef DISK_CACHE_ROOT
-#define DISK_CACHE_ROOT "/usr/share/polipo/www/"
+#define DISK_CACHE_ROOT "/var/cache/polipo/"
 #endif
 
 void 
