@@ -1262,7 +1262,6 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
             new_object->requestor = request;
         }
         releaseObject(object);
-        retainObject(new_object);
         object = new_object;
         request->object = new_object;
         request->request->object = new_object;
