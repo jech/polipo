@@ -37,6 +37,9 @@ int
 httpLocalRequest(ObjectPtr object, int method, int from, int to,
                  HTTPRequestPtr requestor, void *closure)
 {
+    if(object->requestor == NULL)
+        object->requestor = requestor;
+
     if(urlIsSpecial(object->key, object->key_size))
         return httpSpecialRequest(object, method, from, to, 
                                   requestor, closure);
