@@ -1,3 +1,17 @@
+Polipo 0.10 (unreleased):
+
+        Implemented large buffers for headers larger than a chunk's worth.
+        Made the HTTP parser lax by default (ignores unknown headers).
+        Implemented the infrastructure for local POST requests and
+        implemented a real configuration interface (thanks to Theo Honohan).
+        Made timeouts user-configurable and enforced an invariant between
+        timeouts.
+        Made logging configurable at runtime (thanks to Frank Behrens).
+        Implemented the infrastructure for asynchronous handling of 
+        forbidden URLs and support for Squid-style redirectors.
+        Implemented User-configurable uncacheable URLs (thanks to
+        Joachim Haga).
+
 27 December 2004: Polipo 0.9.7:
 
         Fixed a possible crash when tunnelling.
