@@ -592,6 +592,7 @@ typedef struct _MimeEntry {
 
 static const MimeEntryRec mimeEntries[] = {
     { "html", "text/html" },
+    { "htm", "text/html" },
     { "text", "text/plain" },
     { "txt", "text/plain" },
     { "png", "image/png" },
@@ -601,6 +602,7 @@ static const MimeEntryRec mimeEntries[] = {
     { "pdf", "image/pdf" },
     { "ps", "application/postscript" },
     { "tar", "application/x-tar" },
+    { "pac", "application/x-ns-proxy-autoconfig" },
 };
 
 static char*
