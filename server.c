@@ -361,7 +361,7 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
     }
 
     if(request->wait_continue) {
-        if(server->version != HTTP_11) {
+        if(server->version == HTTP_10) {
             httpServerAbortRequest(request, 1,
                                    417, internAtom("Expectation failed"));
             return 1;
