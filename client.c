@@ -875,9 +875,13 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
     return 1;
 }
 
+static int httpClientDelayed(TimeEventHandlerPtr handler);
+
 int
 httpClientDiscardBody(HTTPConnectionPtr connection)
 {
+    TimeEventHandlerPtr handler;
+
     assert(connection->request);
     assert(connection->reqoffset == 0);
 
@@ -916,23 +920,16 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         connection->reqlen = 0;
         connection->reqbegin = 0;
     }
+
     httpSetTimeout(connection, 60);
-    /* As we only notice new requests after that, the IO_NOTNOW is
-       necessary in order to prevent starvation if a client is
-       pipelining large numbers of requests. */
-    if(connection->reqlen > 0) {
-        do_stream(IO_READ | IO_NOTNOW | IO_IMMEDIATE,
-                  connection->fd, connection->reqlen,
-                  connection->reqbuf, CHUNK_SIZE,
-                  httpClientHandler, connection);
-    } else {
-        if(connection->reqbuf)
-            dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
-        do_stream_buf(IO_READ | IO_NOTNOW,
-                      connection->fd, 0,
-                      &connection->reqbuf, CHUNK_SIZE,
-                      httpClientHandler, connection);
+    /* We need to delay in order to make sure the previous request
+       gets queued on the server side.  IO_NOTNOW isn't strong enough
+       for that due to IO_IMMEDIATE. */
+    handler = scheduleTimeEvent(-1, httpClientDelayed,
+                                sizeof(connection), &connection);
+    if(handler == NULL) {
+        do_log(L_ERROR, "Couldn't schedule reading from client.");
+        goto fail;
     }
     return 1;
 
@@ -940,6 +937,27 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     shutdown(connection->fd, 0);
     connection->request->persistent = 0;
     connection->flags &= ~CONN_READER;
+    return 1;
+}
+
+static int
+httpClientDelayed(TimeEventHandlerPtr event)
+{
+     HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    if(connection->reqlen > 0) {
+        do_stream(IO_READ | IO_IMMEDIATE,
+                  connection->fd, connection->reqlen,
+                  connection->reqbuf, CHUNK_SIZE,
+                  httpClientHandler, connection);
+    } else {
+        if(connection->reqbuf)
+            dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+        do_stream_buf(IO_READ,
+                      connection->fd, 0,
+                      &connection->reqbuf, CHUNK_SIZE,
+                      httpClientHandler, connection);
+    }
     return 1;
 }
 
