@@ -39,6 +39,7 @@ typedef struct _HTTPRequest {
     AtomPtr via;
     int persistent;
     int wait_continue;
+    ObjectPtr can_mutate;
     ObjectHandlerPtr ohandler;
     int requested;
     int force_error;

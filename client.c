@@ -1197,6 +1197,22 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
         return 1;
     }
 
+    /* See httpServerHandlerHeaders */
+    if((object->flags & OBJECT_SUPERSEDED) &&
+       request->request && request->request->can_mutate) {
+        ObjectPtr new_object = retainObject(request->request->can_mutate);
+        if(object->requestor == request) {
+            object->requestor = NULL;
+            assert(new_object->requestor == NULL);
+            new_object->requestor = request;
+        }
+        releaseObject(object);
+        retainObject(new_object);
+        object = new_object;
+        request->object = new_object;
+        request->request->object = new_object;
+    }
+
     if(object->flags & (OBJECT_INITIAL | OBJECT_VALIDATING)) {
         if(object->flags & (OBJECT_INPROGRESS | OBJECT_VALIDATING)) {
             return 0;
@@ -1397,6 +1413,7 @@ httpServeObject(HTTPConnectionPtr connection)
         if(request->request) {
             request->request->request = NULL;
             request->request = NULL;
+            request->object->requestor = NULL;
         }
         object = makeObject(OBJECT_HTTP,
                             object->key, object->key_size, 1, 0,
@@ -1408,8 +1425,7 @@ httpServeObject(HTTPConnectionPtr connection)
         request->object = NULL;
         if(object == NULL) {
             do_log(L_ERROR, "Couldn't allocate object.");
-            return httpClientRawError(connection, 
-                                      501, 
+            return httpClientRawError(connection, 501,
                                       internAtom("Couldn't allocate object"), 
                                       1);
         }

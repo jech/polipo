@@ -556,6 +556,7 @@ httpMakeRequest()
     request->via = NULL;
     request->persistent = 0;
     request->wait_continue = 0;
+    request->can_mutate = NULL;
     request->ohandler = NULL;
     request->requested = 0;
     request->force_error = 0;

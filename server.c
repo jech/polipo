@@ -2033,14 +2033,23 @@ httpServerHandlerHeaders(int eof,
         assert(new_object != old_object);
         supersedeObject(old_object);
     }
+
     if(new_object != old_object) {
-        old_object->flags &= ~(OBJECT_VALIDATING | OBJECT_INPROGRESS);
+        old_object->flags &= ~OBJECT_VALIDATING;
         new_object->flags |= OBJECT_INPROGRESS;
-        if(request->request) {
-            request->request->request = NULL;
+        /* Signal the client side to switch to the new object -- see
+           httpClientGetHandler.  If it doesn't, we'll give up on this
+           request below. */
+        request->can_mutate = new_object;
+        notifyObject(old_object);
+        request->can_mutate = NULL;
+        old_object->flags &= ~OBJECT_INPROGRESS;
+        if(request->object != new_object) {
+            if(request->request)
+                request->request->request = NULL;
             request->request = NULL;
+            request->object = new_object;
         }
-        request->object = new_object;
         releaseNotifyObject(old_object);
         old_object = NULL;
         object = new_object;
@@ -2048,11 +2057,18 @@ httpServerHandlerHeaders(int eof,
         objectMetadataChanged(new_object, 0);
     }
 
-    new_object->flags &= ~OBJECT_VALIDATING;
-    notifyObject(new_object);
+    if(object->flags & OBJECT_VALIDATING) {
+        object->flags &= ~OBJECT_VALIDATING;
+        notifyObject(object);
+    }
 
     if(!expect_body) {
         httpServerFinish(connection, 0, rc);
+        return 1;
+    }
+
+    if(request->request == NULL) {
+        httpServerFinish(connection, 1, 0);
         return 1;
     }
 
