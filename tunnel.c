@@ -293,7 +293,11 @@ tunnelDispatch(TunnelPtr tunnel)
         if(!(tunnel->flags & (TUNNEL_WRITER1 | TUNNEL_EPIPE1)) &&
            !circularBufferEmpty(&tunnel->buf2)) {
             tunnel->flags |= TUNNEL_WRITER1;
+            /* There's no IO_NOTNOW in bufWrite, so it might close the
+               file descriptor straight away.  Wait until we're
+               rescheduled. */
             bufWrite(tunnel->fd1, &tunnel->buf2, tunnelWrite1Handler, tunnel);
+            return;
         }
         if(tunnel->fd2 < 0 || (tunnel->flags & TUNNEL_EOF2)) {
             if(!(tunnel->flags & TUNNEL_EPIPE1))
@@ -322,6 +326,7 @@ tunnelDispatch(TunnelPtr tunnel)
            !circularBufferEmpty(&tunnel->buf1)) {
             tunnel->flags |= TUNNEL_WRITER2;
             bufWrite(tunnel->fd2, &tunnel->buf1, tunnelWrite2Handler, tunnel);
+            return;
         }
         if(tunnel->fd1 < 0 || (tunnel->flags & TUNNEL_EOF1)) {
             if(!(tunnel->flags & TUNNEL_EPIPE2))
