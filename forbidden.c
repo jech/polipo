@@ -464,7 +464,10 @@ redirectorStreamHandler2(int status,
     if(srequest->offset > c + 1 - redirector_buffer)
         do_log(L_WARN, "Stray bytes in redirector output.\n");
 
-    if(c > redirector_buffer + 1) {
+    if(c > redirector_buffer + 1 && 
+       (c - redirector_buffer != request->url->length ||
+        memcmp(redirector_buffer, request->url->string,
+               request->url->length) != 0)) {
         code = redirectorRedirectCode;
         message = internAtom("Redirected by external redirector");
         if(message == NULL) {
