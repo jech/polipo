@@ -1388,7 +1388,9 @@ httpClientSideHandler(int status,
     if((request->object->flags & OBJECT_ABORTED) || 
        !(request->object->flags & OBJECT_INPROGRESS)) {
         httpClientDiscardBody(connection);
-        httpClientError(request, 503, internAtom("Post aborted"));
+        httpClientError(request, 
+                        request->object->code, 
+                        retainAtom(request->object->message));
         return 1;
     }
         
