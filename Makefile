@@ -5,19 +5,25 @@ INFODIR = $(PREFIX)/info
 LOCAL_ROOT = /usr/share/polipo/www
 DISK_CACHE_ROOT = /var/cache/polipo
 
-# CDEBUGFLAGS = -O
+# To compile with Unix CC:
+
+# CDEBUGFLAGS=-O
+
+# To compile with GCC:
 
 # CC = gcc
-# CDEBUGFLAGS = -O -g -Wall -std=gnu99
-CDEBUGFLAGS = -O -g -Wall
-# CDEBUGFLAGS = -Os -Wall
+# CDEBUGFLAGS = -O2 -g -Wall -std=gnu99
+CDEBUGFLAGS = -Os -g -Wall
+# CDEBUGFLAGS = -O2 -Wall
 # CDEBUGFLAGS = -g -Wall
+
+# To compile on a pure POSIX system:
 
 # CC = c89
 # CC = c99
 # CDEBUGFLAGS=-O
 
-# To compile with icc, you need -restrict.  (Their bug.)
+# To compile with icc 7, you need -restrict.  (Their bug.)
 
 # CC=icc
 # CDEBUGFLAGS = -O -restrict
@@ -38,11 +44,12 @@ FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
 #  -DNO_DISK_CACHE to compile out the on-disk cache and local web server;
 #  -DNO_IPv6 to avoid using the RFC 3493 API and stick to stock
 #      Berkeley sockets;
-#  -DHAVE_IPv6 to use the RFC 3493 API;
+#  -DHAVE_IPv6 to force the use of the RFC 3493 API on systems other
+#      than GNU/Linux and BSD (let me know if it works);
 #  -DNO_FANCY_RESOLVER to compile out the asynchronous name resolution
 #      code;
 #  -DNO_STANDARD_RESOLVER to compile out the code that falls back to
-#      gethostbyname/getaddrinfo when DNS requests fail.
+#      gethostbyname/getaddrinfo when DNS requests fail;
 #  -DNO_TUNNEL to compile out the code that handles CONNECT requests.
 
 DEFINES = $(FILE_DEFINES) $(PLATFORM_DEFINES)
