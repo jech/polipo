@@ -1483,7 +1483,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
         }
     }
 
-    if(method == METHOD_GET && object->etag && (from > 0 || to < 0)) {
+    if(method == METHOD_GET && object->etag && (from > 0 || to >= 0)) {
         if(request->request && request->request->request == request &&
            request->request->from == 0 && request->request->to == -1 &&
            pmmSize == 0 && pmmFirstSize == 0)
