@@ -1268,7 +1268,7 @@ httpClientGetHandler(int status, ObjectHandlerPtr ohandler)
         request->request->object = new_object;
     }
 
-    if(object->requestor != request) {
+    if(object->requestor != request && !(object->flags & OBJECT_ABORTED)) {
         /* Make sure we don't serve an object that is stale for us
            unless we're the requestor. */
         if((object->flags & OBJECT_LINEAR) ||
