@@ -637,6 +637,7 @@ localObjectMimeType(ObjectPtr object, char **encoding_return)
     for(i = 0; i < sizeof(mimeEntries) / sizeof(mimeEntries[0]); i++) {
         int len = strlen(mimeEntries[i].extension);
         if(nlen > len && 
+           name[nlen - len - 1] == '.' &&
            memcmp(name + nlen - len, mimeEntries[i].extension, len) == 0)
             return mimeEntries[i].mime;
     }
