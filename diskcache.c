@@ -1219,8 +1219,9 @@ destroyDiskEntry(ObjectPtr object, int d)
     } else {
         if(entry && entry->metadataDirty)
             writeoutMetadata(object);
+        makeDiskEntry(object, 1, 0);
         /* rewriteDiskEntry may change the disk entry */
-        entry = makeDiskEntry(object, 1, 0);
+        entry = object->disk_entry;
         if(entry == NULL || entry == &negativeEntry)
             return 0;
         if(entry->writeable && diskCacheWriteoutOnClose > 0)
