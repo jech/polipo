@@ -825,6 +825,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
     int n, m, i;
     char *body;
     char htmlMessage[100];
+    char timeStr[100];
 
     assert(code != 0);
 
@@ -847,26 +848,32 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       "\n<html><head>"
                       "\n<title>Proxy %s: %3d %s.</title>"
                       "\n</head><body>"
-                      "\n<p>The proxy on %s:%d "
-                      "%s",
+                      "\n<h1>%3d %s</h1><hr>"
+                      "\n<p>The following %s",
                       code >= 400 ? "error" : "result",
                       code, htmlMessage,
-                      proxyName->string, proxyPort,
+                      code, htmlMessage,
                       code >= 400 ? 
-                      "encountered the following error" :
-                      "returns the following status");
+                      "error occurred" :
+                      "status was returned");
         if(url_len > 0) {
             m = snnprintf(body, m, CHUNK_SIZE,
-                          " while fetching <strong>");
+                          " while trying to access <strong>");
             m = htmlString(body, m, CHUNK_SIZE, url, url_len);
             m = snnprintf(body, m, CHUNK_SIZE, "</strong>");
         }
         
+                                          /*Mon, 24 Sep 2004 17:46:35 GMT*/
+        strftime(timeStr, sizeof(timeStr), "%a, %d %b %Y %H:%M:%S %Z",
+                localtime(&(current_time.tv_sec)));
+        
         m = snnprintf(body, m, CHUNK_SIZE,
-                      ":<br>"
+                      ":<br><br>"
                       "\n<strong>%3d %s</strong></p>"
+                      "\n<hr>Generated %s by <em>%s:%d</em>"
                       "\n</body></html>\r\n",
-                      code, htmlMessage);
+                      code, htmlMessage,
+                      timeStr, proxyName->string, proxyPort);
         if(m <= 0 || m >= CHUNK_SIZE) {
             do_log(L_ERROR, "Couldn't write error body.\n");
             dispose_chunk(body);
