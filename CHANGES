@@ -1,4 +1,4 @@
-Polipo 0.9.7 (unreleased):
+27 December 2004: Polipo 0.9.7:
 
         Fixed a possible crash when tunnelling.
         Fixed spurious updates of object sizes when connection is
