@@ -1093,6 +1093,8 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
                 memmove(connection->buf, connection->buf + offset,
                         connection->len - offset);
                 connection->len = connection->len - offset;
+                if(connection->len <= CHUNK_SIZE)
+                    httpConnectionUnbigify(connection);
             }
         } else {
             connection->len = 0;
@@ -1106,10 +1108,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         if(connection->timeout)
             cancelTimeEvent(connection->timeout);
         connection->timeout = NULL;
-        if(connection->buf) {
-            dispose_chunk(connection->buf);
-            connection->buf = NULL;
-        }
+        httpConnectionDestroyBuf(connection);
         if(connection->fd >= 0)
             close(connection->fd);
         connection->fd = -1;
@@ -1164,10 +1163,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         if(s < 0 || connection->pipelined) {
             httpServerReply(connection, 1);
         } else {
-            if(connection->buf) {
-                dispose_chunk(connection->buf);
-                connection->buf = NULL;
-            }
+            httpConnectionDestroyBuf(connection);
         }
     }
 
@@ -1192,12 +1188,8 @@ httpServerReply(HTTPConnectionPtr connection, int immediate)
              connection->request->object->key_size);
     do_log(D_SERVER_CONN, " (%d)\n", connection->request->method);
 
-    if(connection->len == 0) {
-        if(connection->buf) {
-            dispose_chunk(connection->buf);
-            connection->buf = NULL;
-        }
-    }
+    if(connection->len == 0)
+        httpConnectionDestroyBuf(connection);
 
     httpSetTimeout(connection, serverTimeout);
     do_stream_buf(IO_READ | (immediate ? IO_IMMEDIATE : 0) | IO_NOTNOW,
@@ -1611,6 +1603,8 @@ httpServerReplyHandler(int status,
     HTTPConnectionPtr connection = srequest->data;
     HTTPRequestPtr request = connection->request;
     int i, body;
+    int bufsize = 
+        (connection->flags & CONN_BIGBUF) ? bigBufferSize : CHUNK_SIZE;
 
     assert(request->object->flags & OBJECT_INPROGRESS);
     if(status < 0) {
@@ -1629,13 +1623,6 @@ httpServerReplyHandler(int status,
         return httpServerHandlerHeaders(status, event, srequest, connection);
     }
 
-    if(connection->len >= CHUNK_SIZE) {
-        do_log(L_ERROR, "Couldn't find end of server's headers\n");
-        httpServerAbort(connection, 1, 502,
-                        internAtom("Couldn't find end of server's headers"));
-        return 1;
-    }
-
     if(status) {
         if(connection->serviced >= 1) {
             httpServerRestart(connection);
@@ -1650,6 +1637,30 @@ httpServerReplyHandler(int status,
         } else
             httpServerAbort(connection, 1, 502, 
                             internAtom("Server dropped connection"));
+        return 1;
+    }
+
+    if(connection->len >= bufsize) {
+        int rc = 0;
+        if(!(connection->flags & CONN_BIGBUF))
+            rc = httpConnectionBigify(connection);
+        if(rc == 0) {
+            do_log(L_ERROR, "Couldn't find end of server's headers.\n");
+            httpServerAbort(connection, 1, 502,
+                            internAtom("Couldn't find end "
+                                       "of server's headers"));
+            return 1;
+        } else if(rc < 0) {
+            do_log(L_ERROR, "Couldn't allocate big buffer.\n");
+            httpServerAbort(connection, 1, 500,
+                            internAtom("Couldn't allocate big buffer"));
+            return 1;
+        }
+        /* Can't just return 0 -- buf has moved. */
+        do_stream(IO_READ,
+                  connection->fd, connection->len,
+                  connection->buf, bigBufferSize,
+                  httpServerReplyHandler, connection);
         return 1;
     }
 
@@ -2329,10 +2340,7 @@ httpServerReadData(HTTPConnectionPtr connection, int immediate)
         }
         end = len + connection->offset;
 
-        if(connection->buf) {
-            dispose_chunk(connection->buf);
-            connection->buf = NULL;
-        }
+        httpConnectionDestroyBuf(connection);
 
         /* The order of allocation is important in case we run out of
            memory. */

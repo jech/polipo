@@ -151,10 +151,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
             s = 1;
     }
 
-    if(connection->buf)
-        dispose_chunk(connection->buf);
-    connection->buf = NULL;
-
+    httpConnectionDestroyBuf(connection);
     if(connection->timeout) 
         cancelTimeEvent(connection->timeout);
     connection->timeout = NULL;
@@ -1495,7 +1492,8 @@ httpServeObject(HTTPConnectionPtr connection)
     ObjectPtr object = request->object;
     int i = request->from / CHUNK_SIZE;
     int j = request->from % CHUNK_SIZE;
-    int n, len;
+    int n, len, rc;
+    int bufsize = CHUNK_SIZE;
     int condition_result;
 
     object->atime = current_time.tv_sec;
@@ -1606,11 +1604,13 @@ httpServeObject(HTTPConnectionPtr connection)
         }
     }
 
+ again:
+
     connection->len = 0;
 
     if((request->from <= 0 && request->to < 0) || 
        request->method == METHOD_HEAD) {
-        n = snnprintf(connection->buf, 0, CHUNK_SIZE,
+        n = snnprintf(connection->buf, 0, bufsize,
                       "HTTP/1.1 %d %s",
                       object->code, atomString(object->message));
     } else {
@@ -1621,12 +1621,12 @@ httpServeObject(HTTPConnectionPtr connection)
                                                  "not satisfiable"),
                                       0);
         } else {
-            n = snnprintf(connection->buf, 0, CHUNK_SIZE,
+            n = snnprintf(connection->buf, 0, bufsize,
                           "HTTP/1.1 206 Partial content");
         }
     }
 
-    n = httpWriteObjectHeaders(connection->buf, n, CHUNK_SIZE,
+    n = httpWriteObjectHeaders(connection->buf, n, bufsize,
                                object, request->from, request->to);
     if(n < 0)
         goto fail;
@@ -1636,7 +1636,7 @@ httpServeObject(HTTPConnectionPtr connection)
        request->to < 0 && object->length < 0) {
         if(connection->version == HTTP_11) {
             connection->te = TE_CHUNKED;
-            n = snnprintf(connection->buf, n, CHUNK_SIZE ,
+            n = snnprintf(connection->buf, n, bufsize,
                           "\r\nTransfer-Encoding: chunked");
         } else {
             request->flags &= ~REQUEST_PERSISTENT;
@@ -1644,44 +1644,44 @@ httpServeObject(HTTPConnectionPtr connection)
     }
         
     if(object->age < current_time.tv_sec) {
-        n = snnprintf(connection->buf, n, CHUNK_SIZE,
+        n = snnprintf(connection->buf, n, bufsize,
                       "\r\nAge: %d",
                       (int)(current_time.tv_sec - object->age));
     }
-    n = snnprintf(connection->buf, n, CHUNK_SIZE,
+    n = snnprintf(connection->buf, n, bufsize,
                   "\r\nConnection: %s",
                   (request->flags & REQUEST_PERSISTENT) ? 
                   "keep-alive" : "close");
 
     if(!(object->flags & OBJECT_LOCAL)) {
         if((object->flags & OBJECT_FAILED) && !proxyOffline) {
-            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+            n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 111 %s:%d Revalidation failed",
                           proxyName->string, proxyPort);
             if(request->error_code)
-                n = snnprintf(connection->buf, n, CHUNK_SIZE,
+                n = snnprintf(connection->buf, n, bufsize,
                               " (%d %s)",
                               request->error_code, 
                               atomString(request->error_message));
         } else if(proxyOffline && 
                   objectMustRevalidate(object, &request->cache_control)) {
-            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+            n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 112 %s:%d Disconnected operation",
                           proxyName->string, proxyPort);
         } else if(objectIsStale(object, &request->cache_control)) {
-            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+            n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 110 %s:%d Object is stale",
                           proxyName->string, proxyPort);
         } else if(object->expires < 0 &&
                   object->age < current_time.tv_sec - 24 * 3600) {
-            n = snnprintf(connection->buf, n, CHUNK_SIZE,
+            n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 113 %s:%d Heuristic expiration",
                           proxyName->string, proxyPort);
         }
     }
 
-    n = snnprintf(connection->buf, n, CHUNK_SIZE, "\r\n\r\n");
-
+    n = snnprintf(connection->buf, n, bufsize, "\r\n\r\n");
+    
     if(n < 0)
         goto fail;
     
@@ -1718,9 +1718,19 @@ httpServeObject(HTTPConnectionPtr connection)
     return 1;
 
  fail:
+    rc = 0;
+    connection->len = 0;
+    if(!(connection->flags & CONN_BIGBUF))
+        rc = httpConnectionBigify(connection);
+    if(rc > 0) {
+        bufsize = bigBufferSize;
+        goto again;
+    }
     unlockChunk(object, i);
     return httpClientRawError(connection, 500,
-                              internAtom("No space for headers"), 0);
+                              rc == 0 ?
+                              internAtom("No space for headers") :
+                              internAtom("Couldn't allocate big buffer"), 0);
 }
 
 static int
@@ -2030,9 +2040,7 @@ httpServeObjectStreamHandlerCommon(int kind, int status,
     if(srequest->operation & IO_END)
         httpClientFinish(connection, 0);
     else {
-        if(connection->buf)
-            dispose_chunk(connection->buf);
-        connection->buf = NULL;
+        httpConnectionDestroyBuf(connection);
         httpServeChunk(connection);
     }
     return 1;

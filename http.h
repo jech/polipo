@@ -86,6 +86,7 @@ typedef struct _HTTPConnection {
 /* connection->flags */
 #define CONN_READER 1
 #define CONN_WRITER 2
+#define CONN_BIGBUF 4
 
 /* request->method */
 #define METHOD_UNKNOWN -1
@@ -122,6 +123,7 @@ extern int disableProxy;
 extern AtomPtr proxyName;
 extern int proxyPort;
 extern int clientTimeout, serverTimeout;
+extern int bigBufferSize;
 extern AtomPtr proxyAddress;
 extern int proxyOffline;
 extern int relaxTransparency;
@@ -148,10 +150,13 @@ int htmlString(char *buf, int n, int len, char *s, int slen);
 void htmlPrint(FILE *out, char *s, int slen);
 HTTPConnectionPtr httpMakeConnection(void);
 void httpDestroyConnection(HTTPConnectionPtr connection);
+void httpConnectionDestroyBuf(HTTPConnectionPtr connection);
 HTTPRequestPtr httpMakeRequest(void);
 void httpDestroyRequest(HTTPRequestPtr request);
 void httpQueueRequest(HTTPConnectionPtr, HTTPRequestPtr);
 HTTPRequestPtr httpDequeueRequest(HTTPConnectionPtr connection);
+int httpConnectionBigify(HTTPConnectionPtr);
+int httpConnectionUnbigify(HTTPConnectionPtr);
 HTTPConditionPtr httpMakeCondition(void);
 void httpDestroyCondition(HTTPConditionPtr condition);
 int httpCondition(ObjectPtr, HTTPConditionPtr);

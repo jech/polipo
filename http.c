@@ -29,6 +29,8 @@ int proxyPort = 8123;
 int clientTimeout = 120;
 int serverTimeout = 90;
 
+int bigBufferSize = (32 * 1024);
+
 AtomPtr authRealm = NULL;
 AtomPtr authCredentials = NULL;
 
@@ -91,6 +93,8 @@ preinitHttp()
                     "Ports to which connections are allowed.");
     CONFIG_VARIABLE(expectContinue, CONFIG_TRISTATE,
                     "Send Expect-Continue to servers.");
+    CONFIG_VARIABLE(bigBufferSize, CONFIG_INT,
+                    "Size of big buffers (max size of headers).");
     preinitHttpParser();
 }
 
@@ -556,8 +560,7 @@ void
 httpDestroyConnection(HTTPConnectionPtr connection)
 {
     assert(connection->flags == 0);
-    if(connection->buf)
-        dispose_chunk(connection->buf);
+    httpConnectionDestroyBuf(connection);
     assert(!connection->request);
     assert(!connection->request_last);
     dispose_chunk(connection->reqbuf);
@@ -566,9 +569,21 @@ httpDestroyConnection(HTTPConnectionPtr connection)
     free(connection);
 }
 
+void
+httpConnectionDestroyBuf(HTTPConnectionPtr connection)
+{
+    if(connection->buf) {
+        if(connection->flags & CONN_BIGBUF)
+            free(connection->buf);
+        else
+            dispose_chunk(connection->buf);
+    }
+    connection->flags &= ~CONN_BIGBUF;
+    connection->buf = NULL;
+}
+
 HTTPRequestPtr 
 httpMakeRequest()
-
 {
     HTTPRequestPtr request;
     request = malloc(sizeof(HTTPRequestRec));
@@ -643,6 +658,45 @@ httpDequeueRequest(HTTPConnectionPtr connection)
         request->next = NULL;
     }
     return request;
+}
+
+int
+httpConnectionBigify(HTTPConnectionPtr connection)
+{
+    char *bigbuf;
+    assert(!(connection->flags & CONN_BIGBUF));
+
+    if(bigBufferSize <= CHUNK_SIZE)
+        return 0;
+
+    bigbuf = malloc(bigBufferSize);
+    if(bigbuf == NULL)
+        return -1;
+    if(connection->len > 0)
+        memcpy(bigbuf, connection->buf, connection->len);
+    if(connection->buf)
+        dispose_chunk(connection->buf);
+    connection->buf = bigbuf;
+    connection->flags |= CONN_BIGBUF;
+    return 1;
+}
+
+int
+httpConnectionUnbigify(HTTPConnectionPtr connection)
+{
+    char *buf;
+    assert(connection->flags & CONN_BIGBUF);
+    assert(connection->len < CHUNK_SIZE);
+
+    buf = get_chunk();
+    if(buf == NULL)
+        return -1;
+    if(connection->len > 0)
+        memcpy(buf, connection->buf, connection->len);
+    free(connection->buf);
+    connection->buf = buf;
+    connection->flags &= ~CONN_BIGBUF;
+    return 1;
 }
 
 HTTPConditionPtr 
