@@ -1519,6 +1519,7 @@ httpServeObject(HTTPConnectionPtr connection)
     if(connection->buf == NULL)
         connection->buf = get_chunk();
     if(connection->buf == NULL) {
+        unlockChunk(object, i);
         do_log(L_ERROR, "Couldn't allocate client buffer.\n");
         connection->flags &= ~CONN_WRITER;
         httpClientFinish(connection, 1);
