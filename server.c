@@ -2253,6 +2253,11 @@ httpServerReadData(HTTPConnectionPtr connection, int immediate)
     ObjectPtr object = request->object;
     int to = -1;
 
+    if(request->request == NULL) {
+        httpServerFinish(connection, 1, 0);
+        return 1;
+    }
+
     if(request->to >= 0)
         to = request->to;
     else
