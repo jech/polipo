@@ -862,6 +862,8 @@ validateEntry(ObjectPtr object, int fd,
     else
         dirty = 1;
 
+    object->cache_control |= cache_control.flags;
+
     if(object->age < 0) object->age = object->date;
     if(object->age < 0) object->age = 0; /* a long time ago */
     if(object->length < 0) object->length = length;
