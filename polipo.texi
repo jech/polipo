@@ -1012,6 +1012,7 @@ willing to manually revalidate pages that you suspect are stale.
 @vindex smallRequestTime
 @vindex replyUnpipelineTime
 @vindex replyUnpipelineSize
+@vindex maxPipelineTrain
 @cindex server statistics
 @cindex round-trip time
 @cindex transfer rate
@@ -1056,6 +1057,12 @@ and will cause a pipeline to be broken if either its size is at least
 @code{replyUnpipelineSize} (default one megabyte) or else the server's
 transfer rate is known and the body is expected to take at least
 @code{replyUnpipelineTime} to download (default 15@dmn{s}).
+
+The variable @code{maxPipelineTrain} defines the maximum number of
+requests that will be pipelined in a single write (default 10).
+Setting this variable to a very low value might (or might not) fix
+interaction with some unreliable servers that the normal heuristics
+are unable to detect.
 
 @node PMM, Forbidden, Server statistics, Network
 @section Poor Man's Multiplexing
