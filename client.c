@@ -888,7 +888,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     if(connection->reqte != TE_IDENTITY)
         goto fail;
 
-    if(connection->request->persistent && connection->bodylen < 0)
+    if(connection->bodylen < 0)
         goto fail;
 
     if(connection->bodylen + connection->reqbegin < connection->reqlen) {
@@ -971,8 +971,8 @@ httpClientDiscardHandler(int status,
     HTTPConnectionPtr connection = request->data;
 
     assert(connection->flags & CONN_READER);
-    if(status < 0) {
-        if(status != -EPIPE)
+    if(status) {
+        if(status < 0 && status != -EPIPE)
             do_log_error(L_ERROR, -status, "Couldn't read from client");
         connection->bodylen = -1;
         return httpClientDiscardBody(connection);
