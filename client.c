@@ -882,7 +882,6 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
 {
     TimeEventHandlerPtr handler;
 
-    assert(connection->request);
     assert(connection->reqoffset == 0);
 
     if(connection->reqte != TE_IDENTITY)
@@ -935,7 +934,6 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
 
  fail:
     shutdown(connection->fd, 0);
-    connection->request->persistent = 0;
     connection->flags &= ~CONN_READER;
     return 1;
 }
