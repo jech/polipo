@@ -32,6 +32,7 @@ int parentPort = 8123;
 int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
 int serverMaxSlots = 4;
+int dontCacheRedirects = 0;
 
 static HTTPServerPtr servers = 0;
 
@@ -61,6 +62,8 @@ preinitServer(void)
                     "Maximum number of connections per server.");
     CONFIG_VARIABLE(serverMaxSlots, CONFIG_INT,
                     "Maximum number of connections per broken server.");
+    CONFIG_VARIABLE(dontCacheRedirects, CONFIG_BOOLEAN,
+                    "If true, don't cache redirects.");
 }
 
 static void
@@ -2024,6 +2027,8 @@ httpServerHandlerHeaders(int eof,
         if(new_object->expires < 0 && !(cache_control.flags & CACHE_PUBLIC)) {
             new_object->cache_control |= CACHE_NO_HIDDEN;
         }
+    } else if(dontCacheRedirects && (code == 301 || code == 302)) {
+        new_object->cache_control |= CACHE_NO_HIDDEN;
     }
 
     if(!via)
