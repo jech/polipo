@@ -206,14 +206,14 @@ format_time(char *buf, int i, int len, time_t t)
     struct tm *tm;
     int rc;
 
+    if(i < 0 || i > len)
+        return -1;
+
     tm = gmtime(&t);
     if(tm == NULL)
         return -1;
     rc = strftime(buf + i, len - i, "%a, %d %b %Y %H:%M:%S GMT", tm);
-    if(rc <= 0)
-        return -i;
-    if(i + rc < len)
-        return i + rc;
-    else
-        return i + len;
+    if(rc <= 0)                 /* yes, that's <= */
+        return -1;
+    return i + rc;
 }
