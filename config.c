@@ -596,8 +596,6 @@ parseConfigFile(AtomPtr filename)
             return 1;
         }
         rc = parseConfigLine(buf, filename->string, lineno);
-        if(rc < 0)
-            return -1;
         lineno++;
     }
 }
