@@ -654,14 +654,16 @@ httpCondition(ObjectPtr object, HTTPConditionPtr condition)
     if(!condition) return CONDITION_MATCH;
 
     if(condition->ims >= 0) {
-        if(condition->ims < object->last_modified)
+        if(object->last_modified < 0 ||
+           condition->ims < object->last_modified)
             return rc;
         else
             rc = CONDITION_NOT_MODIFIED;
     }
 
     if(condition->inms >= 0) {
-        if(condition->inms >= object->last_modified)
+        if(object->last_modified < 0 || 
+           condition->inms >= object->last_modified)
             return rc;
         else
             rc = CONDITION_FAILED;
