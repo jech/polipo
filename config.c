@@ -518,7 +518,7 @@ parseConfigLine(char *line, char *filename, int lineno, int set)
     case CONFIG_TETRASTATE:
     case CONFIG_PENTASTATE:
         iv = parseState(line, i, var->type);
-        if(*var->value.i < 0)
+        if(iv < 0)
             goto syntax;
         if(set)
             var->setter(var, &iv);
@@ -674,6 +674,15 @@ configIntSetter(ConfigVariablePtr var, void* value)
     *var->value.i = *(int*)value;
     return 1;
 }
+
+int
+configFloatSetter(ConfigVariablePtr var, void* value)
+{
+    assert(var->type == CONFIG_FLOAT);
+    *var->value.i = *(float*)value;
+    return 1;
+}
+
 
 int
 configAtomSetter(ConfigVariablePtr var, void* value)

@@ -71,7 +71,7 @@ preinitObject()
                              "Max age for objects with Expires header.");
     CONFIG_VARIABLE_SETTABLE(maxAge, CONFIG_TIME, configIntSetter,
                              "Max age for objects without Expires header.");
-    CONFIG_VARIABLE_SETTABLE(maxAgeFraction, CONFIG_FLOAT, configIntSetter,
+    CONFIG_VARIABLE_SETTABLE(maxAgeFraction, CONFIG_FLOAT, configFloatSetter,
                              "Fresh fraction of modification time.");
     CONFIG_VARIABLE_SETTABLE(maxNoModifiedAge, CONFIG_TIME, configIntSetter,
                              "Max age for objects without Last-modified.");

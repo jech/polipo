@@ -63,4 +63,5 @@ void printConfigVariables(FILE *out, int html);
 int parseConfigLine(char *line, char *filename, int lineno, int set);
 int parseConfigFile(AtomPtr);
 int configIntSetter(ConfigVariablePtr, void*);
+int configFloatSetter(ConfigVariablePtr, void*);
 int configAtomSetter(ConfigVariablePtr, void*);

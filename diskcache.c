@@ -101,7 +101,7 @@ maxDiskEntriesSetter(ConfigVariablePtr var, void *value)
     if(i < 0 || i > 1000000)
         return -3;
     maxDiskEntries = i;
-    while(numDiskEntries >= maxDiskEntries)
+    while(numDiskEntries > maxDiskEntries)
         destroyDiskEntry(diskEntriesLast->object, 0);
     return 1;
 }
@@ -1084,7 +1084,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
         }
     }
 
-    if(numDiskEntries >= maxDiskEntries)
+    if(numDiskEntries > maxDiskEntries)
         destroyDiskEntry(diskEntriesLast->object, 0);
 
     if(!local) {
