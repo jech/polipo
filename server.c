@@ -2053,7 +2053,6 @@ httpServerHandlerHeaders(int eof,
 
     if(!expect_body) {
         httpServerFinish(connection, 0, rc);
-        notifyObject(object);
         return 1;
     }
 
