@@ -1183,10 +1183,11 @@ delayedHttpClientNoticeRequest(HTTPRequestPtr request)
 int
 httpClientContinueDelayed(TimeEventHandlerPtr event)
 {
+    static char httpContinue[] = "HTTP/1.1 100 Continue\r\n\r\n";
     HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
-    httpClientRawError(connection, 100,
-                       internAtom("Continue"),
-                       -1);
+
+    do_stream(IO_WRITE, connection->fd, 0, httpContinue, 25,
+              httpErrorNofinishStreamHandler, connection);
     return 1;
 }
 
