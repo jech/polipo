@@ -196,18 +196,19 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         connection->serviced++;
         httpSetTimeout(connection, clientTimeout);
         if(!connection->flags & CONN_READER) {
-            if(connection->reqlen == 0) {
-                if(connection->reqbuf) {
-                    dispose_chunk(connection->reqbuf);
-                    connection->reqbuf = NULL;
-                }
-            }
+            if(connection->reqlen == 0)
+                httpConnectionDestroyReqbuf(connection);
+            else if((connection->flags & CONN_BIGREQBUF) &&
+                    connection->reqlen < CHUNK_SIZE)
+                httpConnectionUnbigifyReqbuf(connection);
             connection->flags |= CONN_READER;
             httpSetTimeout(connection, clientTimeout);
             do_stream_buf(IO_READ | IO_NOTNOW |
                           (connection->reqlen ? IO_IMMEDIATE : 0),
                           connection->fd, connection->reqlen,
-                          &connection->reqbuf, CHUNK_SIZE,
+                          &connection->reqbuf,
+                          (connection->flags & CONN_BIGREQBUF) ?
+                          bigBufferSize : CHUNK_SIZE,
                           httpClientHandler, connection);
         }
         /* The request has already been validated when it first got
@@ -249,10 +250,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         }
         return;
     }
-    if(connection->reqbuf) {
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
-    }
+    httpConnectionDestroyReqbuf(connection);
     if(connection->timeout)
         cancelTimeEvent(connection->timeout);
     connection->timeout = NULL;
@@ -307,10 +305,7 @@ httpClientShutdownHandler(int status,
     if(!(connection->flags & CONN_WRITER)) {
         connection->flags &= ~CONN_READER;
         connection->reqlen = 0;
-        if(connection->reqbuf) {
-            dispose_chunk(connection->reqbuf);
-            connection->reqbuf = NULL;
-        }
+        httpConnectionDestroyReqbuf(connection);
         if(status && status != -EDOGRACEFUL)
             httpClientFinish(connection, 2);
         else
@@ -331,10 +326,7 @@ httpClientDelayedShutdownHandler(TimeEventHandlerPtr event)
     if(!(connection->flags & CONN_WRITER)) {
         connection->flags &= ~CONN_READER;
         connection->reqlen = 0;
-        if(connection->reqbuf) {
-            dispose_chunk(connection->reqbuf);
-            connection->reqbuf = NULL;
-        }
+        httpConnectionDestroyReqbuf(connection);
         httpClientFinish(connection, 1);
         return 1;
     }
@@ -350,6 +342,8 @@ httpClientHandler(int status,
 {
     HTTPConnectionPtr connection = request->data;
     int i, body;
+    int bufsize = 
+        (connection->flags & CONN_BIGREQBUF) ? connection->reqlen : CHUNK_SIZE;
 
     assert(connection->flags & CONN_READER);
 
@@ -358,10 +352,7 @@ httpClientHandler(int status,
        half-open connections. */
     if(status != 0) {
         connection->reqlen = 0;
-        if(connection->reqbuf) {
-            dispose_chunk(connection->reqbuf);
-            connection->reqbuf = NULL;
-        }
+        httpConnectionDestroyReqbuf(connection);
         if(!(connection->flags & CONN_WRITER)) {
             connection->flags &= ~CONN_READER;
             if(status > 0 || status == -ECONNRESET || status == -EDOSHUTDOWN)
@@ -399,13 +390,27 @@ httpClientHandler(int status,
         return 1;
     }
 
-    if(connection->reqlen >= CHUNK_SIZE) {
-        do_log(L_ERROR, "Couldn't find end of client's headers.\n");
+    if(connection->reqlen >= bufsize) {
+        int rc = 0;
+        if(!(connection->flags & CONN_BIGREQBUF))
+            rc = httpConnectionBigifyReqbuf(connection);
+        if(rc > 0) {
+            do_stream(IO_READ, connection->fd, connection->reqlen,
+                      connection->reqbuf, bigBufferSize,
+                      httpClientHandler, connection);
+            return 1;
+        }
         connection->reqlen = 0;
-        dispose_chunk(connection->reqbuf); 
-        connection->reqbuf = NULL;
-        httpClientNewError(connection, METHOD_UNKNOWN, 0, 400, 
-                           internAtom("Couldn't find end of headers"));
+        httpConnectionDestroyReqbuf(connection);
+        if(rc < 0) {
+            do_log(L_ERROR, "Couldn't allocate big buffer.\n");
+            httpClientNewError(connection, METHOD_UNKNOWN, 0, 400, 
+                               internAtom("Couldn't allocate big buffer"));
+        } else {
+            do_log(L_ERROR, "Couldn't find end of client's headers.\n");
+            httpClientNewError(connection, METHOD_UNKNOWN, 0, 400, 
+                               internAtom("Couldn't find end of headers"));
+        }
         return 1;
     }
     httpSetTimeout(connection, clientTimeout);
@@ -659,8 +664,7 @@ httpClientHandlerHeaders(FdEventHandlerPtr event, StreamRequestPtr srequest,
     shutdown(connection->fd, 0);
     connection->reqlen = 0;
     connection->reqbegin = 0;
-    dispose_chunk(connection->reqbuf); 
-    connection->reqbuf = NULL;
+    httpConnectionDestroyReqbuf(connection);
     connection->flags &= ~CONN_READER;
     httpClientNewError(connection, METHOD_UNKNOWN, 0, code, message);
     return 1;
@@ -786,6 +790,13 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
                                   internAtom("Pipelined CONNECT "
                                              "not supported"));
             return 1;
+        }
+        if(connection->flags & CONN_BIGREQBUF) {
+            /* For now */
+            httpClientDiscardBody(connection);
+            httpClientNoticeError(request, 500,
+                                  internAtom("CONNECT over big buffer "
+                                             "not supported"));
         }
         connection->flags &= ~CONN_READER;
         do_tunnel(connection->fd, connection->reqbuf, 
@@ -941,8 +952,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         connection->bodylen -= connection->reqlen - connection->reqbegin;
         connection->reqbegin = 0;
         connection->reqlen = 0;
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
+        httpConnectionDestroyReqbuf(connection);
     }
 
     if(connection->bodylen > 0) {
@@ -990,21 +1000,21 @@ httpClientDelayed(TimeEventHandlerPtr event)
 
      /* IO_NOTNOW is unfortunate, but needed to avoid starvation if a
         client is pipelining a lot of requests. */
-     if(connection->reqlen > 0) {
-         do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
-                   connection->fd, connection->reqlen,
-                   connection->reqbuf, CHUNK_SIZE,
-                   httpClientHandler, connection);
-     } else {
-         if(connection->reqbuf)
-             dispose_chunk(connection->reqbuf);
-         connection->reqbuf = NULL;
-         do_stream_buf(IO_READ | IO_NOTNOW,
-                       connection->fd, 0,
-                       &connection->reqbuf, CHUNK_SIZE,
-                       httpClientHandler, connection);
-     }
-     return 1;
+    if(connection->reqlen > 0) {
+        do_stream(IO_READ | IO_IMMEDIATE,
+                  connection->fd, connection->reqlen,
+                  connection->reqbuf, CHUNK_SIZE,
+                  httpClientHandler, connection);
+    } else {
+        if(connection->reqbuf)
+            dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+        do_stream_buf(IO_READ,
+                      connection->fd, 0,
+                      &connection->reqbuf, CHUNK_SIZE,
+                      httpClientHandler, connection);
+    }
+    return 1;
 
  fail:
     shutdown(connection->fd, 0);

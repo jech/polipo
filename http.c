@@ -563,7 +563,7 @@ httpDestroyConnection(HTTPConnectionPtr connection)
     httpConnectionDestroyBuf(connection);
     assert(!connection->request);
     assert(!connection->request_last);
-    dispose_chunk(connection->reqbuf);
+    httpConnectionDestroyReqbuf(connection);
     assert(!connection->timeout);
     assert(!connection->server);
     free(connection);
@@ -580,6 +580,19 @@ httpConnectionDestroyBuf(HTTPConnectionPtr connection)
     }
     connection->flags &= ~CONN_BIGBUF;
     connection->buf = NULL;
+}
+
+void
+httpConnectionDestroyReqbuf(HTTPConnectionPtr connection)
+{
+    if(connection->reqbuf) {
+        if(connection->flags & CONN_BIGREQBUF)
+            free(connection->reqbuf);
+        else
+            dispose_chunk(connection->reqbuf);
+    }
+    connection->flags &= ~CONN_BIGREQBUF;
+    connection->reqbuf = NULL;
 }
 
 HTTPRequestPtr 
@@ -682,6 +695,27 @@ httpConnectionBigify(HTTPConnectionPtr connection)
 }
 
 int
+httpConnectionBigifyReqbuf(HTTPConnectionPtr connection)
+{
+    char *bigbuf;
+    assert(!(connection->flags & CONN_BIGREQBUF));
+
+    if(bigBufferSize <= CHUNK_SIZE)
+        return 0;
+
+    bigbuf = malloc(bigBufferSize);
+    if(bigbuf == NULL)
+        return -1;
+    if(connection->reqlen > 0)
+        memcpy(bigbuf, connection->reqbuf, connection->reqlen);
+    if(connection->reqbuf)
+        dispose_chunk(connection->reqbuf);
+    connection->reqbuf = bigbuf;
+    connection->flags |= CONN_BIGREQBUF;
+    return 1;
+}
+
+int
 httpConnectionUnbigify(HTTPConnectionPtr connection)
 {
     char *buf;
@@ -696,6 +730,24 @@ httpConnectionUnbigify(HTTPConnectionPtr connection)
     free(connection->buf);
     connection->buf = buf;
     connection->flags &= ~CONN_BIGBUF;
+    return 1;
+}
+
+int
+httpConnectionUnbigifyReqbuf(HTTPConnectionPtr connection)
+{
+    char *buf;
+    assert(connection->flags & CONN_BIGREQBUF);
+    assert(connection->reqlen < CHUNK_SIZE);
+
+    buf = get_chunk();
+    if(buf == NULL)
+        return -1;
+    if(connection->reqlen > 0)
+        memcpy(buf, connection->reqbuf, connection->reqlen);
+    free(connection->reqbuf);
+    connection->reqbuf = buf;
+    connection->flags &= ~CONN_BIGREQBUF;
     return 1;
 }
 

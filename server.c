@@ -873,9 +873,7 @@ httpServerDoSide(HTTPConnectionPtr connection)
                   httpServerSideHandler, connection);
     } else {
         if(done || connection->reqlen == 0) {
-            if(connection->reqbuf)
-                dispose_chunk(connection->reqbuf);
-            connection->reqbuf = NULL;
+            httpConnectionDestroyReqbuf(connection);
             connection->reqlen = 0;
         }
         if(request->flags & REQUEST_WAIT_CONTINUE) {
@@ -940,8 +938,7 @@ httpServerSideHandlerCommon(int kind, int status,
     assert(request->object->flags & OBJECT_INPROGRESS);
 
     if(status) {
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
+        httpConnectionDestroyReqbuf(connection);
         do_log_error(L_ERROR, -status, "Couldn't write to server");
         httpServerAbortRequest(request, status != -ECLIENTRESET, 503, 
                                internAtomError(-status, 
@@ -955,9 +952,8 @@ httpServerSideHandlerCommon(int kind, int status,
         if(srequest->offset < connection->reqlen)
             return 0;
         bodylen = srequest->offset - connection->reqlen;
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
         connection->reqlen = 0;
+        httpConnectionDestroyReqbuf(connection);
     } else {
         bodylen = srequest->offset;
     }
@@ -1347,8 +1343,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
     int url_size = object->key_size;
     int x, y, port, z, location_size;
     char *location;
-    int rc;
-    int l, n;
+    int l, n, rc, bufsize;
 
     assert(method != METHOD_NONE);
 
@@ -1403,6 +1398,9 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
        object->last_modified < 0 && object->etag == NULL)
         method = request->method = METHOD_GET;
 
+ again:
+    bufsize = 
+        (connection->flags & CONN_BIGREQBUF) ? bigBufferSize : CHUNK_SIZE;
     n = connection->reqlen;
     switch(method) {
     case METHOD_GET:
@@ -1412,10 +1410,10 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
     case METHOD_PUT: m = "PUT"; break;
     default: abort();
     }
-    n = snnprintf(connection->reqbuf, n, CHUNK_SIZE, "%s ", m);
+    n = snnprintf(connection->reqbuf, n, bufsize, "%s ", m);
 
     if(connection->server->isProxy) {
-        n = snnprint_n(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprint_n(connection->reqbuf, n, bufsize,
                        url, url_size);
     } else {
         if(url_size - z == 0) {
@@ -1426,7 +1424,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
             location_size = url_size - z;
         }
         
-        n = snnprint_n(connection->reqbuf, n, CHUNK_SIZE, 
+        n = snnprint_n(connection->reqbuf, n, bufsize, 
                        location, location_size);
     }
     
@@ -1438,35 +1436,35 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
            method, from, to,
            (unsigned long)connection, (unsigned long)object);
 
-    n = snnprintf(connection->reqbuf, n, CHUNK_SIZE, " HTTP/1.1");
+    n = snnprintf(connection->reqbuf, n, bufsize, " HTTP/1.1");
 
     if(!connection->server->isProxy) {
-        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE, "\r\nHost: ");
-        n = snnprint_n(connection->reqbuf, n, CHUNK_SIZE, url + x, y - x);
+        n = snnprintf(connection->reqbuf, n, bufsize, "\r\nHost: ");
+        n = snnprint_n(connection->reqbuf, n, bufsize, url + x, y - x);
         if(port != 80) {
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           ":%d", port);
         }
     } else {
         if(parentAuthCredentials)
-            n = buildServerAuthHeaders(connection->reqbuf, n, CHUNK_SIZE,
+            n = buildServerAuthHeaders(connection->reqbuf, n, bufsize,
                                        parentAuthCredentials);
     }
 
     if(bodylen >= 0)
-        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprintf(connection->reqbuf, n, bufsize,
                       "\r\nContent-Length: %d", bodylen);
 
     if(request->flags & REQUEST_WAIT_CONTINUE)
-        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprintf(connection->reqbuf, n, bufsize,
                       "\r\nExpect: 100-continue");
 
     if(method != METHOD_HEAD && (from > 0 || to >= 0)) {
         if(to >= 0) {
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           "\r\nRange: bytes=%d-%d", from, to - 1);
         } else {
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           "\r\nRange: bytes=%d-", from);
         }
     }
@@ -1475,51 +1473,59 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
         if(request->request && request->request->request == request &&
            request->request->from == 0 && request->request->to == -1 &&
            pmmSize == 0 && pmmFirstSize == 0)
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           "\r\nIf-Range: \"%s\"", object->etag);
     }
 
     if(method == METHOD_CONDITIONAL_GET) {
         if(object->last_modified >= 0) {
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           "\r\nIf-Modified-Since: ");
-            n = format_time(connection->reqbuf, n, CHUNK_SIZE,
+            n = format_time(connection->reqbuf, n, bufsize,
                             object->last_modified);
         }
         if(object->etag) {
-            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+            n = snnprintf(connection->reqbuf, n, bufsize,
                           "\r\nIf-None-Match: \"%s\"", object->etag);
         }
     }
 
-    n = httpPrintCacheControl(connection->reqbuf, n, CHUNK_SIZE,
+    n = httpPrintCacheControl(connection->reqbuf, n, bufsize,
                               0, &request->cache_control);
     if(n < 0)
-        return -1;
+        goto fail;
 
     if(request->request && request->request->headers) {
-        n = snnprint_n(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprint_n(connection->reqbuf, n, bufsize,
                        request->request->headers->string, 
                        request->request->headers->length);
     }
     if(request->request && request->request->via) {
-        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprintf(connection->reqbuf, n, bufsize,
                       "\r\nVia: %s, 1.1 %s",
                       request->request->via->string, proxyName->string);
     } else {
-        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+        n = snnprintf(connection->reqbuf, n, bufsize,
                       "\r\nVia: 1.1 %s",
                       proxyName->string);
     }
 
-    n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
+    n = snnprintf(connection->reqbuf, n, bufsize,
                   "\r\nConnection: %s\r\n\r\n",
                   (request->flags & REQUEST_PERSISTENT) ? 
                   "keep-alive" : "close");
-    if(n < 0 || n >= CHUNK_SIZE - 1)
-        return -1;
+    if(n < 0 || n >= bufsize - 1)
+        goto fail;
     connection->reqlen = n;
     return n;
+
+ fail:
+    rc = 0;
+    if(!(connection->flags & CONN_BIGREQBUF))
+        rc = httpConnectionBigifyReqbuf(connection);
+    if(rc == 1)
+        goto again;
+    return -1;
 }
 
 int
@@ -1535,8 +1541,7 @@ httpServerHandler(int status,
     if(connection->reqlen == 0) {
         do_log(D_SERVER_REQ, "Writing aborted on 0x%lx\n", 
                (unsigned long)connection);
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
+        httpConnectionDestroyReqbuf(connection);
         shutdown(connection->fd, 2);
         pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN | POLLOUT);
         httpSetTimeout(connection, serverTimeout);
@@ -1548,8 +1553,7 @@ httpServerHandler(int status,
         return 0;
     }
     
-    dispose_chunk(connection->reqbuf);
-    connection->reqbuf = NULL;
+    httpConnectionDestroyReqbuf(connection);
 
     if(status) {
         if(connection->serviced >= 1) {
@@ -1582,8 +1586,7 @@ httpServerSendRequest(HTTPConnectionPtr connection)
     if(connection->reqlen == 0) {
         do_log(D_SERVER_REQ, 
                "Writing aborted on 0x%lx\n", (unsigned long)connection);
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
+        httpConnectionDestroyReqbuf(connection);
         shutdown(connection->fd, 2);
         pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN | POLLOUT);
         return -1;

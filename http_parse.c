@@ -695,7 +695,7 @@ urlSameHost(const char *url1, int len1, const char *url2, int len2)
 static char *
 resize_hbuf(char *hbuf, int *size, char *hbuf_small)
 {
-    int new_size = MIN(CHUNK_SIZE, 2 * *size);
+    int new_size = 2 * *size;
     char *new_hbuf;
 
     if(new_size <= *size)
