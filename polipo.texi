@@ -1332,6 +1332,7 @@ circumstances.
 @cindex tunnelling proxy
 @cindex https
 @cindex HTTP/SSL
+@cindex rsync
 @cindex CONNECT
 @vindex tunnelAllowedPorts
 
@@ -1354,7 +1355,8 @@ firewalls.
 
 The variable @code{tunnelAllowedPorts} specifies the set of ports that
 Polipo will accept to tunnel traffic to.  It defaults to @samp{22, 80,
-443}, meaning that Polipo will only tunnel ssh, HTTP and https traffic.
+443, 873}, meaning that Polipo will only tunnel ssh, HTTP, https and
+rsync traffic.
 
 @node Caching, Memory usage, Network, Top
 @chapter Caching

@@ -153,6 +153,7 @@ initHttp()
         intListCons(22, 22, tunnelAllowedPorts);
         intListCons(80, 80, tunnelAllowedPorts);
         intListCons(443, 443, tunnelAllowedPorts);
+        intListCons(873, 873, tunnelAllowedPorts);
     }
 
     if(proxyName)
