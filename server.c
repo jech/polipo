@@ -687,7 +687,7 @@ httpServerTrigger(HTTPServerPtr server)
            progress on this server, and we don't pipeline anything
            until it succeeds.  When server->pipeline >= 4, pipelining
            is believed to work on this server. */
-        if(server->version != HTTP_11 || server->pipeline == 0 ||
+        if(server->version != HTTP_11 || server->pipeline <= 0 ||
            server->pipeline == 2 || server->pipeline == 3) {
             if(connection->pipelined == 0)
                 n = 1;
