@@ -91,7 +91,7 @@ readDomainFile(char *filename)
     in = fopen(filename, "r");
     if(in == NULL) {
         if(errno != ENOENT)
-            do_log_error(L_ERROR, errno, "Couldn't open file: %s", filename);
+            do_log_error(L_ERROR, errno, "Couldn't open file %s", filename);
         return -1;
     }
 
@@ -175,7 +175,8 @@ readDomainFile(char *filename)
 }
 
 void
-parseDomainFile(AtomPtr file, DomainPtr **domains_return, regex_t **regex_return)
+parseDomainFile(AtomPtr file,
+                DomainPtr **domains_return, regex_t **regex_return)
 {
     int rc;
 
@@ -360,7 +361,7 @@ urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
 int
 urlIsUncachable(char *url, int length)
 {
-  return urlIsMatched(url, length, uncachableDomains, uncachableRegex);
+    return urlIsMatched(url, length, uncachableDomains, uncachableRegex);
 }
 
 static char lf[1] = "\n";
@@ -370,7 +371,8 @@ urlForbidden(AtomPtr url,
              int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
              void *closure)
 {
-    int forbidden = urlIsMatched(url->string, url->length, forbiddenDomains, forbiddenRegex);
+    int forbidden = urlIsMatched(url->string, url->length,
+                                 forbiddenDomains, forbiddenRegex);
     int code = 0;
     AtomPtr message = NULL, headers = NULL;
 
