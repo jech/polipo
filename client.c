@@ -948,7 +948,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     if(connection->reqte != TE_IDENTITY)
         goto fail;
 
-    if(connection->request->persistent && connection->bodylen < 0)
+    if(connection->bodylen < 0)
         goto fail;
 
     if(connection->bodylen + connection->reqbegin < connection->reqlen) {
@@ -993,8 +993,6 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     return 1;
 
  fail:
-    shutdown(connection->fd, 0);
-    connection->request->persistent = 0;
     connection->flags &= ~CONN_READER;
     shutdown(connection->fd, 0);
     httpClientFinish(connection, 1);
