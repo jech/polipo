@@ -1953,7 +1953,8 @@ httpServerHandlerHeaders(int eof,
          (CACHE_NO_HIDDEN | CACHE_NO | CACHE_NO_STORE |
           (cacheIsShared ? CACHE_PRIVATE : 0))) ||
         (cache_control.max_age >= 0 && cache_control.max_age <= 2) ||
-        (cacheIsShared && cache_control.s_maxage <= 5) ||
+        (cacheIsShared && 
+         cache_control.s_maxage >= 0 && cache_control.s_maxage <= 5) ||
         (old_object->last_modified >= 0 && old_object->expires >= 0 && 
          (old_object->expires - old_object->last_modified <= 1)) ||
         (supersede && (old_object->date - date <= 5));
