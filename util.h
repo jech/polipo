@@ -66,7 +66,7 @@ void *memrchr(const void *s, int c, size_t n) ATTRIBUTE ((pure));
 #endif
 int h2i(char h) ATTRIBUTE ((const));
 int log2_floor(int x) ATTRIBUTE ((const));
-int log2_ceil(int x); ATTRIBUTE ((const))
+int log2_ceil(int x) ATTRIBUTE ((const));
 char* vsprintf_a(const char *f, va_list args) ATTRIBUTE ((malloc));
 char* sprintf_a(const char *f, ...) ATTRIBUTE ((malloc));
 unsigned int hash(unsigned seed, const void *restrict key, int key_size, 
