@@ -672,6 +672,11 @@ static const MimeEntryRec mimeEntries[] = {
     { "ps", "application/postscript" },
     { "tar", "application/x-tar" },
     { "pac", "application/x-ns-proxy-autoconfig" },
+    { "css", "text/css" },
+    { "js",  "application/x-javascript" },
+    { "dtd", "text/xml" },
+    { "xml", "text/xml" },
+    { "swf", "application/x-shockwave-flash" },
 };
 
 static char*
