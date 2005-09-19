@@ -240,6 +240,7 @@ makeObject(int type, void *key, int key_size, int public, int fromdisk,
     object->atime = -1;
     object->etag = NULL;
     object->cache_control = 0;
+    object->max_age = -1;
     object->s_maxage = -1;
     object->size = 0;
     object->requestor = NULL;
@@ -867,9 +868,9 @@ CacheControlRec no_cache_control = {0, -1, -1, 0, 0};
 int
 objectIsStale(ObjectPtr object, CacheControlPtr cache_control)
 {
-    int stale;
+    int stale = 0x7FFFFFFF;
     int flags;
-    int s_maxage;
+    int max_age, s_maxage;
 
     if(object->flags & OBJECT_INITIAL)
         return 0;
@@ -877,6 +878,14 @@ objectIsStale(ObjectPtr object, CacheControlPtr cache_control)
     if(cache_control == NULL)
         cache_control = &no_cache_control;
     flags = object->cache_control | cache_control->flags;
+
+    if(cache_control->max_age >= 0) {
+        if(object->max_age >= 0)
+            max_age = MIN(cache_control->max_age, object->max_age);
+        else
+            max_age = cache_control->max_age;
+    } else
+        max_age = object->max_age;
 
     if(cache_control->s_maxage >= 0) {
         if(object->s_maxage >= 0)
@@ -886,31 +895,33 @@ objectIsStale(ObjectPtr object, CacheControlPtr cache_control)
     } else
         s_maxage = object->s_maxage;
     
-    if(cacheIsShared && s_maxage >= 0) {
-        stale = object->age + s_maxage;
+    if(max_age >= 0)
+        stale = MIN(stale, object->age + max_age);
+
+    if(cacheIsShared && s_maxage >= 0)
         stale = MIN(stale, object->age + s_maxage);
-    } else if(cache_control->max_age >= 0) {
-        stale = object->age + cache_control->max_age;
-        stale = MIN(stale, object->age + cache_control->max_age);
-    } else if(object->expires >= 0) {
-        stale = object->age + maxExpiresAge;
+
+    /* RFC 2616 14.9.3 */
+
+    if(object->expires >= 0 && object->max_age < 0) {
+        stale = MIN(stale, object->age + maxExpiresAge);
         if(object->date >= 0) {
             /* This protects against clock skew */
             stale = MIN(stale, object->expires - object->date + object->age);
         } else {
             stale = MIN(stale, object->expires);
         }
-    } else {
-        stale = object->age + maxAge;
-
-        if(object->last_modified >= 0)
-            stale = MIN(stale,
-                        object->age +
-                        (current_time.tv_sec - 
-                         object->last_modified) * maxAgeFraction);
-        else
-            stale = MIN(stale, object->age + maxNoModifiedAge);
     }
+
+    stale = MIN(stale, object->age + maxAge);
+
+    if(object->last_modified >= 0)
+        stale = MIN(stale,
+                    object->age +
+                    (current_time.tv_sec -
+                     object->last_modified) * maxAgeFraction);
+    else
+        stale = MIN(stale, object->age + maxNoModifiedAge);
 
     if(!(flags & CACHE_MUST_REVALIDATE) &&
        !(cacheIsShared && (flags & CACHE_PROXY_REVALIDATE))) {

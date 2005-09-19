@@ -58,6 +58,7 @@ typedef struct _Object {
     time_t atime;
     char *etag;
     unsigned short cache_control;
+    int max_age;
     int s_maxage;
     struct _Atom *headers;
     struct _Atom *via;

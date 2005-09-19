@@ -1835,6 +1835,7 @@ httpServerHandlerHeaders(int eof,
 
     if((code == 200 || code == 206 || code == 304 || code == 412) &&
        (cache_control.flags & (CACHE_NO | CACHE_NO_STORE) ||
+        cache_control.max_age == 0 ||
         (cacheIsShared && cache_control.s_maxage == 0) ||
         (expires >= 0 && expires <= object->age))) {
         do_log(L_UNCACHEABLE, "Uncacheable object ");
@@ -1965,6 +1966,7 @@ httpServerHandlerHeaders(int eof,
 
     new_object->age = age;
     new_object->cache_control |= cache_control.flags;
+    new_object->max_age = cache_control.max_age;
     new_object->s_maxage = cache_control.s_maxage;
     new_object->flags &= ~OBJECT_FAILED;
 
