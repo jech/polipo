@@ -11,7 +11,7 @@
 @end direntry
 
 @copying
-Copyright @copyright{} 2003, 2004 by Juliusz Chroboczek.
+Copyright @copyright{} 2003 -- 2005 by Juliusz Chroboczek.
 @end copying
 
 @titlepage
