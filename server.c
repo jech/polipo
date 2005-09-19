@@ -1440,15 +1440,15 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
     n = snnprintf(connection->reqbuf, n, bufsize, " HTTP/1.1");
 
     if(!connection->server->isProxy) {
-        n = snnprintf(connection->reqbuf, n, bufsize, "\r\nHost: ");
-        n = snnprint_n(connection->reqbuf, n, bufsize, url + x, y - x);
+        n = snnprintf(connection->reqbuf, n, CHUNK_SIZE, "\r\nHost: ");
+        n = snnprint_n(connection->reqbuf, n, CHUNK_SIZE, url + x, y - x);
         if(port != 80) {
-            n = snnprintf(connection->reqbuf, n, bufsize,
+            n = snnprintf(connection->reqbuf, n, CHUNK_SIZE,
                           ":%d", port);
         }
     } else {
         if(parentAuthCredentials)
-            n = buildServerAuthHeaders(connection->reqbuf, n, bufsize,
+            n = buildServerAuthHeaders(connection->reqbuf, n, CHUNK_SIZE,
                                        parentAuthCredentials);
     }
 
