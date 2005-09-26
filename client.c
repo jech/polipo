@@ -1046,9 +1046,13 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     return 1;
 
  fail:
-    connection->flags &= ~CONN_READER;
     shutdown(connection->fd, 0);
-    httpClientFinish(connection, 1);
+    handler = scheduleTimeEvent(-1, httpClientDelayed,
+                                sizeof(connection), &connection);
+    if(handler == NULL) {
+        do_log(L_ERROR, "Couldn't schedule reading from client.");
+        connection->flags &= ~CONN_READER;
+    }
     return 1;
 }
 
