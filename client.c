@@ -964,6 +964,7 @@ httpClientRequestContinue(int forbidden_code, AtomPtr url,
             httpClientDiscardBody(connection);
             httpClientNoticeError(request, 403,
                                   internAtom("Proxying disabled"));
+            releaseObject(object);
             return 1;
         }
 
@@ -971,6 +972,7 @@ httpClientRequestContinue(int forbidden_code, AtomPtr url,
             httpClientDiscardBody(connection);
             httpClientNoticeError(request, 504, 
                                   internAtom("Proxy loop detected"));
+            releaseObject(object);
             return 1;
         }
     }
@@ -1138,6 +1140,7 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
                               sizeof(request), &request);
             if(request->chandler == NULL) {
                 do_log(L_ERROR, "Couldn't register condition handler.\n");
+                connection->flags |= CONN_WRITER;
                 httpClientRawError(connection, 500,
                                    internAtom("Couldn't register "
                                               "condition handler"),
