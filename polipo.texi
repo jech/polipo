@@ -434,12 +434,11 @@ Junkbuster.  Privoxy has the ability to randomly modify web pages
 before sending them to the browser --- for example, remove
 @samp{<blink>} or @samp{<img>} tags.
 
-Just like its parent, Privoxy cannot do persistent connections.
-Additionally, it buffers whole pages before sending them to the
-client, which significantly adds to its latency.
-
-WWWOFFLE is probably a better choice than Privoxy if you need page
-rewriting.
+Just like its parent, Privoxy cannot do persistent connections.  Under
+some circumstances, it will also buffer whole pages before sending
+them to the client, which significantly adds to its latency.  However,
+this is difficult to avoid given the kinds of rewriting it attempts to
+perform.
 
 @node Oops,  , Privoxy, Other HTTP proxies
 @subsection Oops
