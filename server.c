@@ -996,24 +996,22 @@ httpServerSideHandlerCommon(int kind, int status,
                             StreamRequestPtr srequest)
 {
     HTTPConnectionPtr connection = srequest->data;
-    HTTPRequestPtr request;
-    HTTPRequestPtr requestor;
-    HTTPConnectionPtr client;
+    HTTPRequestPtr request = connection->request;
+    HTTPRequestPtr requestor = request->request;
+    HTTPConnectionPtr client = requestor->connection;
     int bodylen;
+
+    assert(request->object->flags & OBJECT_INPROGRESS);
 
     if(status) {
         httpConnectionDestroyReqbuf(connection);
         do_log_error(L_ERROR, -status, "Couldn't write to server");
-        httpServerAbort(connection, status != -ECLIENTRESET, 503,
-                        internAtomError(-status, "Couldn't write to server"));
+        httpServerAbortRequest(request, status != -ECLIENTRESET, 503, 
+                               internAtomError(-status, 
+                                               "Couldn't write to server"));
         return 1;
     }
 
-    request = connection->request;
-    requestor = request->request;
-    client = requestor->connection;
-
-    assert(request->object->flags & OBJECT_INPROGRESS);
     assert(srequest->offset > 0);
 
     if(kind == 2) {
