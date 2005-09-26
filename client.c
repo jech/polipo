@@ -243,6 +243,16 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     do_log(D_CLIENT_CONN, "Closing client connection 0x%x\n",
            (unsigned)connection);
 
+    if(connection->flags & CONN_READER) {
+        httpSetTimeout(connection, 10);
+        if(connection->fd < 0) return;
+        if(s >= 2) {
+            pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
+        } else {
+            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLIN);
+        }
+        return;
+    }
     while(1) {
         HTTPRequestPtr requestee;
         request = connection->request;
@@ -261,16 +271,6 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
             request->object->requestor = NULL;
         httpDequeueRequest(connection);
         httpDestroyRequest(request);
-    }
-    if(connection->flags & CONN_READER) {
-        httpSetTimeout(connection, 10);
-        if(connection->fd < 0) return;
-        if(s >= 2) {
-            pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
-        } else {
-            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLIN);
-        }
-        return;
     }
     httpConnectionDestroyReqbuf(connection);
     if(connection->timeout)
