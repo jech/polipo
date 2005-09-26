@@ -2248,10 +2248,10 @@ httpServerIndirectHandlerCommon(HTTPConnectionPtr connection, int eof)
                         objectMetadataChanged(request->object, 0);
                     } else if(request->object->length != 
                               request->object->size) {
+                        request->object->length = -1;
                         httpServerAbort(connection, 1, 502,
                                         internAtom("Inconsistent "
                                                    "object size"));
-                        request->object->length = -1;
                         return 1;
                     }
                 }
