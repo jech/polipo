@@ -75,6 +75,16 @@ httpLocalRequest(ObjectPtr object, int method, int from, int to,
     return 1;
 }
 
+void
+alternatingHttpStyle(FILE *out, char *id)
+{
+    fprintf(out,
+            "<style type=\"text/css\">\n"
+            "#%s tbody tr.even td { background-color: #eee; }\n"
+            "#%s tbody tr.odd  td { background-color: #fff; }\n"
+            "</style>\n", id, id);
+}
+
 static void
 printConfig(char *dummy)
 {

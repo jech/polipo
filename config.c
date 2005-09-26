@@ -326,17 +326,14 @@ printConfigVariables(FILE *out, int html)
     }
 
     if(html) {
-      fprintf(out,
-	      "<style type=\"text/css\">\n"
-	      "#configlist tbody tr.even td { background-color: #eee; }\n"
-	      "#configlist tbody tr.odd  td { background-color: #fff; }\n"
-	      "</style>\n"
-	      "<table id=configlist>\n"
-	      "<tbody>\n"
-	      "<tr><td>variable name</td>"
-	      "<td>current value</td>"
-	      "<td>new value</td>"
-	      "<td>description</td>");
+        alternatingHttpStyle(out, "configlist");
+        fprintf(out,
+                "<table id=configlist>\n"
+                "<tbody>\n"
+                "<tr><td>variable name</td>"
+                "<td>current value</td>"
+                "<td>new value</td>"
+                "<td>description</td>");
     }
 
     /* configFile is not a config variable, for obvious bootstrapping reasons.

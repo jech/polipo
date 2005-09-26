@@ -29,6 +29,7 @@ typedef struct _SpecialRequest {
 } SpecialRequestRec, *SpecialRequestPtr;
 
 void preinitLocal(void);
+void alternatingHttpStyle(FILE *out, char *id);
 int httpLocalRequest(ObjectPtr object, int method, int from, int to,
                      HTTPRequestPtr, void *);
 int httpSpecialRequest(ObjectPtr object, int method, int from, int to,

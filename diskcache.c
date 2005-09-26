@@ -2040,19 +2040,26 @@ indexDiskObjects(const char *root, int recursive)
 
     if(dobjects) {
         DiskObjectPtr dobject;
+        int entryno;
         dobjects = insertRoot(dobjects, root);
         dobjects = insertDirs(dobjects);
         dobjects = filterDiskObjects(dobjects, root, recursive);
         dobject = dobjects;
         buf[0] = '\0';
-        printf("<table>\n");
+        alternatingHttpStyle(stdout, "diskcachelist");
+        printf("<table id=diskcachelist>\n");
         printf("<tbody>\n");
+        entryno = 0;
         while(dobjects) {
             dobject = dobjects;
             i = strlen(dobject->location);
             isdir = (i == 0 || dobject->location[i - 1] == '/');
+            if(entryno % 2)
+                printf("<tr class=odd>");
+            else
+                printf("<tr class=even>");
             if(dobject->size >= 0) {
-                printf("<tr><td><a href=\"%s\"><tt>",
+                printf("<td><a href=\"%s\"><tt>",
                        dobject->location);
                 htmlPrint(stdout, 
                           dobject->location, strlen(dobject->location));
@@ -2097,7 +2104,7 @@ indexDiskObjects(const char *root, int recursive)
                     printf("<td></td>");
                 }
             } else {
-                printf("<tr><td><tt>");
+                printf("<td><tt>");
                 htmlPrint(stdout, dobject->location,
                           strlen(dobject->location));
                 printf("</tt></td><td></td><td></td><td></td>");
@@ -2107,8 +2114,9 @@ indexDiskObjects(const char *root, int recursive)
                        "<td><a href=\"/polipo/recursive-index?%s\">"
                        "recursive</a></td>",
                        dobject->location, dobject->location);
-                printf("</tr>\n");
             }
+            printf("</tr>\n");
+            entryno++;
             dobjects = dobject->next;
             free(dobject->location);
             free(dobject->filename);
