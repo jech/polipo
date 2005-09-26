@@ -246,7 +246,8 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                 }
             }
             printf("</select>");
-            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            if(var->setter)
+                printf("<input type=\"submit\" value=\"set\"\n>");
             break;
         }
     
@@ -263,7 +264,8 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                 }
             }
             printf("</select>");
-            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            if(var->setter)
+                printf("<input type=\"submit\" value=\"set\"\n>");
             break;
         }
 
@@ -281,7 +283,8 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                 }
             }
             printf("</select>");
-            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            if(var->setter)
+                printf("<input type=\"submit\" value=\"set\"\n>");
             break;
         }
 
@@ -299,7 +302,8 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                 }
             }
             printf("</select>");
-            printf("<INPUT type=\"submit\" value=\"set\"\n>");
+            if(var->setter)
+                printf("<input type=\"submit\" value=\"set\"\n>");
             break;
         }
     default: abort();
