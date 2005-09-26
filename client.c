@@ -231,8 +231,12 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         }
         /* The request has already been validated when it first got
            into the queue */
-        if(connection->request)
-            httpClientNoticeRequest(connection->request, 1);
+        if(connection->request) {
+            if(connection->request->object != NULL)
+                httpClientNoticeRequest(connection->request, 1);
+            else
+                assert(connection->flags & CONN_READER);
+        }
         return;
     }
     
