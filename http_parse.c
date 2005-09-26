@@ -49,7 +49,8 @@ static AtomListPtr censoredHeaders;
 void
 preinitHttpParser()
 {
-    CONFIG_VARIABLE(censorReferer, CONFIG_TRISTATE, "Censor referer headers.");
+    CONFIG_VARIABLE_SETTABLE(censorReferer, CONFIG_TRISTATE, configIntSetter,
+                             "Censor referer headers.");
     censoredHeaders = makeAtomList(NULL, 0);
     if(censoredHeaders == NULL) {
         do_log(L_ERROR, "Couldn't allocate censored atoms.\n");
@@ -57,8 +58,8 @@ preinitHttpParser()
     }
     CONFIG_VARIABLE(censoredHeaders, CONFIG_ATOM_LIST_LOWER,
                     "Headers to censor.");
-    CONFIG_VARIABLE(laxHttpParser, CONFIG_BOOLEAN,
-                    "Ignore unknown HTTP headers.");
+    CONFIG_VARIABLE_SETTABLE(laxHttpParser, CONFIG_BOOLEAN, configIntSetter,
+                             "Ignore unknown HTTP headers.");
 }
 
 void
