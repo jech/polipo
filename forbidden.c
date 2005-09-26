@@ -66,7 +66,8 @@ preinitForbidden(void)
                              "Redirect code, 301 or 302.");
     CONFIG_VARIABLE_SETTABLE(forbiddenFile, CONFIG_ATOM, atomSetterForbidden,
                              "File specifying forbidden URLs.");
-    CONFIG_VARIABLE(redirector, CONFIG_ATOM, "Squid-style redirector.");
+    CONFIG_VARIABLE_SETTABLE(redirector, CONFIG_ATOM, atomSetterForbidden,
+                             "Squid-style redirector.");
     CONFIG_VARIABLE_SETTABLE(redirectorRedirectCode, CONFIG_INT,
                              configIntSetter,
                              "Redirect code to use with redirector.");
