@@ -329,11 +329,13 @@ printConfigVariables(FILE *out, int html)
         alternatingHttpStyle(out, "configlist");
         fprintf(out,
                 "<table id=configlist>\n"
-                "<tbody>\n"
-                "<tr><td>variable name</td>"
-                "<td>current value</td>"
-                "<td>new value</td>"
-                "<td>description</td>");
+                "<thead>\n"
+                "<tr><th>variable name</th>"
+                "<th>current value</th>"
+                "<th>new value</th>"
+                "<th>description</th>\n"
+                "</thead><tbody>\n"
+);
     }
 
     /* configFile is not a config variable, for obvious bootstrapping reasons.
