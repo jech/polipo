@@ -28,8 +28,9 @@ int replyUnpipelineTime = 20;
 int replyUnpipelineSize = 1024 * 1024;
 int pipelineAdditionalRequests = 1;
 int maxPipelineTrain = 10;
+AtomPtr parentProxy = NULL;
 AtomPtr parentHost = NULL;
-int parentPort = 8123;
+int parentPort = -1;
 int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
 int serverMaxSlots = 4;
@@ -38,12 +39,14 @@ int dontCacheRedirects = 0;
 static HTTPServerPtr servers = 0;
 
 static int httpServerContinueConditionHandler(int, ConditionHandlerPtr);
+static int initParentProxy(void);
+static int parentProxySetter(ConfigVariablePtr var, void *value);
 
 void
 preinitServer(void)
 {
-    CONFIG_VARIABLE(parentHost, CONFIG_ATOM_LOWER, "Parent proxy hostname.");
-    CONFIG_VARIABLE(parentPort, CONFIG_INT, "Parent proxy port.");
+    CONFIG_VARIABLE_SETTABLE(parentProxy, CONFIG_ATOM_LOWER, parentProxySetter,
+                    "Parent proxy (host:port).");
     CONFIG_VARIABLE(serverExpireTime, CONFIG_TIME,
                     "Time during which server data is valid.");
     CONFIG_VARIABLE_SETTABLE(smallRequestTime, CONFIG_TIME, configIntSetter,
@@ -69,6 +72,14 @@ preinitServer(void)
                     "Maximum number of connections per broken server.");
     CONFIG_VARIABLE(dontCacheRedirects, CONFIG_BOOLEAN,
                     "If true, don't cache redirects.");
+}
+
+static int
+parentProxySetter(ConfigVariablePtr var, void *value)
+{
+    configAtomSetter(var, value);
+    initParentProxy();
+    return 1;
 }
 
 static void
@@ -133,7 +144,41 @@ roundSize(int size)
     else
         return size;
 }
-        
+
+static int
+initParentProxy()
+{
+    AtomPtr host, port_atom;
+    int rc, port;
+
+    if(parentHost) {
+        releaseAtom(parentHost);
+        parentHost = NULL;
+    }
+    if(parentPort >= 0)
+        parentPort = -1;
+
+    if(parentProxy == NULL)
+        return 1;
+
+    rc = atomSplit(parentProxy, ':', &host, &port_atom);
+    if(rc <= 0) {
+        do_log(L_ERROR, "Couldn't parse parentProxy.");
+        return -1;
+    }
+
+    port = atoi(port_atom->string);
+    if(port <= 0 || port >= 0x10000) {
+        releaseAtom(host);
+        releaseAtom(port_atom);
+        do_log(L_ERROR, "Couldn't parse parentProxy.");
+        return -1;
+    }
+
+    parentHost = host;
+    parentPort = port;
+    return 1;
+}
 
 void
 initServer(void)
@@ -154,6 +199,8 @@ initServer(void)
         serverSlots = 1;
     if(serverSlots > serverMaxSlots)
         serverSlots = serverMaxSlots;
+
+    initParentProxy();
 
     event = scheduleTimeEvent(serverExpireTime / 60 + 60, expireServersHandler,
                               0, NULL);
