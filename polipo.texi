@@ -1253,7 +1253,6 @@ cached (default 5 minutes).
 
 @node Parent proxies, Tuning POST and PUT, DNS, Network
 @section Parent proxies
-@vindex parentHost
 @vindex parentProxy
 @vindex parentAuthCredentials
 @cindex parent proxy
@@ -1265,9 +1264,8 @@ Polipo will usually fetch instances directly from source servers as
 this configuration minimises latency.  In some cases, however, it may
 be useful to have Polipo fetch instances from a @dfn{parent} proxy.
 
-The variable @code{parentHost} specifies the hostname or IP address of
-a parent proxy; Polipo will contact this proxy using the port number
-specified by @code{parentPort}.
+The variable @code{parentProxy} specifies the hostname and port number
+of a parent proxy; it should have the form @samp{host:port}.
 
 If the parent proxy requires authorisation, the username and password
 should be specified in the variable @code{parentAuthCredentials} in
@@ -1280,7 +1278,7 @@ access to the web, the following evades a firewall by using an
 encrypted compressed @code{ssh} link:
 @example
 $ ssh -f -C -L 8124:localhost:8123 trurl polipo
-$ polipo parentHost=localhost parentPort=8124
+$ polipo parentProxy=localhost:8124
 @end example
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
