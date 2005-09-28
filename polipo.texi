@@ -756,7 +756,7 @@ machine on which Polipo is running, defines the @dfn{name} of the
 proxy.  This can be an arbitrary string that should be unique among
 all instances of Polipo that you are running.  Polipo uses it in error
 messages and for detecting proxy loops (by using the @samp{Via} HTTP
-header).
+header, @pxref{Censoring headers}).
 
 @menu
 * Access control::              Deciding who can connect.
@@ -891,6 +891,8 @@ amount of headers Polipo can parse, is specified by the variable
 @cindex cookies
 @vindex censorReferer
 @vindex censoredHeaders
+@vindex proxyName
+@vindex disableVia
 
 Polipo offers the option to censor given HTTP headers in both client
 requests and server replies.  The main application of this feature is
@@ -919,6 +921,13 @@ is @code{maybe}, @samp{Referer} headers are passed to the server only
 when they refer to the same host as the resource being fetched.  If
 @code{censorReferer} is @code{true}, all @samp{Referer} headers are
 censored.  I recommend setting @code{censorReferer} to @code{maybe}.
+
+Another header that can have privacy implications is the @samp{Via}
+header; you should probably set the @code{proxyName} variable to some
+random string (@pxref{Client connections}).  Usage of the @samp{Via}
+header can be omitted altogether by setting @code{disableVia}; doing
+that will prevent Polipo from detecting routing loops, and is not
+recommended.
 
 @menu
 * Censor Accept-Language::      Why Accept-Language is evil.
