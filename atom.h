@@ -42,6 +42,7 @@ AtomPtr internAtom(const char *string);
 AtomPtr internAtomN(const char *string, int n);
 AtomPtr internAtomLowerN(const char *string, int n);
 AtomPtr atomCat(AtomPtr atom, const char *string);
+int atomSplit(AtomPtr atom, char c, AtomPtr *return1, AtomPtr *return2);
 AtomPtr retainAtom(AtomPtr atom);
 void releaseAtom(AtomPtr atom);
 AtomPtr internAtomError(int e, const char *f, ...)

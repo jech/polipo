@@ -102,6 +102,27 @@ atomCat(AtomPtr atom, const char *string)
     return newAtom;
 }
 
+int
+atomSplit(AtomPtr atom, char c, AtomPtr *return1, AtomPtr *return2)
+{
+    char *p;
+    AtomPtr atom1, atom2;
+    p = memchr(atom->string, c, atom->length);
+    if(p == NULL)
+        return 0;
+    atom1 = internAtomN(atom->string, p - atom->string);
+    if(atom1 == NULL)
+        return -ENOMEM;
+    atom2 = internAtomN(p + 1, atom->length - (p + 1 - atom->string));
+    if(atom2 == NULL) {
+        releaseAtom(atom1);
+        return -ENOMEM;
+    }
+    *return1 = atom1;
+    *return2 = atom2;
+    return 1;
+}
+
 AtomPtr
 internAtomLowerN(const char *string, int n)
 {
