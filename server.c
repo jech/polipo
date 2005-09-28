@@ -1556,14 +1556,16 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
                        request->request->headers->string, 
                        request->request->headers->length);
     }
-    if(request->request && request->request->via) {
-        n = snnprintf(connection->reqbuf, n, bufsize,
-                      "\r\nVia: %s, 1.1 %s",
-                      request->request->via->string, proxyName->string);
-    } else {
-        n = snnprintf(connection->reqbuf, n, bufsize,
-                      "\r\nVia: 1.1 %s",
-                      proxyName->string);
+    if(!disableVia) {
+        if(request->request && request->request->via) {
+            n = snnprintf(connection->reqbuf, n, bufsize,
+                          "\r\nVia: %s, 1.1 %s",
+                          request->request->via->string, proxyName->string);
+        } else {
+            n = snnprintf(connection->reqbuf, n, bufsize,
+                          "\r\nVia: 1.1 %s",
+                          proxyName->string);
+        }
     }
 
     n = snnprintf(connection->reqbuf, n, bufsize,

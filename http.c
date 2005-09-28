@@ -45,6 +45,8 @@ int expectContinue = 1;
 
 AtomPtr atom100Continue;
 
+int disableVia = 0;
+
 /* 0 means that all failures lead to errors.  1 means that failures to
    connect are reported in a Warning header when stale objects are
    served.  2 means that only missing data is fetched from the net,
@@ -95,6 +97,8 @@ preinitHttp()
                     "Send Expect-Continue to servers.");
     CONFIG_VARIABLE(bigBufferSize, CONFIG_INT,
                     "Size of big buffers (max size of headers).");
+    CONFIG_VARIABLE_SETTABLE(disableVia, CONFIG_BOOLEAN, configIntSetter,
+                             "Don't use Via headers (not recommended).");
     preinitHttpParser();
 }
 
@@ -334,7 +338,7 @@ httpWriteObjectHeaders(char *buf, int offset, int len,
     if(n < 0)
         goto fail;
 
-    if(object->via)
+    if(!disableVia && object->via)
         n = snnprintf(buf, n, len, "\r\nVia: %s", object->via->string);
 
     if(object->headers)

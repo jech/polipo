@@ -135,6 +135,7 @@ extern IntListPtr allowedPorts;
 extern IntListPtr tunnelAllowedPorts;
 extern int expectContinue;
 extern AtomPtr atom100Continue;
+extern int disableVia;
 
 void preinitHttp(void);
 void initHttp(void);
