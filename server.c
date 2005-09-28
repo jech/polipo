@@ -1612,6 +1612,10 @@ httpServerReplyHandler(int status,
 
     assert(request->object->flags & OBJECT_INPROGRESS);
     if(status < 0) {
+        if(connection->serviced >= 1) {
+            httpServerRestart(connection);
+            return 1;
+        }
         if(status != -ECLIENTRESET)
             do_log_error(L_ERROR, -status, "Read from server failed");
         httpServerAbort(connection, status != -ECLIENTRESET, 502, 
