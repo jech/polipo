@@ -75,8 +75,8 @@ preinitHttp()
                     "The TCP port on which the proxy listens.");
     CONFIG_VARIABLE(proxyAddress, CONFIG_ATOM_LOWER,
                     "The IP address on which the proxy listens.");
-    CONFIG_VARIABLE(proxyName, CONFIG_ATOM_LOWER,
-                    "The name under which the proxy is known.");
+    CONFIG_VARIABLE_SETTABLE(proxyName, CONFIG_ATOM_LOWER, configAtomSetter,
+                             "The name by which the proxy is known.");
     CONFIG_VARIABLE_SETTABLE(clientTimeout, CONFIG_TIME, 
                              timeoutSetter, "Client-side timeout.");
     CONFIG_VARIABLE_SETTABLE(serverTimeout, CONFIG_TIME,
