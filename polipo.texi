@@ -853,7 +853,9 @@ internal web server, for example, listens on port 8123 by default.
 The variable @code{allowedPorts} contains the list of ports that
 Polipo will accept to connect to on behalf of clients; it defaults to
 @samp{80-86, 1024-65535}.  Set this variable to @samp{1-65535} if your
-clients (and the web pages they consult!) are fully trusted.
+clients (and the web pages they consult!) are fully trusted.  (The
+variable @code{allowedPorts} is not considered for tunnelled
+connections; @pxref{Tunnelling connections}).
 
 @node HTTP tuning, Offline browsing, Contacting servers, Network
 @section Tuning at the HTTP level
