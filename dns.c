@@ -1122,6 +1122,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
     if(value == NULL)
         value = internAtom("");
 
+ again:
     if(af == 4) {
         if(query->inet4 == NULL) {
             query->inet4 = value;
@@ -1140,6 +1141,9 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
                    "ignoring CNAME.\n", query->name->string,
                    query->inet4 ? "A" : "AAAA");
             releaseAtom(value);
+            value = internAtom("");
+            af = query->inet4 ? 4 : 6;
+            goto again;
         } else {
             cname = value;
         }
