@@ -515,7 +515,7 @@ really_do_gethostbyname(AtomPtr name, ObjectPtr object)
     else if(dnsQueryIPv6 >= 3)
         hints.ai_family = AF_INET6;
 
-    rc = getaddrinfo(name->string, NULL, NULL, &ai);
+    rc = getaddrinfo(name->string, NULL, &hints, &ai);
 
     switch(rc) {
     case 0: error = 0; break;
