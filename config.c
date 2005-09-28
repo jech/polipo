@@ -103,7 +103,7 @@ printString(FILE *out, char *string, int html)
 }
 
 static void
-printVariable(FILE *out, ConfigVariablePtr var, int html)
+printVariable(FILE *out, ConfigVariablePtr var, int html, int parseable)
 {
     int i;
 
@@ -164,18 +164,25 @@ printVariable(FILE *out, ConfigVariablePtr var, int html)
     case CONFIG_FLOAT: fprintf(out, "%f", *var->value.f); break;
     case CONFIG_ATOM: case CONFIG_ATOM_LOWER:
         if(*var->value.a) {
-            if((*var->value.a)->length > 0)
+            if((*var->value.a)->length > 0) {
                 printString(out, (*var->value.a)->string, html);
-            else fprintf(out, "(empty)");
-        } else
-            fprintf(out, "(none)");
+            } else {
+                if(!parseable)
+                    fprintf(out, "(empty)");
+            }
+        } else {
+            if(!parseable)
+                fprintf(out, "(none)");
+        }
         break;
     case CONFIG_INT_LIST:
-        if((*var->value.il) == NULL)
-            fprintf(out, "(not set)");
-        else if((*var->value.il)->length == 0)
-            fprintf(out, "(empty list)");
-        else {
+        if((*var->value.il) == NULL) {
+            if(!parseable)
+                fprintf(out, "(not set)");
+        } else if((*var->value.il)->length == 0) {
+            if(!parseable)
+                fprintf(out, "(empty list)");
+        } else {
             for(i = 0; i < (*var->value.il)->length; i++) {
                 int from = (*var->value.il)->ranges[i].from;
                 int to = (*var->value.il)->ranges[i].to;
@@ -190,20 +197,26 @@ printVariable(FILE *out, ConfigVariablePtr var, int html)
         }
         break;
     case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
-        if((*var->value.al) == NULL)
-            fprintf(out, "(not set)");
-        else if((*var->value.al)->length == 0)
-            fprintf(out, "(empty list)");
-        else {
+        if((*var->value.al) == NULL) {
+            if(!parseable)
+                fprintf(out, "(not set)");
+        } else if((*var->value.al)->length == 0) {
+            if(!parseable)
+                fprintf(out, "(empty list)");
+        } else {
             for(i = 0; i < (*var->value.al)->length; i++) {
                 AtomPtr atom = (*var->value.al)->list[i];
                 if(atom) {
                     if(atom->length > 0)
                         printString(out, atom->string, html);
-                    else
-                        fprintf(out, "(empty)");
-                } else
-                    fprintf(out, "(none)");
+                    else {
+                        if(!parseable)
+                            fprintf(out, "(empty)");
+                    }
+                } else {
+                    if(!parseable)
+                        fprintf(out, "(none)");
+                }
                 if(i < (*var->value.al)->length - 1)
                     fprintf(out, ", ");
             }
@@ -229,7 +242,7 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
     case CONFIG_ATOM_LOWER: case CONFIG_INT_LIST:
     case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
         printf("<input value=\"");
-        printVariable(out, var, 1);
+        printVariable(out, var, 1, 1);
         printf("\" size=10 name=%s %s>\n", var->name->string, disabled);
         break;
     
@@ -394,7 +407,7 @@ printConfigVariables(FILE *out, int html)
 
       PRINT_SEP();
 
-      printVariable(out, var, html);
+      printVariable(out, var, html, 0);
 
       PRINT_SEP();
 	
