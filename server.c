@@ -41,6 +41,7 @@ static HTTPServerPtr servers = 0;
 static int httpServerContinueConditionHandler(int, ConditionHandlerPtr);
 static int initParentProxy(void);
 static int parentProxySetter(ConfigVariablePtr var, void *value);
+static void httpServerDelayedFinish(HTTPConnectionPtr);
 
 void
 preinitServer(void)
@@ -1084,6 +1085,18 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
                   !(connection->request->flags & REQUEST_PERSISTENT)))
         s = 1;
 
+    if(connection->reqbuf) {
+        /* As most normal requests go out in a single packet, this is
+           extremely unlikely to happen.  As for POST/PUT requests,
+           they are not pipelined, so this can only happen if the
+           server sent an error reply early. */
+        assert(connection->fd >= 0);
+        shutdown(connection->fd, 1);
+        pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLOUT);
+        httpServerDelayedFinish(connection);
+        goto done;
+    }
+
     if(s >= 0 && request) {
         /* Update statistics about the server */
         int size = -1, d = -1, rtt = -1, rate = -1;
@@ -1125,20 +1138,6 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 
     do_log(D_SERVER_CONN, "Done with server %s:%d connection (%d)\n",
            connection->server->name, connection->server->port, s);
-
-    if(connection->reqbuf) {
-        /* As most normal requests go out in a single packet, this is
-           extremely unlikely to happen.  As for POST/PUT requests,
-           they are not pipelined, so this can only happen if the
-           server sent an error reply early.  Hence, it's reasonable
-           to shut the connection down. */
-        do_log(L_WARN, "Connection to %s:%d finished while writing.\n",
-               server->name, server->port);
-        assert(connection->fd >= 0);
-        shutdown(connection->fd, 1);
-        pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLOUT);
-        goto done;
-    }
 
     assert(offset <= connection->len);
 
@@ -1232,6 +1231,35 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 
  done:
     httpServerTrigger(server);
+}
+
+static int
+httpServerDelayedFinishHandler(TimeEventHandlerPtr event)
+{
+    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    httpServerFinish(connection, 1, 0);
+    return 1;
+}
+
+static void
+httpServerDelayedFinish(HTTPConnectionPtr connection)
+{
+    TimeEventHandlerPtr handler;
+
+    handler = scheduleTimeEvent(1, httpServerDelayedFinishHandler,
+                                sizeof(connection), &connection);
+    if(!handler) {
+        do_log(L_ERROR,
+               "Couldn't schedule delayed finish -- freeing memory.");
+        free_chunk_arenas();
+        handler = scheduleTimeEvent(1, httpServerDelayedFinishHandler,
+                                    sizeof(connection), &connection);
+        if(!handler) {
+            do_log(L_ERROR,
+                   "Couldn't schedule delayed finish -- aborting.\n");
+            polipoExit();
+        }
+    }
 }
 
 void
@@ -1597,11 +1625,7 @@ httpServerHandler(int status,
     if(connection->reqlen == 0) {
         do_log(D_SERVER_REQ, "Writing aborted on 0x%lx\n", 
                (unsigned long)connection);
-        httpConnectionDestroyReqbuf(connection);
-        shutdown(connection->fd, 2);
-        pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN | POLLOUT);
-        httpSetTimeout(connection, serverTimeout);
-        return 1;
+        goto fail;
     }
 
     if(status == 0 && !streamRequestDone(srequest)) {
@@ -1626,11 +1650,17 @@ httpServerHandler(int status,
             message = 
                 internAtomError(-status, "Couldn't send request to server");
         }
-        httpServerAbort(connection, status != -ECLIENTRESET, 502,
-                        message);
-        return 1;
+        goto fail;
     }
     
+    return 1;
+
+ fail:
+    dispose_chunk(connection->reqbuf);
+    connection->reqbuf = NULL;
+    shutdown(connection->fd, 2);
+    pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
+    httpSetTimeout(connection, 60);
     return 1;
 }
 
