@@ -585,6 +585,9 @@ writeHeaders(int fd, int *body_offset_return,
         n = format_time(buf, n, bufsize, object->atime);
     }
 
+    if(n < 0)
+        goto overflow;
+
     if(body_offset < 0)
         body_offset = chooseBodyOffset(n, object);
 
