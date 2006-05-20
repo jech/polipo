@@ -689,6 +689,10 @@ create_listener(char *address, int port,
 
     if(inet6) {
 #ifdef HAVE_IPv6
+        rc = setV6only(fd, 0);
+        if(rc < 0)
+            do_log_error(L_WARN, errno, "Couldn't reset IPV6_V6ONLY");
+
         memset(&addr6, 0, sizeof(addr6));
         rc = inet_pton(AF_INET6, address, &addr6.sin6_addr);
         if(rc != 1) {
@@ -775,6 +779,25 @@ setNodelay(int fd, int nodelay)
         return -1;
     return 0;
 }
+
+#ifdef IPV6_V6ONLY
+int
+setV6only(int fd, int v6only)
+{
+    int val = v6only ? 1 : 0;
+    int rc;
+    rc = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&val, sizeof(val));
+    if(rc < 0)
+        return -1;
+    return 0;
+}
+#else
+int
+setV6only(int fd, int v6only)
+{
+    return 0;
+}
+#endif
 
 typedef struct _LingeringClose {
     int fd;

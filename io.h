@@ -147,6 +147,7 @@ create_listener(char *address, int port,
                 void *data);
 int setNonblocking(int fd, int nonblocking);
 int setNodelay(int fd, int nodelay);
+int setV6only(int fd, int v6only);
 int lingeringClose(int fd);
 
 typedef struct _NetAddress {
