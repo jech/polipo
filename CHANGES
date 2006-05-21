@@ -20,6 +20,7 @@ Polipo 0.10 (unreleased):
         Polipo's eagerness to pipeline.
         Unified parentHost and parentPort into parentProxy.
         Implemented disableVia.
+        Implemented SOCKS support.
 
 27 December 2004: Polipo 0.9.7:
 
