@@ -1844,7 +1844,7 @@ my right to be recognised as the author and you don't blame me if
 anything goes wrong.
 
 @quotation
-Copyright @copyright{} 2003 by Juliusz Chroboczek
+Copyright @copyright{} 2003--2006 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
