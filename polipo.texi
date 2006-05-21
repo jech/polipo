@@ -1264,6 +1264,21 @@ cached (default 5 minutes).
 
 @node Parent proxies, Tuning POST and PUT, DNS, Network
 @section Parent proxies
+
+Polipo will usually fetch instances directly from source servers as
+this configuration minimises latency.  In some cases, however, it may
+be useful to have Polipo fetch instances from a @dfn{parent} proxy.
+
+Polipo can use two protocols to speak to a parent proxy: HTTP and
+SOCKS.
+
+@menu
+* HTTP parent proxies::         Using an HTTP parent proxy.
+* SOCKS parent proxies::        Using a SOCKS4a parent proxy.
+@end menu
+
+@node HTTP parent proxies, SOCKS parent proxies, Parent proxies, Parent proxies
+@subsection HTTP parent proxies
 @vindex parentProxy
 @vindex parentAuthCredentials
 @cindex parent proxy
@@ -1271,12 +1286,8 @@ cached (default 5 minutes).
 @cindex firewall
 @cindex authentication
 
-Polipo will usually fetch instances directly from source servers as
-this configuration minimises latency.  In some cases, however, it may
-be useful to have Polipo fetch instances from a @dfn{parent} proxy.
-
 The variable @code{parentProxy} specifies the hostname and port number
-of a parent proxy; it should have the form @samp{host:port}.
+of an HTTP parent proxy; it should have the form @samp{host:port}.
 
 If the parent proxy requires authorisation, the username and password
 should be specified in the variable @code{parentAuthCredentials} in
@@ -1291,6 +1302,15 @@ encrypted compressed @code{ssh} link:
 $ ssh -f -C -L 8124:localhost:8123 trurl polipo
 $ polipo parentProxy=localhost:8124
 @end example
+
+@node SOCKS parent proxies,  , HTTP parent proxies, Parent proxies
+@subsection SOCKS parent proxies
+@cindex SOCKS
+@vindex socksParentProxy
+
+The variable @code{socksParentProxy} specifies the hostname and port
+number of a SOCKS4a parent proxy; it should have the form
+@samp{host:port}.
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
 @section Tuning POST and PUT requests
