@@ -55,6 +55,8 @@ static int tunnelWrite1Handler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int tunnelWrite2Handler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int tunnelDnsHandler(int, GethostbynameRequestPtr);
 static int tunnelConnectionHandler(int, FdEventHandlerPtr, ConnectRequestPtr);
+static int tunnelSocksHandler(int, SocksRequestPtr);
+static int tunnelHandlerCommon(int, TunnelPtr);
 static int tunnelError(TunnelPtr, int, AtomPtr);
 
 static int
@@ -151,7 +153,12 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
     
     releaseAtom(url);
 
-    do_gethostbyname(tunnel->hostname->string, 0, tunnelDnsHandler, tunnel);
+    if(socksParentProxy)
+        do_socks_connect(tunnel->hostname->string, tunnel->port,
+                         tunnelSocksHandler, tunnel);
+    else
+        do_gethostbyname(tunnel->hostname->string, 0,
+                         tunnelDnsHandler, tunnel);
 }
 
 static int
@@ -186,7 +193,6 @@ tunnelConnectionHandler(int status,
                         ConnectRequestPtr request)
 {
     TunnelPtr tunnel = request->data;
-    const char *message = "HTTP/1.1 200 Tunnel established\r\n\r\n";
     int rc;
 
     if(status < 0) {
@@ -198,15 +204,35 @@ tunnelConnectionHandler(int status,
     if(rc < 0)
         do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
 
+    return tunnelHandlerCommon(request->fd, tunnel);
+}
+
+static int
+tunnelSocksHandler(int status, SocksRequestPtr request)
+{
+    TunnelPtr tunnel = request->data;
+
+    if(status < 0) {
+        tunnelError(tunnel, 504, internAtomError(-status, "Couldn't connect"));
+        return 1;
+    }
+
+    return tunnelHandlerCommon(request->fd, tunnel);
+}
+
+static int
+tunnelHandlerCommon(int fd, TunnelPtr tunnel)
+{
+    const char *message = "HTTP/1.1 200 Tunnel established\r\n\r\n";
     assert(tunnel->buf1.buf == NULL);
     tunnel->buf1.buf = get_chunk();
     if(tunnel->buf1.buf == NULL) {
-        close(request->fd);
+        close(fd);
         tunnelError(tunnel, 501, internAtom("Couldn't allocate buffer"));
         return 1;
     }
 
-    tunnel->fd2 = request->fd;
+    tunnel->fd2 = fd;
 
     memcpy(tunnel->buf2.buf, message, MIN(CHUNK_SIZE - 1, strlen(message)));
     tunnel->buf2.head = MIN(CHUNK_SIZE - 1, strlen(message));
