@@ -326,6 +326,7 @@ pstrerror(int e)
     case EDOTIMEOUT: s = "Timeout"; break;
     case ECLIENTRESET: s = "Connection reset by client"; break;
     case ESYNTAX: s = "Incorrect syntax"; break;
+    case ESOCKS: s = "SOCKS protocol error"; break;
     case EDNS_HOST_NOT_FOUND: s = "Host not found"; break;
     case EDNS_NO_ADDRESS: s = "No address"; break;
     case EDNS_NO_RECOVERY: s = "Permanent name server failure"; break;
@@ -334,6 +335,7 @@ pstrerror(int e)
     case EDNS_UNSUPPORTED: s = "Unsupported DNS reply"; break;
     case EDNS_FORMAT: s = "Invalid DNS query"; break;
     case EDNS_REFUSED: s = "DNS query refused by server"; break;
+    case EDNS_CNAME_LOOP: s= "DNS CNAME loop"; break;
     case EUNKNOWN: s = "Unknown error"; break;
     default: s = NULL; break;
     }

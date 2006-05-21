@@ -482,10 +482,16 @@ httpServerConnection(HTTPServerPtr server)
     do_log(D_SERVER_CONN, "C... %s:%d.\n",
            connection->server->name, connection->server->port);
     httpSetTimeout(connection, serverTimeout);
-    connection->connecting = CONNECTING_DNS;
-    do_gethostbyname(server->name, 0,
-                     httpServerConnectionDnsHandler,
-                     connection);
+    if(socksParentProxy) {
+        connection->connecting = CONNECTING_SOCKS;
+        do_socks_connect(server->name, connection->server->port,
+                         httpServerSocksHandler, connection);
+    } else {
+        connection->connecting = CONNECTING_DNS;
+        do_gethostbyname(server->name, 0,
+                         httpServerConnectionDnsHandler,
+                         connection);
+    }
     return 1;
 }
 
@@ -551,13 +557,33 @@ httpServerConnectionHandler(int status,
                             ConnectRequestPtr request)
 {
     HTTPConnectionPtr connection = request->data;
-    int rc;
 
     assert(connection->fd < 0);
     if(request->fd >= 0) {
         connection->fd = request->fd;
         connection->server->addrindex = request->index;
     }
+
+    return httpServerConnectionHandlerCommon(status, connection);
+}
+
+int
+httpServerSocksHandler(int status, SocksRequestPtr request)
+{
+    HTTPConnectionPtr connection = request->data;
+
+    assert(connection->fd < 0);
+    if(request->fd >= 0) {
+        connection->fd = request->fd;
+        connection->server->addrindex = 0;
+    }
+    return httpServerConnectionHandlerCommon(status, connection);
+}
+
+int
+httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
+{
+    int rc;
     httpSetTimeout(connection, -1);
 
     if(status < 0) {

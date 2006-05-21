@@ -112,6 +112,7 @@ typedef struct _HTTPConnection {
 /* connection->connecting */
 #define CONNECTING_DNS 1
 #define CONNECTING_CONNECT 2
+#define CONNECTING_SOCKS 3
 
 /* the results of a conditional request.  200, 304 and 412. */
 #define CONDITION_MATCH 0

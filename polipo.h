@@ -161,6 +161,7 @@ THE SOFTWARE.
 #include "config.h"
 #include "event.h"
 #include "io.h"
+#include "socks.h"
 #include "chunk.h"
 #include "object.h"
 #include "dns.h"

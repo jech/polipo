@@ -60,6 +60,7 @@ main(int argc, char **argv)
     preinitDiskcache();
     preinitLocal();
     preinitForbidden();
+    preinitSocks();
 
     i = 1;
     while(i < argc) {
@@ -136,6 +137,7 @@ main(int argc, char **argv)
     initServer();
     initDiskcache();
     initForbidden();
+    initSocks();
 
     if(printConfig) {
         printConfigVariables(stdout, 0);

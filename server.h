@@ -64,6 +64,9 @@ int httpServerConnectionDnsHandler(int status,
 int httpServerConnectionHandler(int status,
                                 FdEventHandlerPtr event,
                                 ConnectRequestPtr request);
+int httpServerSocksHandler(int status, SocksRequestPtr request);
+int httpServerConnectionHandlerCommon(int status,
+                                      HTTPConnectionPtr connection);
 void httpServerFinish(HTTPConnectionPtr connection, int s, int offset);
 
 void httpServerReply(HTTPConnectionPtr connection, int immediate);
