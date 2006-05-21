@@ -50,7 +50,8 @@ FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
 #      code;
 #  -DNO_STANDARD_RESOLVER to compile out the code that falls back to
 #      gethostbyname/getaddrinfo when DNS requests fail;
-#  -DNO_TUNNEL to compile out the code that handles CONNECT requests.
+#  -DNO_TUNNEL to compile out the code that handles CONNECT requests;
+#  -DNO_SOCKS to compile out the SOCKS gateway code.
 
 DEFINES = $(FILE_DEFINES) $(PLATFORM_DEFINES)
 

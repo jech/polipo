@@ -22,6 +22,41 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+#ifdef NO_SOCKS
+
+AtomPtr socksParentProxy = NULL;
+
+void
+preinitSocks()
+{
+    return;
+}
+
+void
+initSocks()
+{
+    return;
+}
+
+int
+do_socks_connect(char *name, int port,
+                 int (*handler)(int, SocksRequestPtr),
+                 void *data)
+{
+    SocksRequestRec request;
+    request.name = internAtomLowerN(name, strlen(name));
+    request.port = port;
+    request.handler = handler;
+    request.buf = NULL;
+    request.data = data;
+
+    handler(-ENOSYS, &request);
+    releaseAtom(request.name);
+    return 1;
+}
+
+#else
+
 AtomPtr socksParentProxy = NULL;
 AtomPtr socksProxyHost = NULL;
 int socksProxyPort = -1;
@@ -294,3 +329,4 @@ socksReadHandler(int status,
     destroySocksRequest(request);
     return 1;
 }
+#endif
