@@ -22,6 +22,22 @@ Polipo 0.10 (unreleased):
         Implemented disableVia.
         Implemented SOCKS support.
 
+23 September 2005: Polipo 0.9.9:
+
+        Fixed a bug that could cause objects to be incorrectly
+        determined to be dynamic (thanks to Joachim B. Haga).
+        Fixed a bug that could cause the local web server to expose
+        files that are not under the local root (thanks to Wessel
+        Dankers).
+        Fixed an off-by-one bug when parsing NL-terminated headers.
+        Made Polipo forget about failures when finishing on the client
+        side.
+        Polipo now sends Host headers even when speaking to an upstream
+        proxy.  Some proxies take RFC 2616 literally, and require that
+        (thanks to Zoltan Ivanfi).
+        Fixed some bugs in staleness computation, and implemented
+        server-side max-age directives (oops!) (thanks to Charley Chu).
+
 27 December 2004: Polipo 0.9.7:
 
         Fixed a possible crash when tunnelling.
