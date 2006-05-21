@@ -30,8 +30,7 @@
 
 # Uncomment this if you want to use a parent proxy:
 
-# parentHost = "squid.example.org"
-# parentPort = 3128
+# parentProxy = "squid.example.org:3128"
 
 # Uncomment this if you want to use a parent SOCKS4a proxy:
 
