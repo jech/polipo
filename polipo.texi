@@ -1307,10 +1307,14 @@ $ polipo parentProxy=localhost:8124
 @subsection SOCKS parent proxies
 @cindex SOCKS
 @vindex socksParentProxy
+@vindex socksUserName
 
 The variable @code{socksParentProxy} specifies the hostname and port
 number of a SOCKS4a parent proxy; it should have the form
 @samp{host:port}.
+
+The user name passed to the SOCKS proxy is defined by the variable
+@code{socksUserName}.
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
 @section Tuning POST and PUT requests
