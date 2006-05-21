@@ -691,7 +691,9 @@ create_listener(char *address, int port,
 #ifdef HAVE_IPv6
         rc = setV6only(fd, 0);
         if(rc < 0)
-            do_log_error(L_WARN, errno, "Couldn't reset IPV6_V6ONLY");
+            /* Reportedly OpenBSD returns an error for that.  So only
+               log it as a debugging message. */
+            do_log_error(D_CLIENT_CONN, errno, "Couldn't reset IPV6_V6ONLY");
 
         memset(&addr6, 0, sizeof(addr6));
         rc = inet_pton(AF_INET6, address, &addr6.sin6_addr);
