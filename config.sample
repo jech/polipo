@@ -33,6 +33,10 @@
 # parentHost = "squid.example.org"
 # parentPort = 3128
 
+# Uncomment this if you want to use a parent SOCKS4a proxy:
+
+# socksParentProxy = "localhost:9050"
+
 
 ### Memory
 ### ******
