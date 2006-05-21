@@ -27,6 +27,7 @@ AtomPtr socksProxyHost = NULL;
 int socksProxyPort = -1;
 AtomPtr socksProxyAddress = NULL;
 int socksProxyAddressIndex = -1;
+AtomPtr socksUserName = NULL;
 
 static int socksParentProxySetter();
 static int do_socks_connect_common();
@@ -40,7 +41,11 @@ preinitSocks()
 {
     CONFIG_VARIABLE_SETTABLE(socksParentProxy, CONFIG_ATOM_LOWER,
                              socksParentProxySetter,
-                             "SOCKS4A parent proxy (host:port)");
+                             "SOCKS4a parent proxy (host:port)");
+    socksUserName = internAtom("");
+    CONFIG_VARIABLE_SETTABLE(socksUserName, CONFIG_ATOM,
+                             configAtomSetter,
+                             "SOCKS4a user name");
 }
 
 static int
@@ -109,7 +114,7 @@ do_socks_connect(char *name, int port,
     request->buf = NULL;
     request->data = data;
 
-    if(socksProxyAddress == NULL) { 
+    if(socksProxyAddress == NULL) {
         do_gethostbyname(socksProxyHost->string, 0,
                          socksDnsHandler,
                          request);
@@ -195,7 +200,9 @@ socksConnectHandler(int status,
     if(rc < 0)
         do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
 
-    request->buf = malloc(9 + request->name->length + 1);
+    request->buf = malloc(8 +
+                          socksUserName->length + 1 +
+                          request->name->length + 1);
     if(request->buf == NULL) {
         request->handler(-ENOMEM, request);
         destroySocksRequest(request);
@@ -210,12 +217,16 @@ socksConnectHandler(int status,
     buf[3] = request->port & 0xFF;
     buf[4] = buf[5] = buf[6] = 0;
     buf[7] = 3;
-    buf[8] = '\0';
 
-    memcpy(buf + 9, request->name->string, request->name->length);
-    buf[9 + request->name->length] = '\0';
+    memcpy(buf + 8, socksUserName->string, socksUserName->length);
+    buf[8 + socksUserName->length] = '\0';
 
-    do_stream(IO_WRITE, request->fd, 0, buf, 9 + request->name->length + 1,
+    memcpy(buf + 8 + socksUserName->length + 1,
+           request->name->string, request->name->length);
+    buf[8 + socksUserName->length + 1 + request->name->length] = '\0';
+
+    do_stream(IO_WRITE, request->fd, 0, buf,
+              8 + socksUserName->length + 1 + request->name->length + 1,
               socksWriteHandler, request);
     return 1;
 }
