@@ -560,8 +560,12 @@ httpServerConnectionHandler(int status,
 
     assert(connection->fd < 0);
     if(request->fd >= 0) {
+        int rc;
         connection->fd = request->fd;
         connection->server->addrindex = request->index;
+        rc = setNodelay(connection->fd, 1);
+        if(rc < 0)
+            do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
     }
 
     return httpServerConnectionHandlerCommon(status, connection);
@@ -583,7 +587,6 @@ httpServerSocksHandler(int status, SocksRequestPtr request)
 int
 httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
 {
-    int rc;
     httpSetTimeout(connection, -1);
 
     if(status < 0) {
@@ -605,10 +608,6 @@ httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
 
     do_log(D_SERVER_CONN, "C    %s:%d.\n",
            connection->server->name, connection->server->port);
-
-    rc = setNodelay(connection->fd, 1);
-    if(rc < 0)
-        do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
 
     connection->connecting = 0;
     httpServerTrigger(connection->server);
