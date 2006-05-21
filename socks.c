@@ -227,20 +227,25 @@ socksWriteHandler(int status,
 {
     SocksRequestPtr request = srequest->data;
 
-    if(status) {
-        if(status > 0)
-            status = -ESOCKS;
-        request->handler(status, request);
-        destroySocksRequest(request);
-        return 1;
-    }
+    if(status < 0)
+        goto error;
 
-    if(!streamRequestDone(srequest))
+    if(!streamRequestDone(srequest)) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
         return 0;
+    }
 
     do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 8,
               socksReadHandler, request);
     return 1;
+
+ error:
+        request->handler(status, request);
+        destroySocksRequest(request);
+        return 1;
 }
 
 static int
@@ -250,17 +255,22 @@ socksReadHandler(int status,
 {
     SocksRequestPtr request = srequest->data;
 
-    if(status) {
-        if(status > 0)
-            status = -ESOCKS;
+    if(status < 0)
         goto error;
+
+    if(srequest->offset < 8) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
+        return 0;
     }
 
-    if(srequest->offset < 8)
-        return 0;
-
     if(request->buf[0] != 0 || request->buf[1] != 90) {
-        status = -ESOCKS;
+        if(request->buf[1] >= 91 && request->buf[1] <= 93)
+            status = -(ESOCKS_PROTOCOL + request->buf[1] - 90);
+        else
+            status = -ESOCKS_PROTOCOL;
         goto error;
     }
 

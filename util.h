@@ -19,15 +19,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+/* These are Polipo's error codes.  They need to be positive integers,
+   and must not collide with possible errno values.
+   Starting at 2^16 should be safe enough. */
+
 #define E0 (1 << 16)
 #define E1 (2 << 16)
+#define E2 (3 << 16)
 #define EUNKNOWN (E0)
 #define EDOSHUTDOWN (E0 + 1)
 #define EDOGRACEFUL (E0 + 2)
 #define EDOTIMEOUT (E0 + 3)
 #define ECLIENTRESET (E0 + 4)
 #define ESYNTAX (E0 + 5)
-#define ESOCKS (E0 + 6)
 #define EDNS_HOST_NOT_FOUND (E1)
 #define EDNS_NO_ADDRESS (E1 + 1)
 #define EDNS_NO_RECOVERY (E1 + 2)
@@ -37,6 +42,11 @@ THE SOFTWARE.
 #define EDNS_FORMAT (E1 + 6)
 #define EDNS_REFUSED (E1 + 7)
 #define EDNS_CNAME_LOOP (E1 + 8)
+#define ESOCKS_PROTOCOL (E2)
+/* These correspond to SOCKS status codes 91 through 93 */
+#define ESOCKS_REJECT_FAIL (E2 + 1)
+#define ESOCKS_REJECT_IDENTD (E2 + 2)
+#define ESOCKS_REJECT_UID_MISMATCH (E2 + 3)
 
 typedef struct _IntRange {
     int from;
