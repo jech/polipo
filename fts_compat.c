@@ -124,6 +124,18 @@ dirfd(DIR *dir)
 }
 #endif
 
+/*
+ * Make the directory identified by the argument the current directory.
+ */
+int change_to_dir(DIR *dir) {
+#ifdef HAVE_MINGW
+    assert(!"Not yet implemented!!");
+    exit(-1);
+#else
+    return fchdir(dirfd(dir));
+#endif
+}
+
 FTS*
 fts_open(char * const *path_argv, int options,
          int (*compar)(const FTSENT **, const FTSENT **))
@@ -159,7 +171,7 @@ fts_open(char * const *path_argv, int options,
         return NULL;
     }
 
-    rc = fchdir(dirfd(dir));
+    rc = change_to_dir(dir);
     if(rc < 0) {
         int save = errno;
         free(cwd);
@@ -249,7 +261,7 @@ fts_read(FTS *fts)
         fts->cwd = NULL;
         if(fts->depth < 0)
             return NULL;
-        rc = fchdir(dirfd(fts->dir[fts->depth]));
+        rc = change_to_dir(fts->dir[fts->depth]);
         if(rc < 0) {
             free(newcwd);
             goto error;
@@ -262,7 +274,9 @@ fts_read(FTS *fts)
 
     name = dirent->d_name;
 
+#ifndef HAVE_MINGW
  again2:
+#endif
     rc = stat(name, &fts->stat);
     if(rc < 0) {
         fts->ftsent.fts_info = FTS_NS;
@@ -289,7 +303,7 @@ fts_read(FTS *fts)
                 goto error;
         }
         newcwd = mkfilename(fts->cwd, dirent->d_name);
-        rc = fchdir(dirfd(dir));
+        rc = change_to_dir(dir);
         if(rc < 0) {
             free(newcwd);
             goto error;
@@ -303,6 +317,7 @@ fts_read(FTS *fts)
     } else if(S_ISREG(fts->stat.st_mode)) {
         fts->ftsent.fts_info = FTS_F;
         goto done;
+#ifndef HAVE_MINGW
     } else if(S_ISLNK(fts->stat.st_mode)) {
         int rc;
         rc = readlink(name, buf, 1024);
@@ -318,6 +333,7 @@ fts_read(FTS *fts)
             goto again2;
         fts->ftsent.fts_info = FTS_SLNONE;
         goto done;
+#endif
     } else {
         fts->ftsent.fts_info = FTS_DEFAULT;
         goto done;

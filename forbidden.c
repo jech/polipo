@@ -58,6 +58,7 @@ static int atomSetterForbidden(ConfigVariablePtr, void*);
 void
 preinitForbidden(void)
 {
+#ifdef HAVE_FORK
     CONFIG_VARIABLE_SETTABLE(forbiddenUrl, CONFIG_ATOM, configAtomSetter,
                              "URL to which forbidden requests "
                              "should be redirected.");
@@ -73,6 +74,7 @@ preinitForbidden(void)
                              "Redirect code to use with redirector.");
     CONFIG_VARIABLE_SETTABLE(uncachableFile, CONFIG_ATOM, atomSetterForbidden,
                              "File specifying uncachable URLs.");
+#endif
 }
 
 static int
@@ -419,6 +421,7 @@ urlForbidden(AtomPtr url,
 void
 redirectorKill(void)
 {
+#ifdef HAVE_FORK
     int rc;
     int status;
     if(redirector_read_fd >= 0) {
@@ -435,6 +438,7 @@ redirectorKill(void)
         }
         redirector_pid = -1;
     }
+#endif
 }
 
 static void
@@ -566,6 +570,7 @@ redirectorStreamHandler2(int status,
 int
 runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
 {
+#ifdef HAVE_FORK
     int rc;
     pid_t pid;
     int filedes1[2], filedes2[2];
@@ -643,5 +648,6 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
         exit(1);
         /* NOTREACHED */
     }
+#endif
     return 1;
 }

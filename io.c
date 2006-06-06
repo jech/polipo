@@ -25,6 +25,16 @@ THE SOFTWARE.
 void
 preinitIo()
 {
+#ifdef HAVE_WINSOCK
+    /* Load the winsock dll */
+    WSADATA wsaData;
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    int err = WSAStartup( wVersionRequested, &wsaData );
+    if (err != 0) {
+        do_log_error(L_ERROR, err, "Couldn't load winsock dll");
+        exit(-1);
+    }
+#endif
     return;
 }
 
@@ -326,14 +336,14 @@ do_scheduled_stream(int status, FdEventHandlerPtr event)
 
     if((request->operation & IO_MASK) == IO_WRITE) {
         if(i > 1) 
-            rc = writev(request->fd, iov, i);
+            rc = WRITEV(request->fd, iov, i);
         else
-            rc = write(request->fd, iov[0].iov_base, iov[0].iov_len);
+            rc = WRITE(request->fd, iov[0].iov_base, iov[0].iov_len);
     } else {
         if(i > 1) 
-            rc = readv(request->fd, iov, i);
+            rc = READV(request->fd, iov, i);
         else
-            rc = read(request->fd, iov[0].iov_base, iov[0].iov_len);
+            rc = READ(request->fd, iov[0].iov_base, iov[0].iov_len);
     }
 
     if(rc > 0) {
@@ -399,7 +409,7 @@ serverSocket(int af)
         rc = setNonblocking(fd, 1);
         if(rc < 0) {
             int errno_save = errno;
-            close(fd);
+            CLOSE(fd);
             errno = errno_save;
             return -1;
         }
@@ -501,7 +511,7 @@ do_scheduled_connect(int status, FdEventHandlerPtr event)
         int newfd;
         /* Ouch.  Our socket has a different protocol than the host
            address. */
-        close(request->fd);
+        CLOSE(request->fd);
         newfd = serverSocket(host->af);
         if(newfd < 0) {
             if(errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT) {
@@ -518,7 +528,7 @@ do_scheduled_connect(int status, FdEventHandlerPtr event)
         }
         if(newfd != request->fd) {
             request->fd = dup2(newfd, request->fd);
-            close(newfd);
+            CLOSE(newfd);
             if(request->fd < 0) {
                 done = request->handler(-errno, event, request);
                 assert(done);
@@ -724,7 +734,7 @@ create_listener(char *address, int port,
 
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't bind");
-        close(fd);
+        CLOSE(fd);
         done = (*handler)(-errno, NULL, NULL);
         assert(done);
         return NULL;
@@ -733,7 +743,7 @@ create_listener(char *address, int port,
     rc = setNonblocking(fd, 1);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't set non blocking mode");
-        close(fd);
+        CLOSE(fd);
         done = (*handler)(-errno, NULL, NULL);
         assert(done);
         return NULL;
@@ -742,7 +752,7 @@ create_listener(char *address, int port,
     rc = listen(fd, 32);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't listen");
-        close(fd);
+        CLOSE(fd);
         done = (*handler)(-errno, NULL, NULL);
         assert(done);
         return NULL;
@@ -751,9 +761,17 @@ create_listener(char *address, int port,
     return schedule_accept(fd, handler, data);
 }
 
+#ifndef SOL_TCP
+/* BSD */
+#define SOL_TCP IPPROTO_TCP
+#endif
+
 int
 setNonblocking(int fd, int nonblocking)
 {
+#ifdef HAVE_MINGW
+    return mingw_setnonblocking(fd, nonblocking);
+#else
     int rc;
     rc = fcntl(fd, F_GETFL, 0);
     if(rc < 0)
@@ -764,12 +782,8 @@ setNonblocking(int fd, int nonblocking)
         return -1;
 
     return 0;
-}
-
-#ifndef SOL_TCP
-/* BSD */
-#define SOL_TCP IPPROTO_TCP
 #endif
+}
 
 int
 setNodelay(int fd, int nodelay)
@@ -816,7 +830,7 @@ lingeringCloseTimeoutHandler(TimeEventHandlerPtr event)
     if(l->handler)
         pokeFdEvent(l->fd, -ESHUTDOWN, POLLIN | POLLOUT);
     else {
-        close(l->fd);
+        CLOSE(l->fd);
         free(l);
     }
     return 1;
@@ -835,7 +849,7 @@ lingeringCloseHandler(int status, FdEventHandlerPtr event)
     if(status && status != -EDOGRACEFUL)
         goto done;
 
-    rc = read(l->fd, &buf, 17);
+    rc = READ(l->fd, &buf, 17);
     if(rc == 0 || (rc < 0 && errno != EAGAIN && errno != EINTR))
         goto done;
 
@@ -849,7 +863,7 @@ lingeringCloseHandler(int status, FdEventHandlerPtr event)
         cancelTimeEvent(l->timeout);
         l->timeout = NULL;
     }
-    close(l->fd);
+    CLOSE(l->fd);
     free(l);
     return 1;
 }
@@ -867,7 +881,7 @@ lingeringClose(int fd)
         } else if(errno == EFAULT || errno == EBADF) {
             abort();
         }
-        close(fd);
+        CLOSE(fd);
         return 1;
     }
 
@@ -896,7 +910,7 @@ lingeringClose(int fd)
 
  fail:
     do_log(L_ERROR, "Couldn't schedule lingering close.\n");
-    close(fd);
+    CLOSE(fd);
     return 1;
 }
 

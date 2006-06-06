@@ -39,8 +39,12 @@ preinitLocal()
     atomWriteoutObjects = internAtom("writeout-objects");
     atomFreeChunkArenas = internAtom("free-chunk-arenas");
 
+#ifdef HAVE_FORK
     CONFIG_VARIABLE(disableLocalInterface, CONFIG_BOOLEAN,
                     "Disable the local configuration pages.");
+#else
+    disableLocalInterface = 1;
+#endif
 }
 
 static void fillSpecialObject(ObjectPtr, void (*)(char*), void*);
@@ -447,6 +451,7 @@ httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
 static void
 fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
 {
+#ifdef HAVE_FORK
     int rc;
     int filedes[2];
     pid_t pid;
@@ -556,12 +561,14 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
         (*fn)(closure);
         exit(0);
     }
+#endif
 }
 
 int
 specialRequestHandler(int status, 
                       FdEventHandlerPtr event, StreamRequestPtr srequest)
 {
+#ifdef HAVE_FORK
     SpecialRequestPtr request = srequest->data;
     int rc;
     int killed = 0;
@@ -636,5 +643,6 @@ specialRequestHandler(int status,
                (int)request->pid, reason, value);
     }
     free(request);
+#endif
     return 1;
 }

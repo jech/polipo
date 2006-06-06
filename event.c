@@ -22,7 +22,11 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+#ifdef HAVE_FORK
 static volatile sig_atomic_t exitFlag = 0;
+#else
+int exitFlag = 0;
+#endif
 static int in_signalCondition = 0;
 
 static TimeEventHandlerPtr timeEventQueue;
@@ -72,6 +76,7 @@ timeval_minus_usec(struct timeval *s1, struct timeval *s2)
     return (s1->tv_sec - s2->tv_sec) * 1000000 + s1->tv_usec - s2->tv_usec;
 }
 
+#ifdef HAVE_FORK
 static void
 sigexit(int signo)
 {
@@ -82,10 +87,12 @@ sigexit(int signo)
     else
         exitFlag = 3;
 }
+#endif
 
 void
 initEvents()
 {
+#ifdef HAVE_FORK
     struct sigaction sa;
     sigset_t ss;
 
@@ -124,6 +131,7 @@ initEvents()
     sa.sa_mask = ss;
     sa.sa_flags = 0;
     sigaction(SIGUSR2, &sa, NULL);
+#endif
 
     timeEventQueue = NULL;
     timeEventQueueLast = NULL;
@@ -137,6 +145,7 @@ initEvents()
 void
 uninitEvents(void)
 {
+#ifdef HAVE_FORK
     struct sigaction sa;
     sigset_t ss;
 
@@ -169,8 +178,10 @@ uninitEvents(void)
     sa.sa_mask = ss;
     sa.sa_flags = 0;
     sigaction(SIGUSR2, &sa, NULL);
+#endif
 }
 
+#ifdef HAVE_FORK
 void
 interestingSignals(sigset_t *ss)
 {
@@ -181,6 +192,7 @@ interestingSignals(sigset_t *ss)
     sigaddset(ss, SIGUSR1);
     sigaddset(ss, SIGUSR2);
 }
+#endif
 
 void
 timeToSleep(struct timeval *time)

@@ -32,28 +32,13 @@ THE SOFTWARE.
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-
-#include <sys/types.h>
-#include <sys/uio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
-#include <sys/poll.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
 #include <dirent.h>
-#include <sys/mman.h>
-
 #include <regex.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
@@ -154,8 +139,9 @@ THE SOFTWARE.
 #define UNALIGNED_ACCESS
 #endif
 
-#include "ftsimport.h"
+#include "mingw.h"
 
+#include "ftsimport.h"
 #include "atom.h"
 #include "util.h"
 #include "config.h"
