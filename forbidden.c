@@ -58,7 +58,6 @@ static int atomSetterForbidden(ConfigVariablePtr, void*);
 void
 preinitForbidden(void)
 {
-#ifdef HAVE_FORK
     CONFIG_VARIABLE_SETTABLE(forbiddenUrl, CONFIG_ATOM, configAtomSetter,
                              "URL to which forbidden requests "
                              "should be redirected.");
@@ -67,14 +66,15 @@ preinitForbidden(void)
                              "Redirect code, 301 or 302.");
     CONFIG_VARIABLE_SETTABLE(forbiddenFile, CONFIG_ATOM, atomSetterForbidden,
                              "File specifying forbidden URLs.");
+#ifndef NO_REDIRECTOR
     CONFIG_VARIABLE_SETTABLE(redirector, CONFIG_ATOM, atomSetterForbidden,
                              "Squid-style redirector.");
     CONFIG_VARIABLE_SETTABLE(redirectorRedirectCode, CONFIG_INT,
                              configIntSetter,
                              "Redirect code to use with redirector.");
+#endif
     CONFIG_VARIABLE_SETTABLE(uncachableFile, CONFIG_ATOM, atomSetterForbidden,
                              "File specifying uncachable URLs.");
-#endif
 }
 
 static int
@@ -391,6 +391,7 @@ urlForbidden(AtomPtr url,
         }
     }
 
+#ifndef NO_REDIRECTOR
     if(code == 0 && redirector) {
         RedirectRequestPtr request;
         request = malloc(sizeof(RedirectRequestRec));
@@ -411,17 +412,17 @@ urlForbidden(AtomPtr url,
             redirectorTrigger();
         return 1;
     }
-
+#endif
 
  done:
     handler(code, url, message, headers, closure);
     return 1;
 }
 
+#ifndef NO_REDIRECTOR
 void
 redirectorKill(void)
 {
-#ifdef HAVE_FORK
     int rc;
     int status;
     if(redirector_read_fd >= 0) {
@@ -438,7 +439,6 @@ redirectorKill(void)
         }
         redirector_pid = -1;
     }
-#endif
 }
 
 static void
@@ -570,7 +570,6 @@ redirectorStreamHandler2(int status,
 int
 runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
 {
-#ifdef HAVE_FORK
     int rc;
     pid_t pid;
     int filedes1[2], filedes2[2];
@@ -648,6 +647,15 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
         exit(1);
         /* NOTREACHED */
     }
-#endif
     return 1;
 }
+
+#else
+
+void
+redirectorKill(void)
+{
+    return;
+}
+
+#endif

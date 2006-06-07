@@ -166,6 +166,9 @@ THE SOFTWARE.
 #define READV(x, y, z)  readv(x, y, z)
 #endif
 
+#ifndef HAVE_FORK
+#define NO_REDIRECTOR
+#endif
 
 #include "mingw.h"
 
