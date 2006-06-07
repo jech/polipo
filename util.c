@@ -456,11 +456,11 @@ expandTilde(AtomPtr filename)
     return ret;
 }
 
+#ifdef HAVE_FORK
 void
 do_daemonise(int noclose)
 {
     /* If we cannot call fork(), then we cannot become a daemon. */
-#ifdef HAVE_FORK
     int rc;
 
     fflush(stdout);
@@ -485,8 +485,16 @@ do_daemonise(int noclose)
         do_log_error(L_ERROR, errno, "Couldn't create new session");
         exit(1);
     }
-#endif
 }
+#else
+void
+do_daemonise(int noclose)
+{
+    do_log(L_ERROR, "Cannot daemonise on this platform");
+    exit(1);
+}
+#endif
+
 
 void
 writePid(char *pidfile)
