@@ -47,7 +47,9 @@ preinitLocal()
 #endif
 }
 
+#ifdef HAVE_FORK
 static void fillSpecialObject(ObjectPtr, void (*)(char*), void*);
+#endif
 
 int 
 httpLocalRequest(ObjectPtr object, int method, int from, int to,
@@ -177,10 +179,12 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      "</head><body>\n"
                      "<h1>Polipo</h1>\n"
                      "<p><a href=\"status?\">Status report</a>.</p>\n"
+#ifdef HAVE_FORK
                      "<p><a href=\"config?\">Current configuration</a>.</p>\n"
                      "<p><a href=\"servers?\">Known servers</a>.</p>\n"
 #ifndef NO_DISK_CACHE
                      "<p><a href=\"index?\">Disk cache index</a>.</p>\n"
+#endif
 #endif
                      "</body></html>\n");
         object->length = object->size;
@@ -226,6 +230,7 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      used_atoms);
         object->expires = current_time.tv_sec;
         object->length = object->size;
+#ifdef HAVE_FORK
     } else if(matchUrl("/polipo/config", object)) {
         fillSpecialObject(object, printConfig, NULL);
         object->expires = current_time.tv_sec + 5;
@@ -258,6 +263,7 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
     } else if(matchUrl("/polipo/servers", object)) {
         fillSpecialObject(object, serversList, NULL);
         object->expires = current_time.tv_sec + 2;
+#endif
     } else {
         abortObject(object, 404, internAtom("Not found"));
     }
@@ -448,10 +454,10 @@ httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
     return 1;
 }
 
+#ifdef HAVE_FORK
 static void
 fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
 {
-#ifdef HAVE_FORK
     int rc;
     int filedes[2];
     pid_t pid;
@@ -561,14 +567,12 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
         (*fn)(closure);
         exit(0);
     }
-#endif
 }
 
 int
 specialRequestHandler(int status, 
                       FdEventHandlerPtr event, StreamRequestPtr srequest)
 {
-#ifdef HAVE_FORK
     SpecialRequestPtr request = srequest->data;
     int rc;
     int killed = 0;
@@ -643,6 +647,6 @@ specialRequestHandler(int status,
                (int)request->pid, reason, value);
     }
     free(request);
-#endif
     return 1;
 }
+#endif
