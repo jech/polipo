@@ -91,6 +91,7 @@ alternatingHttpStyle(FILE *out, char *id)
             "</style>\n", id, id);
 }
 
+#ifdef HAVE_FORK
 static void
 printConfig(char *dummy)
 {
@@ -105,6 +106,7 @@ printConfig(char *dummy)
     printf("<p><a href=\"/polipo/\">back</a></p>");
     printf("</body></html>\n");
 }
+#endif
 
 #ifndef NO_DISK_CACHE
 
@@ -121,11 +123,13 @@ plainIndexDiskObjects(char *root)
 }
 #endif
 
+#ifdef HAVE_FORK
 static void
 serversList(char *dummy)
 {
     listServers();
 }
+#endif
 
 static int
 matchUrl(char *base, ObjectPtr object)
