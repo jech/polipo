@@ -22,6 +22,8 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+#ifndef NO_FORBIDDEN
+
 #include <regex.h>
 
 typedef struct _Domain {
@@ -658,6 +660,37 @@ void
 redirectorKill(void)
 {
     return;
+}
+
+#endif
+
+#else
+
+void
+preinitForbidden()
+{
+    return;
+}
+
+void
+initForbidden()
+{
+    return;
+}
+
+int
+urlIsUncachable(char *url, int length)
+{
+    return 0;
+}
+
+int
+urlForbidden(AtomPtr url,
+             int (*handler)(int, AtomPtr, AtomPtr, AtomPtr, void*),
+             void *closure)
+{
+    handler(0, url, NULL, NULL, closure);
+    return 1;
 }
 
 #endif

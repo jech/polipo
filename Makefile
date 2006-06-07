@@ -52,6 +52,7 @@ FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
 #      gethostbyname/getaddrinfo when DNS requests fail;
 #  -DNO_TUNNEL to compile out the code that handles CONNECT requests;
 #  -DNO_SOCKS to compile out the SOCKS gateway code.
+#  -DNO_FORBIDDEN to compile out the all of the forbidden URL code
 #  -DNO_REDIRECTOR to compile out the Squid-style redirector code
 
 DEFINES = $(FILE_DEFINES) $(PLATFORM_DEFINES)
