@@ -241,14 +241,6 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo){
 int mingw_close_socket(SOCKET fd) {
     int rc;
 
-    /* Before closing the socket, perform a full-shutdown. Under winsock,
-     * this seems to speed up notification of the the other party to the
-     * connection.
-     */
-#if 0
-    shutdown(fd, 2);
-#endif
-
     rc = closesocket(fd);
     assert(rc == 0);
     return 0;
