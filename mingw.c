@@ -140,12 +140,14 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
     return (1);
 }
 
-unsigned int mingw_sleep(unsigned int seconds){
-  Sleep(seconds * 1000);
-  return 0;
+unsigned int mingw_sleep(unsigned int seconds)
+{
+    Sleep(seconds * 1000);
+    return 0;
 }
 
-int mingw_gettimeofday(struct timeval *tv, char *tz){
+int mingw_gettimeofday(struct timeval *tv, char *tz)
+{
     const long long EPOCHFILETIME = (116444736000000000LL);
     FILETIME        ft;
     LARGE_INTEGER   li;
@@ -174,7 +176,8 @@ int mingw_gettimeofday(struct timeval *tv, char *tz){
 
 #define DEBUG_POPIPO_POLL 0
 
-int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo){
+int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
+{
     struct timeval timeout, *toptr;
     fd_set ifds, ofds, efds, *ip, *op;
     int i, rc;
@@ -259,7 +262,8 @@ set_errno(int winsock_err)
     }
 }
 
-int mingw_write_socket(SOCKET fd, void *buf, int n){
+int mingw_write_socket(SOCKET fd, void *buf, int n)
+{
     int rc = send(fd, buf, n, 0);
     if(rc == SOCKET_ERROR) {
         set_errno(WSAGetLastError());
@@ -267,7 +271,8 @@ int mingw_write_socket(SOCKET fd, void *buf, int n){
     return rc;
 }
 
-int mingw_read_socket(SOCKET fd, void *buf, int n){
+int mingw_read_socket(SOCKET fd, void *buf, int n)
+{
     int rc = recv(fd, buf, n, 0);
     if(rc == SOCKET_ERROR) {
         set_errno(WSAGetLastError());
@@ -285,7 +290,8 @@ int mingw_read_socket(SOCKET fd, void *buf, int n){
  * This function is Mingw friendly, but only supports socket file 
  * descriptors, not regular files. 
  */
-int mingw_setnonblocking(SOCKET fd, int nonblocking){
+int mingw_setnonblocking(SOCKET fd, int nonblocking)
+{
     int rc;
 
 #ifdef HAVE_MINGW
@@ -461,4 +467,3 @@ int polipo_readv(int fd, const struct iovec *vector, int count)
     return ret;
 }
 #endif
-
