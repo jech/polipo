@@ -128,52 +128,20 @@ THE SOFTWARE.
 
   int mingw_setnonblocking(SOCKET, int);
 
-#else
-
-  #include <sys/mman.h>
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <netinet/tcp.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
-  #include <sys/types.h>
-  #include <sys/uio.h>
-  #include <sys/poll.h>
-  #include <sys/wait.h>
-  #include <sys/ioctl.h>
-
-  #include <signal.h>
-
-  /* The HAVE_FORK symbol is defined if the system has both fork() and 
-   * Unix signals functionality. 
-   */
-  #define HAVE_FORK 1
-
-  #define HAVE_READV_WRITEV 1
-
-  /* Three socket specific macros */
-  #define READ(x, y, z)  read(x, y, z)
-  #define WRITE(x, y, z) write(x, y, z)
-  #define CLOSE(x)       close(x)
-
 #endif
 
+#ifndef HAVE_READV_WRITEV
 /*
  * The HAVE_READV_WRITEV symbol should be defined if the system features
  * the vector IO functions readv() and writev() and those functions may
  * be legally used with sockets.
  */
-#ifdef HAVE_READV_WRITEV
-  #define WRITEV(x, y, z) writev(x, y, z)
-  #define READV(x, y, z)  readv(x, y, z)
-#else
-  struct iovec {
+struct iovec {
     void *iov_base;   /* Starting address */
     size_t iov_len;   /* Number of bytes */
-  };
-  #define WRITEV(x, y, z) polipo_writev(x, y, z)
-  #define READV(x, y, z)  polipo_readv(x, y, z)
-  int polipo_readv(int fd, const struct iovec *vector, int count);
-  int polipo_writev(int fd, const struct iovec *vector, int count);
+};
+#define WRITEV(x, y, z) polipo_writev(x, y, z)
+#define READV(x, y, z)  polipo_readv(x, y, z)
+int polipo_readv(int fd, const struct iovec *vector, int count);
+int polipo_writev(int fd, const struct iovec *vector, int count);
 #endif
-

@@ -39,6 +39,20 @@ THE SOFTWARE.
 #include <sys/stat.h>
 #include <dirent.h>
 #include <regex.h>
+#ifndef HAVE_MINGW
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <sys/poll.h>
+#include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#endif
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
@@ -138,6 +152,20 @@ THE SOFTWARE.
 #if defined(i386) || defined(__mc68020__)
 #define UNALIGNED_ACCESS
 #endif
+
+#ifndef HAVE_MINGW
+#define HAVE_FORK 1
+#define HAVE_READV_WRITEV 1
+#define READ(x, y, z) read(x, y, z)
+#define WRITE(x, y, z) write(x, y, z)
+#define CLOSE(x) close(x)
+#endif
+
+#ifdef HAVE_READV_WRITEV
+#define WRITEV(x, y, z) writev(x, y, z)
+#define READV(x, y, z)  readv(x, y, z)
+#endif
+
 
 #include "mingw.h"
 
