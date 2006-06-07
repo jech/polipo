@@ -22,6 +22,8 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+#include <regex.h>
+
 typedef struct _Domain {
     int length;
     char domain[1];

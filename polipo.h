@@ -38,7 +38,6 @@ THE SOFTWARE.
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <regex.h>
 #ifndef HAVE_MINGW
 #include <sys/mman.h>
 #include <sys/socket.h>
