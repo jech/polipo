@@ -22,7 +22,11 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
-#ifdef HAVE_MINGW
+#ifndef HAVE_MINGW
+
+static int dummy ATTRIBUTE((unused));
+
+#else
 
 #undef poll
 #undef socket
