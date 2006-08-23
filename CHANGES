@@ -19,6 +19,7 @@ Polipo 0.10 (unreleased):
         Implemented maxPipelineTrain, which can be used to moderate
         Polipo's eagerness to pipeline.
         Unified parentHost and parentPort into parentProxy.
+        Initial port to native Windows (thanks to Dan Kennedy).
         Implemented disableVia.
         Implemented SOCKS support.
         Made disableVia the default.
