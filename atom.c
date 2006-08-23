@@ -203,16 +203,18 @@ internAtomF(const char *format, ...)
 
     va_start(args, format);
     n = vsnprintf(buf, 150, format, args);
+    va_end(args);
     if(n >= 0 && n < 150) {
         atom = internAtomN(buf, n);
     } else {
+        va_start(args, format);
         s = vsprintf_a(format, args);
+        va_end(args);
         if(s != NULL) {
             atom = internAtom(s);
             free(s);
         }
     }
-    va_end(args);
     return atom;
 }
 
