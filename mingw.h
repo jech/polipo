@@ -45,7 +45,6 @@ THE SOFTWARE.
   #define NO_DISK_CACHE 1
   #define NO_IPv6 1
   #define NO_FANCY_RESOLVER 1
-  #define NO_TUNNEL 1
 
   /* Mingw can't do the mmap() stuff required for the special allocator.
    * So define MALLOC_CHUNKS to fall back to regular old malloc().
