@@ -92,6 +92,11 @@
 ### HTTP
 ### ****
 
+# Uncomment this if you want to enable detection of routing loops
+# This will cause your hostname to be included in every request.
+
+# disableVia=false
+
 # Uncomment this if you want to slightly reduce the amount of
 # information that you leak about yourself:
 
