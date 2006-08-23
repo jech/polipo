@@ -74,6 +74,8 @@ union {
 } nameserverAddress_storage;
 
 #ifndef NO_FANCY_RESOLVER
+static AtomPtr atomLocalhost, atomLocalhostDot;
+
 #define nameserverAddress nameserverAddress_storage.sa
 
 static DnsQueryPtr inFlightDnsQueries;
@@ -229,6 +231,8 @@ initDns()
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)&nameserverAddress;
 #endif
 
+    atomLocalhost = internAtom("localhost");
+    atomLocalhostDot = internAtom("localhost.");
     inFlightDnsQueries = NULL;
     inFlightDnsQueriesLast = NULL;
 
@@ -936,6 +940,27 @@ really_do_dns(AtomPtr name, ObjectPtr object)
     AtomPtr message = NULL;
     int id;
     AtomPtr a = NULL;
+
+    if(a == NULL) {
+        if(name == atomLocalhost || name == atomLocalhostDot) {
+            char s[1 + sizeof(HostAddressRec)];
+            memset(s, 0, sizeof(s));
+            s[0] = DNS_A;
+            s[1] = 4;
+            s[2] = 127;
+            s[3] = 0;
+            s[4] = 0;
+            s[5] = 1;
+            a = internAtomN(s, 1 + sizeof(HostAddressRec));
+            if(a == NULL) {
+                abortObject(object, 501,
+                            internAtom("Couldn't allocate address"));
+                notifyObject(object);
+                errno = ENOMEM;
+                return -1;
+            }
+        }
+    }
 
     if(a == NULL) {
         struct in_addr ina;
