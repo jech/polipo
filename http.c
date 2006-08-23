@@ -45,7 +45,7 @@ int expectContinue = 1;
 
 AtomPtr atom100Continue;
 
-int disableVia = 0;
+int disableVia = 1;
 
 /* 0 means that all failures lead to errors.  1 means that failures to
    connect are reported in a Warning header when stale objects are
