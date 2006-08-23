@@ -21,6 +21,7 @@ Polipo 0.10 (unreleased):
         Unified parentHost and parentPort into parentProxy.
         Implemented disableVia.
         Implemented SOCKS support.
+        Made disableVia the default.
 
 23 September 2005: Polipo 0.9.9:
 
