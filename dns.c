@@ -1045,7 +1045,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
     char buf[2048];
     int len, rc;
     ObjectPtr object;
-    unsigned ttl;
+    unsigned ttl = 0;
     AtomPtr name, value, message = NULL;
     int id;
     int af;
