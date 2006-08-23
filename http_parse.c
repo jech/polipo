@@ -935,13 +935,18 @@ httpParseHeaders(int client, AtomPtr url,
             time_t t;
             j = parse_time(buf, value_start, value_end, &t);
             if(j < 0) {
-                t = 0;
+                do_log(L_WARN, "Couldn't parse date.\n");
+                t = -1;
             }
-            if(name == atomDate)
-                date = t;
-            else if(name == atomExpires)
-                expires = t;
-            else if(name == atomLastModified)
+            if(name == atomDate) {
+                if(t >= 0)
+                    date = t;
+            } else if(name == atomExpires) {
+                if(t >= 0)
+                    expires = t;
+                else
+                    expires = 0;
+            } else if(name == atomLastModified)
                 last_modified = t;
             else if(name == atomIfModifiedSince)
                 ims = t;
