@@ -178,8 +178,6 @@ int mingw_gettimeofday(struct timeval *tv, char *tz)
     return 0;
 }
 
-#define DEBUG_POLIPO_POLL 0
-
 int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
 {
     struct timeval timeout, *toptr;
@@ -212,12 +210,12 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
 	timeout.tv_usec = (timo - timeout.tv_sec * 1000) * 1000;
     }
 
-#if DEBUG_POLIPO_POLL
+#ifdef DEBUG_POLL
     printf("Entering select() sec=%d usec=%d ip=%x op=%x\n", 
         timo, timeout.tv_sec, timeout.tv_usec, (int)ip, (int)op);
 #endif
     rc = select(0, ip, op, &efds, toptr);
-#if DEBUG_POLIPO_POLL
+#ifdef DEBUG_POLL
     printf("Exiting select rc=%d\n", rc);
 #endif
 
@@ -234,7 +232,7 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     	if (FD_ISSET(fd, &efds))
     		/* Some error was detected ... should be some way to know. */
     		fds[i].revents |= POLLHUP;
-#if DEBUG_POLIPO_POLL
+#ifdef DEBUG_POLL
         printf("%d %d %d revent = %x\n", 
                 FD_ISSET(fd, &ifds), FD_ISSET(fd, &ofds), FD_ISSET(fd, &efds), 
                 fds[i].revents
