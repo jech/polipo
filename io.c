@@ -458,8 +458,9 @@ do_connect(AtomPtr addr, int index, int port,
         assert(done);
         return NULL;
     }
-    
-    event = registerFdEvent(fd, POLLOUT,
+
+    /* POLLIN is apparently needed on Windows */
+    event = registerFdEvent(fd, POLLIN | POLLOUT,
                             do_scheduled_connect,
                             sizeof(ConnectRequestRec), &request);
     if(event == NULL) {
