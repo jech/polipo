@@ -211,8 +211,8 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     }
 
 #ifdef DEBUG_POLL
-    printf("Entering select() sec=%d usec=%d ip=%x op=%x\n", 
-        timo, timeout.tv_sec, timeout.tv_usec, (int)ip, (int)op);
+    printf("Entering select() sec=%ld usec=%ld ip=%lx op=%lx\n",
+           (long)timeout.tv_sec, (long)timeout.tv_usec, (long)ip, (long)op);
 #endif
     rc = select(0, ip, op, &efds, toptr);
 #ifdef DEBUG_POLL
