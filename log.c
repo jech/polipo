@@ -98,7 +98,7 @@ really_do_log_error(int type, int e, const char *f, ...)
     va_list args;
     va_start(args, f);
     if(type & LOGGING_MAX & logLevel)
-    really_do_log_error_v(type, e, f, args);
+        really_do_log_error_v(type, e, f, args);
     va_end(args);
 }
 
