@@ -207,7 +207,6 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     connection->len = -1;
     connection->offset = 0;
     connection->te = TE_IDENTITY;
-    connection->reqte = TE_UNKNOWN;
 
     if(!s) {
         assert(connection->fd > 0);
@@ -1013,6 +1012,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         connection->reqlen = 0;
         httpConnectionDestroyReqbuf(connection);
     }
+    connection->reqte = TE_UNKNOWN;
 
     if(connection->bodylen > 0) {
         httpSetTimeout(connection, clientTimeout);
@@ -1049,6 +1049,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     connection->reqlen = 0;
     connection->reqbegin = 0;
     connection->bodylen = 0;
+    connection->reqte = TE_UNKNOWN;
     shutdown(connection->fd, 2);
     handler = scheduleTimeEvent(-1, httpClientDelayed,
                                 sizeof(connection), &connection);
