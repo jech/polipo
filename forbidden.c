@@ -488,6 +488,8 @@ redirectorStreamHandler1(int status,
     RedirectRequestPtr request = (RedirectRequestPtr)srequest->data;
 
     if(status) {
+        if(status >= 0)
+            status = -EPIPE;
         do_log_error(L_ERROR, -status, "Write to redirector failed");
         request->handler(status < 0 ? status : -EPIPE, 
                          request->url, NULL, NULL, request->data);
@@ -525,8 +527,7 @@ redirectorStreamHandler2(int status,
     if(!c) {
         if(!status && c < redirector_buffer + 512)
             return 0;
-        do_log_error(L_ERROR, errno,
-                     "Redirector returned incomplete reply.\n");
+        do_log(L_ERROR, "Redirector returned incomplete reply.\n");
         request->handler(-EUNKNOWN, request->url, NULL, NULL, request->data);
         goto kill;
     }
