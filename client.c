@@ -1046,7 +1046,10 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     return 1;
 
  fail:
-    shutdown(connection->fd, 0);
+    connection->reqlen = 0;
+    connection->reqbegin = 0;
+    connection->bodylen = 0;
+    shutdown(connection->fd, 2);
     handler = scheduleTimeEvent(-1, httpClientDelayed,
                                 sizeof(connection), &connection);
     if(handler == NULL) {
