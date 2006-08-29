@@ -945,6 +945,8 @@ httpServerDoSide(HTTPConnectionPtr connection)
 
     assert(connection->bodylen >= 0);
 
+    httpSetTimeout(connection, 60);
+
     if(connection->reqlen > 0) {
         /* Send the headers, but don't send any part of the body if
            we're in wait_continue. */
