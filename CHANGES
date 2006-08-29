@@ -24,6 +24,26 @@ Polipo 0.10 (unreleased):
         Implemented SOCKS support.
         Made disableVia the default.
 
+Polipo 0.9.10 (unreleased):
+
+        Fixed a crash when a client closes a connection at just the
+        wrong time.
+        Fixed a crash that could happen when a server returned
+        incorrect headers and closed the connection at just the wrong
+        time.
+        Fixed restarting of connections on a server-side read error;
+        this should avoid the ``connection reset by peer'' problem.
+        Corrected work-around for DNS servers that export both AAAA
+        and CNAME.
+        Fix incorrect error handling when overflowing the buffer when
+        saving an entity to disk.
+        IPv6 tweaks for OpenBSD (thanks to Jun-ichiro itojun Hagino).
+        Fixed incorrect error-handling on failure to parse a date.
+        Fixed a deadlock when a tunnel is shut down and the buffer is
+        full.
+        Fixed an incorrect use of va_start (guaranteed crash on AMD64).
+        Fixed a possible race condition with a heavily pipelining client.
+
 23 September 2005: Polipo 0.9.9:
 
         Fixed a bug that could cause objects to be incorrectly
