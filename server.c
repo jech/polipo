@@ -957,7 +957,17 @@ httpServerDoSide(HTTPConnectionPtr connection)
                     (request->flags & REQUEST_WAIT_CONTINUE) ? 0 : len,
                     httpServerSideHandler2, connection);
         httpServerReply(connection, 0);
-    } else if(!request->wait_continue && doflush) {
+    } else if(request->object->flags & OBJECT_ABORTED) {
+        if(connection->reqbuf)
+            dispose_chunk(connection->reqbuf);
+        connection->reqbuf = NULL;
+        connection->reqlen = 0;
+        pokeFdEvent(connection->fd, -ESHUTDOWN, POLLIN);
+        client->flags |= CONN_SIDE_READER;
+        do_stream(IO_READ | IO_IMMEDIATE,
+                  client->fd, 0, NULL, 0,
+                  httpClientSideHandler, client);
+    } else if(!(request->flags & REQUEST_WAIT_CONTINUE) && doflush) {
         /* Make sure there's a reqbuf, as httpServerFinish uses
            it to determine if there's a writer. */
         if(connection->reqbuf == NULL)
@@ -968,10 +978,8 @@ httpServerDoSide(HTTPConnectionPtr connection)
                   client->reqbuf + client->reqbegin, len,
                   httpServerSideHandler, connection);
     } else {
-        if(done || connection->reqlen == 0) {
-            if(connection->reqbuf)
-                dispose_chunk(connection->reqbuf);
-            connection->reqbuf = NULL;
+        if(connection->reqbuf) {
+            httpConnectionDestroyReqbuf(connection);
             connection->reqlen = 0;
         }
         if(request->flags & REQUEST_WAIT_CONTINUE) {
@@ -1037,8 +1045,8 @@ httpServerSideHandlerCommon(int kind, int status,
     assert(request->object->flags & OBJECT_INPROGRESS);
 
     if(status) {
-        dispose_chunk(connection->reqbuf);
-        connection->reqbuf = NULL;
+        do_log_error(L_ERROR, -status, "Couldn't write to server");
+        httpConnectionDestroyReqbuf(connection);
         if(status != -ECLIENTRESET)
             shutdown(connection->fd, 2);
         abortObject(request->object, 503,
