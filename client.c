@@ -160,14 +160,13 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
 
     if(connection->flags & CONN_SIDE_READER) {
         /* We're in POST or PUT and the reader isn't done yet.
-           We make sure the request is marked as failed, and
-           reschedule ourselves. */
+           Wait for the read side to close the connection. */
         assert(request && (connection->flags & CONN_READER));
-        if(request->error_code == 0) {
-            request->error_code = 500;
-            request->error_message = internAtom("Error message lost");
+        if(s >= 2) {
+            pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
+        } else {
+            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLIN);
         }
-        httpClientDelayedFinish(connection);
         return;
     }
 
