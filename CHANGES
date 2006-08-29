@@ -43,6 +43,7 @@ Polipo 0.9.10 (unreleased):
         full.
         Fixed an incorrect use of va_start (guaranteed crash on AMD64).
         Fixed a possible race condition with a heavily pipelining client.
+        Fixed a crash due to incorrect handling of write errors in POST.
 
 23 September 2005: Polipo 0.9.9:
 
