@@ -391,6 +391,9 @@ tunnelRead1Handler(int status,
     }
     tunnel->buf1.head = request->offset % CHUNK_SIZE;
  done:
+    /* Keep buffer empty to avoid a deadlock */
+    if((tunnel->flags & TUNNEL_EPIPE2))
+        tunnel->buf1.tail = tunnel->buf1.head;
     tunnel->flags &= ~TUNNEL_READER1;
     tunnelDispatch(tunnel);
     return 1;
@@ -409,6 +412,9 @@ tunnelRead2Handler(int status,
     }
     tunnel->buf2.head = request->offset % CHUNK_SIZE;
 done:
+    /* Keep buffer empty to avoid a deadlock */
+    if((tunnel->flags & TUNNEL_EPIPE1))
+        tunnel->buf2.tail = tunnel->buf2.head;
     tunnel->flags &= ~TUNNEL_READER2;
     tunnelDispatch(tunnel);
     return 1;
