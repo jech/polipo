@@ -24,7 +24,7 @@ Polipo 0.10 (unreleased):
         Implemented SOCKS support.
         Made disableVia the default.
 
-Polipo 0.9.10 (unreleased):
+2 September 2006: Polipo 0.9.10:
 
         Fixed a crash when a client closes a connection at just the
         wrong time.
