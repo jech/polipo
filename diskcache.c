@@ -2008,7 +2008,8 @@ indexDiskObjects(const char *root, int recursive)
                 }
                 closedir(dir);
             } else {
-                printf("<p>Couldn't open directory: %d</p>\n", errno);
+                printf("<p>Couldn't open directory: %s (%d).</p>\n",
+                       strerror(errno), errno);
                 goto trailer;
             }
         }
