@@ -33,7 +33,7 @@ AtomPtr parentHost = NULL;
 int parentPort = -1;
 int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
-int serverMaxSlots = 5;
+int serverMaxSlots = 8;
 int dontCacheRedirects = 0;
 
 static HTTPServerPtr servers = 0;
