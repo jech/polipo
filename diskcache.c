@@ -337,48 +337,6 @@ md5(unsigned char *restrict key, int len, unsigned char *restrict dst)
     memcpy(dst, ctx.digest, 16);
 }
 
-/* Given a URL, returns the filename where the cached data can be
-   found. */
-static int
-urlFilename(char *restrict buf, int n, const char *url, int len)
-{
-    int i, j;
-    unsigned char md5buf[18];
-    if(len < 8)
-        return -1;
-    if(memcmp(url, "http://", 7) != 0)
-        return -1;
-
-    if(diskCacheRoot == NULL || diskCacheRoot->length <= 0 || 
-       diskCacheRoot->string[0] != '/')
-        return -1;
-
-    if(n <= diskCacheRoot->length)
-        return -1;
-
-    memcpy(buf, diskCacheRoot->string, diskCacheRoot->length);
-    j = diskCacheRoot->length;
-
-    if(buf[j - 1] != '/')
-        buf[j++] = '/';
-
-    for(i = 7; i < len; i++) {
-        if(i >= len || url[i] == '/')
-            break;
-        if((url[i] & 0x7F) < 32 ||
-           (url[i] == '.' && i != len - 1 && url[i + 1] == '.'))
-            return -1;
-        buf[j++] = url[i]; if(j >= n) return -1;
-    }
-    if(j + 1 + 2 * 16 >= n)
-        return -1;
-    buf[j++] = '/';
-    md5((unsigned char*)url, len, md5buf);
-    b64cpy(buf + j, md5buf, 16, 1);
-    buf[j + 24] = '\0';
-    return j + 24;
-}
-
 /* Given a URL, returns the directory name within which all files
    starting with this URL can be found. */
 
@@ -415,6 +373,22 @@ urlDirname(char *buf, int n, const char *url, int len)
     buf[j++] = '/'; if(j >= n) return -1;
     buf[j] = '\0';
     return j;
+}
+
+/* Given a URL, returns the filename where the cached data can be
+   found. */
+static int
+urlFilename(char *restrict buf, int n, const char *url, int len)
+{
+    int j;
+    unsigned char md5buf[18];
+    j = urlDirname(buf, n, url, len);
+    if(j < 0 || j + 24 >= n)
+        return -1;
+    md5((unsigned char*)url, len, md5buf);
+    b64cpy(buf + j, md5buf, 16, 1);
+    buf[j + 24] = '\0';
+    return j + 24;
 }
 
 static char *
