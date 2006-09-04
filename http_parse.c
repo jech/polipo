@@ -793,10 +793,9 @@ httpParseHeaders(int client, AtomPtr url,
         if(name_start < 0)
             continue;
 
-        /* It's not worthwile to intern the name -- it will only be
-           compared once. */
-        
-        if(token_compare(buf, name_start, name_end, "connection")) {
+        name = internAtomLowerN(buf + name_start, name_end - name_start);
+
+        if(name == atomConnection) {
             j = getNextTokenInList(buf, value_start, 
                                    &token_start, &token_end, NULL, NULL,
                                    &end);
@@ -831,6 +830,8 @@ httpParseHeaders(int client, AtomPtr url,
                                        &end);
             }
         }
+        releaseAtom(name);
+        name = NULL;
     }
     
     i = start;
