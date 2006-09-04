@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
-#ifndef HAVE_MINGW
+#ifndef MINGW
 
 static int dummy ATTRIBUTE((unused));
 
@@ -296,7 +296,7 @@ int mingw_setnonblocking(SOCKET fd, int nonblocking)
 {
     int rc;
 
-#ifdef HAVE_MINGW
+#ifdef MINGW
     unsigned long mode = 1;
     rc = ioctlsocket(fd, FIONBIO, &mode);
     if (rc != 0) {
@@ -407,7 +407,7 @@ int mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
     return rc;
 }
 
-#endif /* #ifdef HAVE_MINGW */
+#endif /* #ifdef MINGW */
 
 #ifndef HAVE_READV_WRITEV
 

@@ -369,7 +369,7 @@ pstrerror(int e)
     default: s = NULL; break;
     }
     if(!s) s = strerror(e);
-#ifdef HAVE_MINGW
+#ifdef MINGW
     if(!s) {
         if(e >= WSABASEERR && e <= WSABASEERR + 2000) {
             /* This should be okay, as long as the caller discards the

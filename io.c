@@ -770,7 +770,7 @@ create_listener(char *address, int port,
 int
 setNonblocking(int fd, int nonblocking)
 {
-#ifdef HAVE_MINGW
+#ifdef MINGW
     return mingw_setnonblocking(fd, nonblocking);
 #else
     int rc;

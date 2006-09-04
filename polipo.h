@@ -38,7 +38,7 @@ THE SOFTWARE.
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#ifndef HAVE_MINGW
+#ifndef MINGW
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -152,7 +152,7 @@ THE SOFTWARE.
 #define UNALIGNED_ACCESS
 #endif
 
-#ifndef HAVE_MINGW
+#ifndef MINGW
 #define HAVE_FORK 1
 #define HAVE_READV_WRITEV 1
 #define READ(x, y, z) read(x, y, z)

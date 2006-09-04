@@ -128,7 +128,7 @@ dirfd(DIR *dir)
  * Make the directory identified by the argument the current directory.
  */
 int change_to_dir(DIR *dir) {
-#ifdef HAVE_MINGW
+#ifdef MINGW
     assert(!"Not yet implemented!!");
     exit(-1);
 #else
@@ -274,7 +274,7 @@ fts_read(FTS *fts)
 
     name = dirent->d_name;
 
-#ifndef HAVE_MINGW
+#ifndef MINGW
  again2:
 #endif
     rc = stat(name, &fts->stat);
@@ -317,7 +317,7 @@ fts_read(FTS *fts)
     } else if(S_ISREG(fts->stat.st_mode)) {
         fts->ftsent.fts_info = FTS_F;
         goto done;
-#ifndef HAVE_MINGW
+#ifndef MINGW
     } else if(S_ISLNK(fts->stat.st_mode)) {
         int rc;
         rc = readlink(name, buf, 1024);

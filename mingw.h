@@ -27,11 +27,11 @@ THE SOFTWARE.
  *
  * The target MS windows compiler is Mingw (MINimal Gnu for Windows). The
  * code in this file probably get's us pretty close to MSVC also, but
- * this has not been tested. To build polipo for Mingw, define the HAVE_MINGW
+ * this has not been tested. To build polipo for Mingw, define the MINGW
  * symbol. For Unix or Unix-like systems, leave it undefined.
  */
 
-#ifdef HAVE_MINGW
+#ifdef MINGW
 
   /* Unfortunately, there's no hiding it. */
   #define HAVE_WINSOCK 1
