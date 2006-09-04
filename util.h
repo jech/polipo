@@ -27,6 +27,7 @@ THE SOFTWARE.
 #define E0 (1 << 16)
 #define E1 (2 << 16)
 #define E2 (3 << 16)
+#define E3 (4 << 16)
 #define EUNKNOWN (E0)
 #define EDOSHUTDOWN (E0 + 1)
 #define EDOGRACEFUL (E0 + 2)
@@ -47,6 +48,7 @@ THE SOFTWARE.
 #define ESOCKS_REJECT_FAIL (E2 + 1)
 #define ESOCKS_REJECT_IDENTD (E2 + 2)
 #define ESOCKS_REJECT_UID_MISMATCH (E2 + 3)
+#define ESOCKS5_BASE (E3)
 
 typedef struct _IntRange {
     int from;

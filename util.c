@@ -346,12 +346,25 @@ pstrerror(int e)
     case EDNS_FORMAT: s = "Invalid DNS query"; break;
     case EDNS_REFUSED: s = "DNS query refused by server"; break;
     case EDNS_CNAME_LOOP: s = "DNS CNAME loop"; break;
+#ifndef NO_SOCKS
     case ESOCKS_PROTOCOL: s = "SOCKS protocol error"; break;
     case ESOCKS_REJECT_FAIL: s = "SOCKS request rejected or failed"; break;
     case ESOCKS_REJECT_IDENTD: s = "SOCKS request rejected: "
                                    "server couldn't connect to identd";
     case ESOCKS_REJECT_UID_MISMATCH: s = "SOCKS request rejected: "
                                          "uid mismatch";
+        break;
+    case ESOCKS5_BASE: s = "SOCKS success"; break;
+    case ESOCKS5_BASE + 1: s = "General SOCKS server failure"; break;
+    case ESOCKS5_BASE + 2: s = "SOCKS connection not allowed"; break;
+    case ESOCKS5_BASE + 3: s = "SOCKS error: network unreachable"; break;
+    case ESOCKS5_BASE + 4: s = "SOCKS error: host unreachable"; break;
+    case ESOCKS5_BASE + 5: s = "SOCKS error: connection refused"; break;
+    case ESOCKS5_BASE + 6: s = "SOCKS error: TTL expired"; break;
+    case ESOCKS5_BASE + 7: s = "SOCKS command not supported"; break;
+    case ESOCKS5_BASE + 8: s = "SOCKS error: address type not supported";
+        break;
+#endif
     case EUNKNOWN: s = "Unknown error"; break;
     default: s = NULL; break;
     }
