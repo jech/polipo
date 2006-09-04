@@ -436,9 +436,6 @@ httpPrintCacheControl(char *buf, int offset, int len,
                           cache_control->min_fresh);
         }
     }
-    if(flags & CACHE_NO) {
-        n = snnprintf(buf, n, len, "\r\nPragma: no-cache");
-    }
     return n;
 #undef PRINT_SEP
 }

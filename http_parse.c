@@ -763,6 +763,7 @@ httpParseHeaders(int client, AtomPtr url,
     char *im = NULL, *inm = NULL;
     AtomListPtr hopToHop = NULL;
     HTTPRangeRec range = {-1, -1, -1}, content_range = {-1, -1, -1};
+    int haveCacheControl = 0;
  
 #define RESIZE_HBUF() \
     do { \
@@ -829,7 +830,9 @@ httpParseHeaders(int client, AtomPtr url,
                                        &token_start, &token_end, NULL, NULL,
                                        &end);
             }
-        }
+        } else if(name == atomCacheControl)
+            haveCacheControl = 1;
+
         releaseAtom(name);
         name = NULL;
     }
@@ -1131,31 +1134,6 @@ httpParseHeaders(int client, AtomPtr url,
                                        &v_start, &v_end,
                                        &end);
             }
-        } else if(name == atomPragma) {
-            j = getNextTokenInList(buf, value_start,
-                                   &token_start, &token_end, NULL, NULL,
-                                   &end);
-            while(1) {
-                if(j < 0) {
-                    do_log(L_WARN, "Couldn't parse Pragma.\n");
-                    cache_control.flags |= CACHE_NO;
-                    break;
-                }
-                /* Pragma is only defined for the client, and the only
-                   standard value is no-cache (RFC 1945, 10.12).  We
-                   quietly ignore anything else. */
-                if(client &&
-                   token_compare(buf, token_start, token_end, "no-cache")) {
-                    cache_control.flags = CACHE_NO;
-                } else {
-                    /* Don't warn, triggers too often. */
-                }
-                if(end)
-                    break;
-                j = getNextTokenInList(buf, j, 
-                                       &token_start, &token_end, NULL, NULL,
-                                       &end);
-            }
         } else if(name == atomContentRange) {
             if(!client) {
                 j = parseContentRange(buf, value_start, 
@@ -1232,6 +1210,32 @@ httpParseHeaders(int client, AtomPtr url,
                 cache_control.flags |= CACHE_AUTHORIZATION;
             } 
 
+            if(name == atomPragma) {
+                /* Pragma is only defined for the client, and the only
+                   standard value is no-cache (RFC 1945, 10.12).
+                   However, we honour a server-side Pragma: no-cache
+                   when there's no Cache-Control header.  In all
+                   cases, we pass the Pragma header to the next hop. */
+                if(client || !haveCacheControl) {
+                    j = getNextTokenInList(buf, value_start,
+                                           &token_start, &token_end, NULL, NULL,
+                                           &end);
+                    while(1) {
+                        if(j < 0) {
+                            do_log(L_WARN, "Couldn't parse Pragma.\n");
+                            cache_control.flags |= CACHE_NO;
+                            break;
+                        }
+                        if(client && token_compare(buf, token_start, token_end,
+                                                   "no-cache"))
+                            cache_control.flags = CACHE_NO;
+                        if(end)
+                            break;
+                        j = getNextTokenInList(buf, j, &token_start, &token_end,
+                                               NULL, NULL, &end);
+                    }
+                }
+            }
             if(!client &&
                (name == atomSetCookie || 
                 name == atomCookie || name == atomCookie2))
