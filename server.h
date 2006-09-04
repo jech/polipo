@@ -42,6 +42,9 @@ typedef struct _HTTPServer {
     struct _HTTPServer *next;
 } HTTPServerRec, *HTTPServerPtr;
 
+extern AtomPtr parentHost;
+extern int parentPort;
+
 void preinitServer(void);
 void initServer(void);
 
