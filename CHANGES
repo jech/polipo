@@ -27,6 +27,7 @@ Polipo 0.10 (unreleased):
         Made the disk cache code quote all characters except for a
         small number of ``known safe'' ones.  This is an incompatible
         change to the on-disk format.
+        Pass all Pragma headers to the next hop.
 
 2 September 2006: Polipo 0.9.10:
 
