@@ -154,10 +154,13 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
     releaseAtom(url);
 
     if(socksParentProxy)
-        do_socks_connect(tunnel->hostname->string, tunnel->port,
+        do_socks_connect(parentHost ?
+                         parentHost->string : tunnel->hostname->string,
+                         parentHost ? parentPort : tunnel->port,
                          tunnelSocksHandler, tunnel);
     else
-        do_gethostbyname(tunnel->hostname->string, 0,
+        do_gethostbyname(parentHost ?
+                         parentHost->string : tunnel->hostname->string, 0,
                          tunnelDnsHandler, tunnel);
 }
 
@@ -182,7 +185,8 @@ tunnelDnsHandler(int status, GethostbynameRequestPtr request)
         return 1;
     }
 
-    do_connect(retainAtom(request->addr), 0, tunnel->port,
+    do_connect(retainAtom(request->addr), 0,
+               parentHost ? parentPort : tunnel->port,
                tunnelConnectionHandler, tunnel);
     return 1;
 }
@@ -221,10 +225,47 @@ tunnelSocksHandler(int status, SocksRequestPtr request)
 }
 
 static int
+tunnelHandlerParent(int fd, TunnelPtr tunnel)
+{
+    char *message;
+    int n;
+
+    tunnel->fd2 = fd;
+
+    tunnel->buf2.buf = get_chunk();
+    if(tunnel->buf2.buf == NULL) {
+        message = "Couldn't allocate buffer";
+        goto fail;
+    }
+
+    n = snnprintf(tunnel->buf2.buf, 0, CHUNK_SIZE,
+                  "CONNECT %s:%d HTTP/1.1"
+                  "\r\n\r\n",
+                  tunnel->hostname->string, tunnel->port);
+    if(n < 0) {
+        message = "Buffer overflow";
+        goto fail;
+    }
+    tunnel->buf2.head = n;
+    tunnelDispatch(tunnel);
+    return 1;
+
+ fail:
+    close(fd);
+    tunnel->fd2 = -1;
+    tunnelError(tunnel, 501, internAtom(message));
+    return 1;
+}
+
+static int
 tunnelHandlerCommon(int fd, TunnelPtr tunnel)
 {
     const char *message = "HTTP/1.1 200 Tunnel established\r\n\r\n";
     assert(tunnel->buf1.buf == NULL);
+
+    if(parentHost)
+        return tunnelHandlerParent(fd, tunnel);
+
     tunnel->buf1.buf = get_chunk();
     if(tunnel->buf1.buf == NULL) {
         close(fd);
