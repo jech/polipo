@@ -1197,8 +1197,8 @@ httpParseHeaders(int client, AtomPtr url,
                 }
             } 
             if(name == atomVary) {
-                if(!token_compare(buf, value_start,value_end,
-                                  "host")) {
+                if(!token_compare(buf, value_start, value_end, "host") &&
+                   !token_compare(buf, value_start, value_end, "*")) {
                     /* What other vary headers should be ignored? */
                     do_log(L_VARY, "Vary header present (");
                     do_log_n(L_VARY,
