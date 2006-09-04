@@ -209,6 +209,17 @@ h2i(char h)
         return -1;
 }
     
+char
+i2h(int i)
+{
+    if(i < 0 || i >= 16)
+        return '?';
+    if(i < 10)
+        return i + '0';
+    else
+        return i - 10 + 'A';
+}
+
 /* floor(log2(x)) */
 int
 log2_floor(int x) 
