@@ -63,24 +63,36 @@ int socksProxyPort = -1;
 AtomPtr socksProxyAddress = NULL;
 int socksProxyAddressIndex = -1;
 AtomPtr socksUserName = NULL;
+AtomPtr socksProxyType = NULL;
+AtomPtr aSocks4a, aSocks5;
 
-static int socksParentProxySetter();
-static int do_socks_connect_common();
-static int socksDnsHandler();
-static int socksConnectHandler();
-static int socksWriteHandler();
-static int socksReadHandler();
+static int socksParentProxySetter(ConfigVariablePtr, void*);
+static int socksProxyTypeSetter(ConfigVariablePtr, void*);
+static int do_socks_connect_common(SocksRequestPtr);
+static int socksDnsHandler(int, GethostbynameRequestPtr);
+static int socksConnectHandler(int, FdEventHandlerPtr, ConnectRequestPtr);
+static int socksWriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socksReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socks5ReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socks5WriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socks5ReadHandler2(int, FdEventHandlerPtr, StreamRequestPtr);
 
 void
 preinitSocks()
 {
+    aSocks4a = internAtom("socks4a");
+    aSocks5 = internAtom("socks5");
+    socksProxyType = retainAtom(aSocks5);
+    socksUserName = internAtom("");
     CONFIG_VARIABLE_SETTABLE(socksParentProxy, CONFIG_ATOM_LOWER,
                              socksParentProxySetter,
-                             "SOCKS4a parent proxy (host:port)");
-    socksUserName = internAtom("");
+                             "SOCKS parent proxy (host:port)");
     CONFIG_VARIABLE_SETTABLE(socksUserName, CONFIG_ATOM,
                              configAtomSetter,
                              "SOCKS4a user name");
+    CONFIG_VARIABLE_SETTABLE(socksProxyType, CONFIG_ATOM_LOWER,
+                             socksProxyTypeSetter,
+                             "One of socks4a or socks5");
 }
 
 static int
@@ -89,6 +101,17 @@ socksParentProxySetter(ConfigVariablePtr var, void *value)
     configAtomSetter(var, value);
     initSocks();
     return 1;
+}
+
+static int
+socksProxyTypeSetter(ConfigVariablePtr var, void *value)
+{
+    if(*var->value.a != aSocks4a && *var->value.a != aSocks5) {
+        do_log(L_ERROR, "Unknown scksProxyType %s\n", (*var->value.a)->string);
+        return -1;
+    }
+
+    return configAtomSetter(var, value);
 }
 
 void
@@ -102,7 +125,7 @@ initSocks()
         rc = atomSplit(socksParentProxy, ':', &host, &port_atom);
         if(rc <= 0) {
             do_log(L_ERROR, "Couldn't parse socksParentProxy");
-            return;
+            exit(1);
         }
         port = atoi(port_atom->string);
         releaseAtom(port_atom);
@@ -116,6 +139,11 @@ initSocks()
         releaseAtom(socksProxyAddress);
     socksProxyAddress = NULL;
     socksProxyAddressIndex = -1;
+
+    if(socksProxyType != aSocks4a && socksProxyType != aSocks5) {
+        do_log(L_ERROR, "Unknown socksProxyType %s\n", socksProxyType->string);
+        exit(1);
+    }
 }
 
 static void
@@ -218,7 +246,6 @@ socksConnectHandler(int status,
                     ConnectRequestPtr crequest)
 {
     SocksRequestPtr request = crequest->data;
-    char *buf;
     int rc;
 
     if(status < 0) {
@@ -235,34 +262,50 @@ socksConnectHandler(int status,
     if(rc < 0)
         do_log_error(L_WARN, errno, "Couldn't disable Nagle's algorithm");
 
-    request->buf = malloc(8 +
-                          socksUserName->length + 1 +
-                          request->name->length + 1);
-    if(request->buf == NULL) {
-        request->handler(-ENOMEM, request);
-        destroySocksRequest(request);
-        return 1;
+    if(socksProxyType == aSocks4a) {
+        request->buf = malloc(8 +
+                              socksUserName->length + 1 +
+                              request->name->length + 1);
+        if(request->buf == NULL) {
+            request->handler(-ENOMEM, request);
+            destroySocksRequest(request);
+            return 1;
+        }
+
+        request->buf[0] = 4;        /* VN */
+        request->buf[1] = 1;        /* CD = REQUEST */
+        request->buf[2] = (request->port >> 8) & 0xFF;
+        request->buf[3] = request->port & 0xFF;
+        request->buf[4] = request->buf[5] = request->buf[6] = 0;
+        request->buf[7] = 3;
+
+        memcpy(request->buf + 8, socksUserName->string, socksUserName->length);
+        request->buf[8 + socksUserName->length] = '\0';
+
+        memcpy(request->buf + 8 + socksUserName->length + 1,
+               request->name->string, request->name->length);
+        request->buf[8 + socksUserName->length + 1 + request->name->length] =
+            '\0';
+
+        do_stream(IO_WRITE, request->fd, 0, request->buf,
+                  8 + socksUserName->length + 1 + request->name->length + 1,
+                  socksWriteHandler, request);
+    } else if(socksProxyType == aSocks5) {
+        request->buf = malloc(8); /* 8 needed for the subsequent read */
+        if(request->buf == NULL) {
+            request->handler(-ENOMEM, request);
+            destroySocksRequest(request);
+            return 1;
+        }
+
+        request->buf[0] = 5;             /* ver */
+        request->buf[1] = 1;             /* nmethods */
+        request->buf[2] = 0;             /* no authentication required */
+        do_stream(IO_WRITE, request->fd, 0, request->buf, 3,
+                  socksWriteHandler, request);
+    } else {
+        request->handler(-EUNKNOWN, request);
     }
-
-    buf = request->buf;
-
-    buf[0] = 4;        /* VN */
-    buf[1] = 1;        /* CD = REQUEST */
-    buf[2] = (request->port >> 8) & 0xFF;
-    buf[3] = request->port & 0xFF;
-    buf[4] = buf[5] = buf[6] = 0;
-    buf[7] = 3;
-
-    memcpy(buf + 8, socksUserName->string, socksUserName->length);
-    buf[8 + socksUserName->length] = '\0';
-
-    memcpy(buf + 8 + socksUserName->length + 1,
-           request->name->string, request->name->length);
-    buf[8 + socksUserName->length + 1 + request->name->length] = '\0';
-
-    do_stream(IO_WRITE, request->fd, 0, buf,
-              8 + socksUserName->length + 1 + request->name->length + 1,
-              socksWriteHandler, request);
     return 1;
 }
 
@@ -285,7 +328,9 @@ socksWriteHandler(int status,
     }
 
     do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 8,
-              socksReadHandler, request);
+              socksProxyType == aSocks5 ?
+              socks5ReadHandler : socksReadHandler,
+              request);
     return 1;
 
  error:
@@ -329,4 +374,129 @@ socksReadHandler(int status,
     destroySocksRequest(request);
     return 1;
 }
+
+static int
+socks5ReadHandler(int status,
+                  FdEventHandlerPtr event,
+                  StreamRequestPtr srequest)
+{
+    SocksRequestPtr request = srequest->data;
+
+    if(status < 0)
+        goto error;
+
+    if(srequest->offset < 2) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
+        return 0;
+    }
+
+    if(request->buf[0] != 5 || request->buf[1] != 0) {
+        status = -ESOCKS_PROTOCOL;
+        goto error;
+    }
+
+    free(request->buf);
+    request->buf = malloc(5 + request->name->length + 2);
+    if(request->buf == NULL) {
+        status = -ENOMEM;
+        goto error;
+    }
+
+    request->buf[0] = 5;        /* ver */
+    request->buf[1] = 1;        /* cmd */
+    request->buf[2] = 0;        /* rsv */
+    request->buf[3] = 3;        /* atyp */
+    request->buf[4] = request->name->length;
+    memcpy(request->buf + 5, request->name->string, request->name->length);
+    request->buf[5 + request->name->length] = (request->port >> 8) & 0xFF;
+    request->buf[5 + request->name->length + 1] = request->port & 0xFF;
+
+    do_stream(IO_WRITE, request->fd, 0,
+              request->buf, 5 + request->name->length + 2,
+              socks5WriteHandler, request);
+    return 1;
+
+ error:
+    request->handler(status, request);
+    destroySocksRequest(request);
+    return 1;
+}
+
+static int
+socks5WriteHandler(int status,
+                   FdEventHandlerPtr event,
+                   StreamRequestPtr srequest)
+{
+    SocksRequestPtr request = srequest->data;
+    
+    if(status < 0)
+        goto error;
+
+    if(!streamRequestDone(srequest)) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
+        return 0;
+    }
+
+    do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 10,
+              socks5ReadHandler2, request);
+    return 1;
+
+ error:
+    request->handler(status, request);
+    destroySocksRequest(request);
+    return 1;
+}
+
+static int
+socks5ReadHandler2(int status,
+                   FdEventHandlerPtr event,
+                   StreamRequestPtr srequest)
+{
+    SocksRequestPtr request = srequest->data;
+
+    if(status < 0)
+        goto error;
+
+    if(srequest->offset < 4) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
+        return 0;
+    }
+
+    if(request->buf[0] != 5) {
+        status = -ESOCKS_PROTOCOL;
+        goto error;
+    }
+
+    if(request->buf[1] != 0) {
+        status = -(ESOCKS5_BASE + request->buf[1]);
+        goto error;
+    }
+
+    if(request->buf[3] != 1) {
+        status = -ESOCKS_PROTOCOL;
+        goto error;
+    }
+
+    if(srequest->offset < 10)
+        return 0;
+
+    request->handler(1, request);
+    destroySocksRequest(request);
+    return 1;
+
+ error:
+    request->handler(status, request);
+    destroySocksRequest(request);
+    return 1;
+}
+
 #endif
