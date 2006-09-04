@@ -337,9 +337,21 @@ md5(unsigned char *restrict key, int len, unsigned char *restrict dst)
     memcpy(dst, ctx.digest, 16);
 }
 
+/* Check whether a character can be stored in a filename.  This is
+   needed since we want to support deficient file systems. */
+static int
+fssafe(char c)
+{
+    if(c <= 31 || c >= 127)
+        return 0;
+    if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+       (c >= '0' && c <= '9') ||  c == '.' || c == '-' || c == '_')
+        return 1;
+    return 0;
+}
+
 /* Given a URL, returns the directory name within which all files
    starting with this URL can be found. */
-
 static int
 urlDirname(char *buf, int n, const char *url, int len)
 {
@@ -365,10 +377,16 @@ urlDirname(char *buf, int n, const char *url, int len)
     for(i = 7; i < len; i++) {
         if(i >= len || url[i] == '/')
             break;
-        if((url[i] & 0x7F) < 32 ||
-           (url[i] == '.' && i != len - 1 && url[i + 1] == '.'))
+        if(url[i] == '.' && i != len - 1 && url[i + 1] == '.')
             return -1;
-        buf[j++] = url[i]; if(j >= n) return -1;
+        if(url[i] == '%' || !fssafe(url[i])) {
+            if(j >= n + 3) return -1;
+            buf[j++] = '%';
+            buf[j++] = i2h((url[i] & 0xF0) >> 4);
+            buf[j++] = i2h(url[i] & 0x0F);
+        } else {
+            buf[j++] = url[i]; if(j >= n) return -1;
+        }
     }
     buf[j++] = '/'; if(j >= n) return -1;
     buf[j] = '\0';
