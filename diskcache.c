@@ -601,6 +601,7 @@ writeHeaders(int fd, int *body_offset_return,
         memset(buf + n, 0, body_offset - n);
 
  again:
+#ifdef HAVE_READV_WRITEV
     if(chunk_len > 0) {
         struct iovec iov[2];
         iov[0].iov_base = buf;
@@ -608,9 +609,9 @@ writeHeaders(int fd, int *body_offset_return,
         iov[1].iov_base = chunk;
         iov[1].iov_len = chunk_len;
         rc = writev(fd, iov, 2);
-    } else {
+    } else
+#endif
         rc = write(fd, buf, body_offset);
-    }
 
     if(rc < 0 && errno == EINTR)
         goto again;

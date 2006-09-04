@@ -42,7 +42,6 @@ THE SOFTWARE.
    * Please also note that the forbidden-file is unavailable under Mingw,
    * as the subsystem uses fork().
    */
-  #define NO_DISK_CACHE 1
   #define NO_IPv6 1
   #define NO_FANCY_RESOLVER 1
 
@@ -54,6 +53,8 @@ THE SOFTWARE.
   #endif
 
   #include <io.h>
+
+  #define S_IROTH S_IREAD
 
   /* Pull in winsock.h for (almost) berkeley sockets. */
   #include <winsock.h>
@@ -101,6 +102,8 @@ THE SOFTWARE.
   #define sleep(x)             mingw_sleep(x)
   #define inet_aton(x, y)      mingw_inet_aton(x, y)
   #define gettimeofday(x, y)   mingw_gettimeofday(x, y)
+
+  #define mkdir(x, y) mkdir(x)
 
   /* Winsock uses int instead of the usual socklen_t */
   typedef int socklen_t;
