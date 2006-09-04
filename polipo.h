@@ -26,6 +26,10 @@ THE SOFTWARE.
 
 #include <sys/param.h>
 
+#ifdef __MINGW32_VERSION
+#define MINGW
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
