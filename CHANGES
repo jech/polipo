@@ -23,6 +23,10 @@ Polipo 0.10 (unreleased):
         Implemented disableVia.
         Implemented SOCKS support.
         Made disableVia the default.
+        Increased the default value of serverMaxSlots to 8.
+        Made the disk cache code quote all characters except for a
+        small number of ``known safe'' ones.  This is an incompatible
+        change to the on-disk format.
 
 2 September 2006: Polipo 0.9.10:
 
