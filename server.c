@@ -693,11 +693,12 @@ numRequests(HTTPServerPtr server)
 }
 
 HTTPConnectionPtr
-httpServerGetConnection(HTTPServerPtr server)
+httpServerGetConnection(HTTPServerPtr server, int *idle_return)
 {
-    int i;
-    int connecting = 0, empty = 0;
+    int i, j;
+    int connecting = 0, empty = 0, idle = 0;
 
+    j = -1;
     /* Try to find an idle connection */
     for(i = 0; i < server->numslots; i++) {
         if(server->connection[i]) {
@@ -706,12 +707,18 @@ httpServerGetConnection(HTTPServerPtr server)
                     if(server->idleHandler[i])
                         unregisterFdEvent(server->idleHandler[i]);
                     server->idleHandler[i] = NULL;
-                    return server->connection[i];
+                    if(j < 0) j = i;
+                    idle++;
                 }
             } else
                 connecting++;
         } else
             empty++;
+    }
+
+    if(j >= 0) {
+        *idle_return = idle;
+        return server->connection[j];
     }
 
     /* If there's an empty slot, schedule connection creation */
@@ -733,10 +740,12 @@ httpServerGetConnection(HTTPServerPtr server)
                 if(server->idleHandler[i])
                     unregisterFdEvent(server->idleHandler[i]);
                 server->idleHandler[i] = NULL;
+                *idle_return = 0;
                 return server->connection[i];
             }
         }
     }
+    *idle_return = 0;
     return NULL;
 }
 
@@ -745,7 +754,7 @@ httpServerTrigger(HTTPServerPtr server)
 {
     HTTPConnectionPtr connection;
     HTTPRequestPtr request;
-    int idle, n, i, rc;
+    int idle, n, i, rc, numidle;
 
     while(server->request) {
         httpServerDiscardRequests(server);
@@ -761,7 +770,7 @@ httpServerTrigger(HTTPServerPtr server)
             if(rc <= 0) break;
             continue;
         }
-        connection = httpServerGetConnection(server);
+        connection = httpServerGetConnection(server, &numidle);
         if(!connection) break;
 
         /* If server->pipeline <= 0, we don't do pipelining.  If
@@ -788,6 +797,10 @@ httpServerTrigger(HTTPServerPtr server)
         } else {
             n = maxPipelineTrain;
         }
+
+        /* Don't pipeline if there are more idle connections */
+        if(numidle >= 2)
+            n = MIN(n, 1);
     
         idle = !connection->pipelined;
         i = 0;
