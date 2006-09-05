@@ -670,11 +670,11 @@ fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
     offset = 0;
     while(1) {
         len = fread(buf, 1, CHUNK_SIZE, tmp);
-        if(len < 0) {
+        if(len <= 0 && ferror(tmp)) {
             abortObject(object, 503, internAtom(pstrerror(errno)));
             goto done;
         }
-        if(len == 0)
+        if(len <= 0)
             break;
 
         rc = objectAddData(object, buf, offset, len);
