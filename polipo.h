@@ -162,6 +162,7 @@ THE SOFTWARE.
 #define READ(x, y, z) read(x, y, z)
 #define WRITE(x, y, z) write(x, y, z)
 #define CLOSE(x) close(x)
+#else
 #ifndef HAVE_REGEX
 #define NO_FORBIDDEN
 #endif
