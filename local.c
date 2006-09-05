@@ -44,7 +44,7 @@ preinitLocal()
 }
 
 #ifdef HAVE_FORK
-static void fillSpecialObject(ObjectPtr, void (*)(char*), void*);
+static void fillSpecialObject(ObjectPtr, void (*)(FILE*, char*), void*);
 #endif
 
 int 
@@ -89,41 +89,42 @@ alternatingHttpStyle(FILE *out, char *id)
 
 #ifdef HAVE_FORK
 static void
-printConfig(char *dummy)
+printConfig(FILE *out, char *dummy)
 {
-    printf("<!DOCTYPE HTML PUBLIC "
-           "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
-           "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
-           "<html><head>\n"
-           "<title>Polipo configuration</title>\n"
-           "</head><body>\n"
-           "<h1>Polipo configuration</h1>\n");
-    printConfigVariables(stdout, 1);
-    printf("<p><a href=\"/polipo/\">back</a></p>");
-    printf("</body></html>\n");
+    fprintf(out,
+            "<!DOCTYPE HTML PUBLIC "
+            "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
+            "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
+            "<html><head>\n"
+            "<title>Polipo configuration</title>\n"
+            "</head><body>\n"
+            "<h1>Polipo configuration</h1>\n");
+    printConfigVariables(out, 1);
+    fprintf(out, "<p><a href=\"/polipo/\">back</a></p>");
+    fprintf(out, "</body></html>\n");
 }
 #endif
 
 #ifndef NO_DISK_CACHE
 
 static void
-recursiveIndexDiskObjects(char *root)
+recursiveIndexDiskObjects(FILE *out, char *root)
 {
-    indexDiskObjects(root, 1);
+    indexDiskObjects(out, root, 1);
 }
 
 static void
-plainIndexDiskObjects(char *root)
+plainIndexDiskObjects(FILE *out, char *root)
 {
-    indexDiskObjects(root, 0);
+    indexDiskObjects(out, root, 0);
 }
 #endif
 
 #ifdef HAVE_FORK
 static void
-serversList(char *dummy)
+serversList(FILE *out, char *dummy)
 {
-    listServers();
+    listServers(out);
 }
 #endif
 
@@ -456,7 +457,7 @@ httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
 
 #ifdef HAVE_FORK
 static void
-fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
+fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
 {
     int rc;
     int filedes[2];
@@ -564,7 +565,7 @@ fillSpecialObject(ObjectPtr object, void (*fn)(char*), void* closure)
         if(filedes[1] != 1)
             dup2(filedes[1], 1);
 
-        (*fn)(closure);
+        (*fn)(stdout, closure);
         exit(0);
     }
 }

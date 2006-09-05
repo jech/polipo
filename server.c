@@ -2758,63 +2758,63 @@ connectionAddData(HTTPConnectionPtr connection, int skip)
 }
 
 void
-listServers()
+listServers(FILE *out)
 {
     HTTPServerPtr server;
     int i, n, m;
 
-    printf("<!DOCTYPE HTML PUBLIC "
-           "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
-           "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
-           "<html><head>\n"
-           "\r\n<title>Known servers</title>\n"
+    fprintf(out, "<!DOCTYPE HTML PUBLIC "
+            "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
+            "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
+            "<html><head>\n"
+            "\r\n<title>Known servers</title>\n"
            "</head><body>\n"
-           "<h1>Known servers</h1>\n");
+            "<h1>Known servers</h1>\n");
 
-    printf("<table>\n");
-    printf("<thead><tr><th>Server</th>"
-           "<th>Version</th>"
-           "<th>Persistent</th>"
-           "<th>Pipeline</th>"
-           "<th>Connections</th>"
-           "<th></th>"
-           "<th>rtt</th>"
-           "<th>rate</th>"
-           "</tr></thead>\n");
-    printf("<tbody>\n");
+    fprintf(out, "<table>\n");
+    fprintf(out, "<thead><tr><th>Server</th>"
+            "<th>Version</th>"
+            "<th>Persistent</th>"
+            "<th>Pipeline</th>"
+            "<th>Connections</th>"
+            "<th></th>"
+            "<th>rtt</th>"
+            "<th>rate</th>"
+            "</tr></thead>\n");
+    fprintf(out, "<tbody>\n");
     server = servers;
     while(server) {
-        printf("<tr>");
+        fprintf(out, "<tr>");
 
         if(server->port == 80)
-            printf("<td>%s</td>", server->name);
+            fprintf(out, "<td>%s</td>", server->name);
         else
-            printf("<td>%s:%d</td>", server->name, server->port);
+            fprintf(out, "<td>%s:%d</td>", server->name, server->port);
 
         if(server->version == HTTP_11)
-            printf("<td>1.1</td>");
+            fprintf(out, "<td>1.1</td>");
         else if(server->version == HTTP_10)
-            printf("<td>1.0</td>");
+            fprintf(out, "<td>1.0</td>");
         else
-            printf("<td>unknown</td>");
+            fprintf(out, "<td>unknown</td>");
 
         if(server->persistent < 0)
-            printf("<td>no</td>");
+            fprintf(out, "<td>no</td>");
         else if(server->persistent > 0)
-            printf("<td>yes</td>");
+            fprintf(out, "<td>yes</td>");
         else
-            printf("<td>unknown</td>");
+            fprintf(out, "<td>unknown</td>");
 
         if(server->version != HTTP_11 || server->persistent <= 0)
-            printf("<td></td>");
+            fprintf(out, "<td></td>");
         else if(server->pipeline < 0)
-            printf("<td>no</td>");
+            fprintf(out, "<td>no</td>");
         else if(server->pipeline >= 0 && server->pipeline <= 1)
-            printf("<td>unknown</td>");
+            fprintf(out, "<td>unknown</td>");
         else if(server->pipeline == 2 || server->pipeline == 3)
-            printf("<td>probing</td>");
+            fprintf(out, "<td>probing</td>");
         else 
-            printf("<td>yes</td>");
+            fprintf(out, "<td>yes</td>");
 
         n = 0; m = 0;
         for(i = 0; i < server->maxslots; i++)
@@ -2825,34 +2825,31 @@ listServers()
                     m++;
             }
             
-        printf("<td>%d/%d", n, server->numslots);
+        fprintf(out, "<td>%d/%d", n, server->numslots);
         if(m)
-            printf(" + %d</td>", m);
+            fprintf(out, " + %d</td>", m);
         else
-            printf("</td>");
+            fprintf(out, "</td>");
 
         if(server->lies > 0)
-            printf("<td>(%d lies)</td>", (server->lies + 9) / 10);
+            fprintf(out, "<td>(%d lies)</td>", (server->lies + 9) / 10);
         else
-            printf("<td></td>");
+            fprintf(out, "<td></td>");
 
         if(server->rtt > 0)
-            printf("<td>%.3f</td>", (double)server->rtt / 1000000.0);
+            fprintf(out, "<td>%.3f</td>", (double)server->rtt / 1000000.0);
         else
-            printf("<td></td>");
+            fprintf(out, "<td></td>");
         if(server->rate > 0)
-            printf("<td>%d</td>", server->rate);
+            fprintf(out, "<td>%d</td>", server->rate);
         else
-            printf("<td></td>");
-        
-        printf("</tr>\n");
-        if(feof(stdout))
-            exit(1);
+            fprintf(out, "<td></td>");
+
+        fprintf(out, "</tr>\n");
         server = server->next;
     }
-    printf("</tbody>\n");
-    printf("</table>\n");
-    printf("<p><a href=\"/polipo/\">back</a></p>");
-    printf("</body></html>\n");
-    exit(0);
+    fprintf(out, "</tbody>\n");
+    fprintf(out, "</table>\n");
+    fprintf(out, "<p><a href=\"/polipo/\">back</a></p>");
+    fprintf(out, "</body></html>\n");
 }

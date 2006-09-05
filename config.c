@@ -234,23 +234,23 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
     
     if(!var->setter) disabled = "disabled=true";
 
-    printf("<form method=POST action=\"config?\">");
+    fprintf(out, "<form method=POST action=\"config?\">");
   
     switch(var->type) {
     case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
     case CONFIG_TIME: case CONFIG_FLOAT: case CONFIG_ATOM:
     case CONFIG_ATOM_LOWER: case CONFIG_INT_LIST:
     case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
-        printf("<input value=\"");
+        fprintf(out, "<input value=\"");
         printVariable(out, var, 1, 1);
-        printf("\" size=10 name=%s %s>\n", var->name->string, disabled);
+        fprintf(out, "\" size=10 name=%s %s>\n", var->name->string, disabled);
         break;
     
     case CONFIG_BOOLEAN:
         {
             static char *states[] = {"false", "true"};
             
-            printf("<select name=%s %s>", var->name->string, disabled);
+            fprintf(out, "<select name=%s %s>", var->name->string, disabled);
             for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
                 if(*var->value.i == i) {
                     fprintf(out, "<option selected>%s</option>", states[i]);
@@ -258,9 +258,9 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                     fprintf(out, "<option>%s</option>", states[i]);
                 }
             }
-            printf("</select>");
+            fprintf(out, "</select>");
             if(var->setter)
-                printf("<input type=\"submit\" value=\"set\"\n>");
+                fprintf(out, "<input type=\"submit\" value=\"set\"\n>");
             break;
         }
     
@@ -268,7 +268,7 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
         {
             static char *states[] = {"false", "maybe", "true"};
             
-            printf("<select name=%s %s>", var->name->string, disabled);
+            fprintf(out, "<select name=%s %s>", var->name->string, disabled);
             for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
                 if(*var->value.i == i) {
                     fprintf(out, "<option selected>%s</option>", states[i]);
@@ -276,9 +276,9 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                     fprintf(out, "<option>%s</option>", states[i]);
                 }
             }
-            printf("</select>");
+            fprintf(out, "</select>");
             if(var->setter)
-                printf("<input type=\"submit\" value=\"set\"\n>");
+                fprintf(out, "<input type=\"submit\" value=\"set\"\n>");
             break;
         }
 
@@ -287,7 +287,7 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
             static char *states[] =
                 {"false", "reluctantly", "happily", "true"};
             
-            printf("<select name=%s %s>", var->name->string, disabled);
+            fprintf(out, "<select name=%s %s>", var->name->string, disabled);
             for(i=0; i <sizeof(states) / sizeof(states[0]); i++) {
                 if(*var->value.i == i) {
                     fprintf(out, "<option selected>%s</option>", states[i]);
@@ -295,9 +295,9 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                     fprintf(out, "<option>%s</option>", states[i]);
                 }
             }
-            printf("</select>");
+            fprintf(out, "</select>");
             if(var->setter)
-                printf("<input type=\"submit\" value=\"set\"\n>");
+                fprintf(out, "<input type=\"submit\" value=\"set\"\n>");
             break;
         }
 
@@ -306,7 +306,7 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
             static char *states[] =
                 {"no", "reluctantly", "maybe", "happily", "true"};
 
-            printf("<select name=%s %s>", var->name->string, disabled);
+            fprintf(out, "<select name=%s %s>", var->name->string, disabled);
             for(i=0; i < sizeof(states) / sizeof(states[0]); i++) {
                 if(*var->value.i == i) {
                     fprintf(out, "<option selected>%s</option>", states[i]);
@@ -314,14 +314,14 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
                     fprintf(out, "<option>%s</option>", states[i]);
                 }
             }
-            printf("</select>");
+            fprintf(out, "</select>");
             if(var->setter)
-                printf("<input type=\"submit\" value=\"set\"\n>");
+                fprintf(out,"<input type=\"submit\" value=\"set\"\n>");
             break;
         }
     default: abort();
     }
-    printf("</form>");
+    fprintf(out, "</form>");
 }
 
 

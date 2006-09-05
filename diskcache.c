@@ -1954,7 +1954,7 @@ insertDirs(DiskObjectPtr from)
 }
         
 void
-indexDiskObjects(const char *root, int recursive)
+indexDiskObjects(FILE *out, const char *root, int recursive)
 {
     int n, i, isdir;
     DIR *dir;
@@ -1966,25 +1966,26 @@ indexDiskObjects(const char *root, int recursive)
     DiskObjectPtr dobjects = NULL;
     char *of = root[0] == '\0' ? "" : " of ";
 
-    printf("<!DOCTYPE HTML PUBLIC "
-           "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
-           "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
-           "<html><head>\n"
-           "<title>%s%s%s</title>\n"
-           "</head><body>\n"
-           "<h1>%s%s%s</h1>\n",
-           recursive ? "Recursive index" : "Index", of, root, 
-           recursive ? "Recursive index" : "Index", of, root);
+    fprintf(out, "<!DOCTYPE HTML PUBLIC "
+            "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
+            "\"http://www.w3.org/TR/html4/loose.dtd\">\n"
+            "<html><head>\n"
+            "<title>%s%s%s</title>\n"
+            "</head><body>\n"
+            "<h1>%s%s%s</h1>\n",
+            recursive ? "Recursive index" : "Index", of, root,
+            recursive ? "Recursive index" : "Index", of, root);
 
     if(diskCacheRoot == NULL || diskCacheRoot->length <= 0) {
-        printf("<p>No <tt>diskCacheRoot</tt>.</p>\n");
+        fprintf(out, "<p>No <tt>diskCacheRoot</tt>.</p>\n");
         goto trailer;
     }
 
     if(diskCacheRoot->length >= 1024) {
-        printf("<p>The value of <tt>diskCacheRoot</tt> is "
-               "too long (%d).</p>\n",
-               diskCacheRoot->length);
+        fprintf(out,
+                "<p>The value of <tt>diskCacheRoot</tt> is "
+                "too long (%d).</p>\n",
+                diskCacheRoot->length);
         goto trailer;
     }
 
@@ -2027,8 +2028,8 @@ indexDiskObjects(const char *root, int recursive)
                 }
                 closedir(dir);
             } else {
-                printf("<p>Couldn't open directory: %s (%d).</p>\n",
-                       strerror(errno), errno);
+                fprintf(out, "<p>Couldn't open directory: %s (%d).</p>\n",
+                        strerror(errno), errno);
                 goto trailer;
             }
         }
@@ -2042,33 +2043,33 @@ indexDiskObjects(const char *root, int recursive)
         dobjects = filterDiskObjects(dobjects, root, recursive);
         dobject = dobjects;
         buf[0] = '\0';
-        alternatingHttpStyle(stdout, "diskcachelist");
-        printf("<table id=diskcachelist>\n");
-        printf("<tbody>\n");
+        alternatingHttpStyle(out, "diskcachelist");
+        fprintf(out, "<table id=diskcachelist>\n");
+        fprintf(out, "<tbody>\n");
         entryno = 0;
         while(dobjects) {
             dobject = dobjects;
             i = strlen(dobject->location);
             isdir = (i == 0 || dobject->location[i - 1] == '/');
             if(entryno % 2)
-                printf("<tr class=odd>");
+                fprintf(out, "<tr class=odd>");
             else
-                printf("<tr class=even>");
+                fprintf(out, "<tr class=even>");
             if(dobject->size >= 0) {
-                printf("<td><a href=\"%s\"><tt>",
-                       dobject->location);
-                htmlPrint(stdout, 
+                fprintf(out, "<td><a href=\"%s\"><tt>",
+                        dobject->location);
+                htmlPrint(out,
                           dobject->location, strlen(dobject->location));
-                printf("</tt></a></td> ");
+                fprintf(out, "</tt></a></td> ");
                 if(dobject->length >= 0) {
                     if(dobject->size == dobject->length)
-                        printf("<td>%d</td> ", dobject->length);
+                        fprintf(out, "<td>%d</td> ", dobject->length);
                     else
-                        printf("<td>%d/%d</td> ", 
+                        fprintf(out, "<td>%d/%d</td> ",
                                dobject->size, dobject->length);
                 } else {
                     /* Avoid a trigraph. */
-                    printf("<td>%d/<em>??" "?</em></td> ", dobject->size);
+                    fprintf(out, "<td>%d/<em>??" "?</em></td> ", dobject->size);
                 }
                 if(dobject->last_modified >= 0) {
                     struct tm *tm = gmtime(&dobject->last_modified);
@@ -2080,9 +2081,9 @@ indexDiskObjects(const char *root, int recursive)
                     n = -1;
                 if(n > 0) {
                     buf[n] = '\0';
-                    printf("<td>%s</td> ", buf);
+                    fprintf(out, "<td>%s</td> ", buf);
                 } else {
-                    printf("<td></td>");
+                    fprintf(out, "<td></td>");
                 }
                 
                 if(dobject->date >= 0) {
@@ -2095,36 +2096,36 @@ indexDiskObjects(const char *root, int recursive)
                     n = -1;
                 if(n > 0) {
                     buf[n] = '\0';
-                    printf("<td>%s</td>", buf);
+                    fprintf(out, "<td>%s</td>", buf);
                 } else {
-                    printf("<td></td>");
+                    fprintf(out, "<td></td>");
                 }
             } else {
-                printf("<td><tt>");
-                htmlPrint(stdout, dobject->location,
+                fprintf(out, "<td><tt>");
+                htmlPrint(out, dobject->location,
                           strlen(dobject->location));
-                printf("</tt></td><td></td><td></td><td></td>");
+                fprintf(out, "</tt></td><td></td><td></td><td></td>");
             }
             if(isdir) {
-                printf("<td><a href=\"/polipo/index?%s\">plain</a></td>"
-                       "<td><a href=\"/polipo/recursive-index?%s\">"
-                       "recursive</a></td>",
-                       dobject->location, dobject->location);
+                fprintf(out, "<td><a href=\"/polipo/index?%s\">plain</a></td>"
+                        "<td><a href=\"/polipo/recursive-index?%s\">"
+                        "recursive</a></td>",
+                        dobject->location, dobject->location);
             }
-            printf("</tr>\n");
+            fprintf(out, "</tr>\n");
             entryno++;
             dobjects = dobject->next;
             free(dobject->location);
             free(dobject->filename);
             free(dobject);
         }
-        printf("</tbody>\n");
-        printf("</table>\n");
+        fprintf(out, "</tbody>\n");
+        fprintf(out, "</table>\n");
     }
 
  trailer:
-    printf("<p><a href=\"/polipo/\">back</a></p>\n");
-    printf("</body></html>\n");
+    fprintf(out, "<p><a href=\"/polipo/\">back</a></p>\n");
+    fprintf(out, "</body></html>\n");
     return;
 }
 
