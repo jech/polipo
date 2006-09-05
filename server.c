@@ -2761,7 +2761,7 @@ void
 listServers(FILE *out)
 {
     HTTPServerPtr server;
-    int i, n, m;
+    int i, n, m, entry;
 
     fprintf(out, "<!DOCTYPE HTML PUBLIC "
             "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
@@ -2771,7 +2771,8 @@ listServers(FILE *out)
            "</head><body>\n"
             "<h1>Known servers</h1>\n");
 
-    fprintf(out, "<table>\n");
+    alternatingHttpStyle(out, "servers");
+    fprintf(out, "<table id=servers>\n");
     fprintf(out, "<thead><tr><th>Server</th>"
             "<th>Version</th>"
             "<th>Persistent</th>"
@@ -2783,9 +2784,9 @@ listServers(FILE *out)
             "</tr></thead>\n");
     fprintf(out, "<tbody>\n");
     server = servers;
+    entry = 0;
     while(server) {
-        fprintf(out, "<tr>");
-
+        fprintf(out, "<tr class=\"%s\">", entry % 2 == 0 ? "even" : "odd");
         if(server->port == 80)
             fprintf(out, "<td>%s</td>", server->name);
         else
@@ -2847,6 +2848,7 @@ listServers(FILE *out)
 
         fprintf(out, "</tr>\n");
         server = server->next;
+        entry++;
     }
     fprintf(out, "</tbody>\n");
     fprintf(out, "</table>\n");
