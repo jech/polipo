@@ -26,6 +26,8 @@ You can also use Polipo without installing:
   $ nroff -man polipo.man | more
   $ ./polipo &
 
+For information about building on Windows, please see the file README.Windows.
+
 2. Configuring your user-agent
 ******************************
 
