@@ -11,7 +11,7 @@
 @end direntry
 
 @copying
-Copyright @copyright{} 2003 -- 2005 by Juliusz Chroboczek.
+Copyright @copyright{} 2003 -- 2006 by Juliusz Chroboczek.
 @end copying
 
 @titlepage
@@ -566,10 +566,10 @@ will run as a daemon: it will fork and detach from its controlling
 terminal (if any).  The variable @code{daemonise} defaults to false.
 
 When Polipo is run as a daemon, it can be useful to get it to
-atomically write its pid to a file.  If the variable @code{pidFile} is
-defined, it should be the name of a file where Polipo will write its
-pid.  If the file already exists when it is started, Polipo will
-refuse to run.
+atomically write its @emph{pid} to a file.  If the variable
+@code{pidFile} is defined, it should be the name of a file where
+Polipo will write its @emph{pid}.  If the file already exists when it
+is started, Polipo will refuse to run.
 
 @node Logging,  , Daemon, Polipo Invocation
 @subsection Logging
@@ -674,11 +674,12 @@ Polipo on-the-fly.  We call this subtree Polipo's @dfn{local web
 interface}.
 
 The page @samp{http://localhost:8123/polipo/config?} contains the
-values of all configuration variables, and forms for setting some of
+values of all configuration variables, and allows setting many of
 those.
 
 The page @samp{http://localhost:8123/polipo/status?} provides a summary
-status report about the running Polipo, currently mainly memory usage.
+status report about the running Polipo, and allows performing a number
+of actions on the proxy, notably flushing the in-memory cache.
 
 The page @samp{http://localhost:8123/polipo/servers?} contains the list
 of known servers, and the statistics maintained about them
@@ -696,7 +697,8 @@ The pages starting with
 @samp{http://localhost:8123/polipo/recursive-index?} contain recursive
 indices of various servers.
 
-The local interface is disabled if @code{disableLocalInterface} is true.
+The local interface is disabled if the variable
+@code{disableLocalInterface} is true.
 
 @node Network, Caching, Running, Top
 @chapter Polipo and the network
@@ -704,9 +706,10 @@ The local interface is disabled if @code{disableLocalInterface} is true.
 @menu
 * Client connections::          Speaking to clients
 * Contacting servers::          Contacting servers.
-* HTTP tuning::                 
+* HTTP tuning::                 Tuning at the HTTP level.
 * Offline browsing::            Browsing with poor connectivity.
 * Server statistics::           Polipo keeps statistics about servers.
+* Server-side behaviour::       Tuning the server-side behaviour.
 * PMM::                         Poor Man's Multiplexing.
 * Forbidden::                   You can forbid some URLs.
 * DNS::                         How Polipo finds hosts.
@@ -744,9 +747,7 @@ set @code{allowedClients} to a reasonable value (@pxref{Access control}).
 Note that the type of address that you specify for @code{proxyAddress}
 will determine whether Polipo listens to IPv4 or IPv6.  Currently, the
 only way to have Polipo listen to both protocols is to specify the
-IPv6 unspecified address (@code{"::"}) for
-@code{proxyAddress}@footnote{This doesn't work on OpenBSD, which
-breaks the IPv6 API in a misguided attempt at security.}.
+IPv6 unspecified address (@code{"::"}) for @code{proxyAddress}.
 
 The variable @code{proxyPort}, by default 8123, defines the TCP port
 on which Polipo will listen.
@@ -776,15 +777,14 @@ messages and optionally for detecting proxy loops (by using the
 @cindex password
 
 By making it possible to have Polipo listen on a non-routable address
-(for example the loopback address), the variable @code{proxyAddress}
-provides a very primitive form of @dfn{access control}: the ability to
-decide which hosts are allowed to connect.
+(for example the loopback address @samp{127.0.0.1}), the variable
+@code{proxyAddress} provides a very crude form of @dfn{access
+control}: the ability to decide which hosts are allowed to connect.
 
 A finer form of access control can be implemented by specifying
 explicitly a number of client addresses or ranges of addresses
-(networks) that a client is allowed to connect from.  This is realised
-by the variable @code{allowedClients}, which is a list of networks
-that are allowed to connect.
+(networks) that a client is allowed to connect from.  This is done
+by setting the variable @code{allowedClients}.
 
 Every entry in @code{allowedClients} can be an IP address, for example
 @samp{134.157.168.57} or @samp{::1}.  It can also be a network
@@ -800,13 +800,13 @@ or, for an IPv4-only version of Polipo,
 allowedClients = 127.0.0.1, 134.157.168.0/24
 @end example
 
-A different form of access control can be realised by requiring each
-client to @dfn{authenticate}, i.e.@: to prove its identity before
+A different form of access control can be implemented by requiring
+each client to @dfn{authenticate}, i.e.@: to prove its identity before
 connecting.  Polipo currently only implements the most insecure form
 of authentication, @dfn{HTTP basic authentication}, which sends
 usernames and passwords in clear over the network.  HTTP basic
-authentication is used when the variable @code{authCredentials} is non
-null; its value should be of the form @samp{username:password}.
+authentication is required when the variable @code{authCredentials} is
+not null; its value should be of the form @samp{username:password}.
 
 Note that both IP-based authentication and HTTP basic authentication
 are insecure: the former is vulnerable to IP address spoofing, the
@@ -833,7 +833,7 @@ once it has found one that works, it will stick to that address until
 it fails again.
 
 @menu
-* Allowed ports::               
+* Allowed ports::               Where the proxy is allowed to connect.
 @end menu
 
 @node Allowed ports,  , Contacting servers, Contacting servers
@@ -852,7 +852,7 @@ internal web server, for example, listens on port 8123 by default.
 
 The variable @code{allowedPorts} contains the list of ports that
 Polipo will accept to connect to on behalf of clients; it defaults to
-@samp{80-86, 1024-65535}.  Set this variable to @samp{1-65535} if your
+@samp{80-100, 1024-65535}.  Set this variable to @samp{1-65535} if your
 clients (and the web pages they consult!) are fully trusted.  (The
 variable @code{allowedPorts} is not considered for tunnelled
 connections; @pxref{Tunnelling connections}).
@@ -863,8 +863,8 @@ connections; @pxref{Tunnelling connections}).
 @cindex headers
 
 @menu
-* Tuning the HTTP parser::      
-* Censoring headers::           
+* Tuning the HTTP parser::      Tuning parsing of HTTP headers.
+* Censoring headers::           Censoring HTTP headers.
 @end menu
 
 @node Tuning the HTTP parser, Censoring headers, HTTP tuning, HTTP tuning
@@ -909,10 +909,10 @@ being collected, they might make it less cost-effective to do so.
 The general mechanism is controlled by the variable
 @code{censoredHeaders}, the value of which is a case-insensitive list
 of headers to unconditionally censor.  By default, it is empty, but I
-recommend that you set it to the list consisting of @samp{Set-Cookie},
-@samp{Cookie}, @samp{Cookie2}, @samp{From} and @samp{Accept-Language}.
-You should probably not censor @samp{User-Agent}, as many sites use it
-in order to customise their pages for a given implementation.
+recommend that you set it to the list consisting of @samp{From} and
+@samp{Accept-Language}.  Adding headers such as @samp{Set-Cookie},
+@samp{Set-Cookie2}, @samp{Cookie}, @samp{Cookie2} or @samp{User-Agent}
+to this list will probably break many web sites.
 
 The case of the @samp{Referer}@footnote{HTTP contains many mistakes
 and even one spelling error.} header is treated specially because many
@@ -927,7 +927,7 @@ censored.  I recommend setting @code{censorReferer} to @code{maybe}.
 Another header that can have privacy implications is the @samp{Via}
 header; by default, Polipo does not use it.  In order to enable its
 use, set the variable @code{disableVia} @code{false}, in which case
-you should probably set the @code{proxyName} variable to some random
+you may want to set the @code{proxyName} variable to some innocuous
 string (@pxref{Client connections}).
 
 @menu
@@ -954,8 +954,8 @@ information (who cares whether your browser supports PNG?).  The
 @samp{Accept-Language} header, however, is meant to convey the user's
 linguistic preferences; in some cases, this information is sufficient
 to pinpoint with great precision the user's origins and even her
-political or religious opinions, as for example in the case of
-@samp{Accept-Language: yi}.
+political or religious opinions; think, for example, of the
+implications of sending @samp{Accept-Language: yi} or @samp{ar_PS}.
 
 At any rate, @samp{Accept-Language} is not useful.  Its design is
 based on the assumption that language is merely another representation
@@ -970,7 +970,6 @@ when they are original.  Such a situation cannot be described by the
 @node Offline browsing, Server statistics, HTTP tuning, Network
 @section Offline browsing
 @vindex proxyOffline
-@vindex relaxTransparency
 @cindex offline browsing
 @cindex browsing offline
 @cindex connectivity
@@ -979,55 +978,22 @@ when they are original.  Such a situation cannot be described by the
 
 In an ideal world, all machines would have perfect connectivity to the
 network at all times and servers would never crash.  In the real
-world, the values of the variables @code{proxyOffline} and
-@code{relaxTransparency} can be used to moderate Polipo's eagerness to
-contact remote machines.
+world, it may be necessary to avoid hitting the network and having
+Polipo serve stale objects from its cache.
 
 Setting @code{proxyOffline} to @code{true}, prevents Polipo from
 contacting remote servers, no matter what.  This setting is suitable
 when you have no network connection whatsoever.
 
-If @code{proxyOffline} is false, Polipo's behaviour is controlled by
-the variable @code{relaxTransparency}.  If @code{relaxTransparency} is
-@code{false} (the default), all stale instances are validated
-(@pxref{Cache transparency}), and failures to connect are reported to
-the client.  This is the default mode of operation of most other
-proxies, and the least likely to surprise the user.
+If @code{proxyOffline} is false, Polipo's caching behaviour is
+controlled by a number of variables documented in @ref{Tweaking validation}.
 
-If @code{relaxTransparency} is @code{maybe}, all stale instances are
-still validated, but a failure to connect is only reported as an error
-if no data is available in the cache.  If a connection fails and stale
-data is available, it is served to the client with a suitable HTTP/1.1
-@samp{Warning} header.  Current user-agents do not provide visible
-indication of such warnings, however, and this setting will typically
-cause the browser to display stale data with no indication that
-anything went wrong.  This setting is useful when you are consulting a
-live web site but don't want to be bothered with failed revalidations.
-
-If @code{relaxTransparency} is @code{true}, missing data is fetched
-from remote servers, but stale data are unconditionally served with no
-validation.  Client-side @samp{Cache-Control} directives are still
-honoured, which means that you can force an end-to-end revalidation
-from the browser's interface (typically by shift-clicking on
-``reload'').  This setting is useful if you have very bad network
-connectivity or are consulting a very slow web site or one that
-provides wrong cache control
-information@footnote{@code{www.microsoft.com} comes to mind.} and are
-willing to manually revalidate pages that you suspect are stale.
-
-@node Server statistics, PMM, Offline browsing, Network
+@node Server statistics, Server-side behaviour, Offline browsing, Network
 @section Server statistics
 @vindex serverExpireTime
-@vindex smallRequestTime
-@vindex replyUnpipelineTime
-@vindex replyUnpipelineSize
-@vindex maxPipelineTrain
 @cindex server statistics
 @cindex round-trip time
 @cindex transfer rate
-@cindex small request
-@cindex large request
-@cindex breaking pipelines
 
 In order to decide when to pipeline requests (@pxref{Pipelining}) and
 whether to perform Poor Man's Multiplexing 
@@ -1048,7 +1014,26 @@ server, this value can be made fairly large.  The reason why it exists
 at all is to limit the amount of memory used up by information about
 servers.
 
-The main use of server information is to decide whether to pipeline
+@node Server-side behaviour, PMM, Server statistics, Network
+@section Tweaking server-side behaviour
+@vindex serverSlots
+@vindex serverMaxSlots
+@vindex smallRequestTime
+@vindex replyUnpipelineTime
+@vindex replyUnpipelineSize
+@vindex maxPipelineTrain
+@vindex pipelineAdditionalRequests
+@cindex small request
+@cindex large request
+@cindex breaking pipelines
+
+The most important piece of information about a server is whether it
+supports persistent connections.  If this is the case, Polipo will
+open at most @code{serverSlots} connections to that server, and
+attempt to pipeline; if not, Polipo will hit the server harder,
+opening up to @code{maxServerSlots} connections.
+
+Another use of server information is to decide whether to pipeline
 additional requests on a connection that already has in-flight
 requests.  This is controlled by the variable
 @code{pipelineAdditionalRequests}; if it is @code{false}, no
@@ -1073,7 +1058,7 @@ Setting this variable to a very low value might (or might not) fix
 interaction with some unreliable servers that the normal heuristics
 are unable to detect.
 
-@node PMM, Forbidden, Server statistics, Network
+@node PMM, Forbidden, Server-side behaviour, Network
 @section Poor Man's Multiplexing
 @cindex Poor Man's Multiplexing
 @cindex multiplexing
@@ -1126,8 +1111,8 @@ browser, either by returning a @emph{forbidden} error message to the
 user, or by @emph{redirecting} such URLs to some other URL.
 
 @menu
-* Internal forbidden list::     
-* External redirectors::        
+* Internal forbidden list::     Specifying forbidden URLs.
+* External redirectors::        Using an external redirector.
 @end menu
 
 @node Internal forbidden list, External redirectors, Forbidden, Forbidden
@@ -1269,7 +1254,9 @@ this configuration minimises latency.  In some cases, however, it may
 be useful to have Polipo fetch instances from a @dfn{parent} proxy.
 
 Polipo can use two protocols to speak to a parent proxy: HTTP and
-SOCKS.
+SOCKS.  When configured to use both HTTP and SOCKS proxying, Polipo
+will contact an HTTP proxy over SOCKS --- in other words, SOCKS is
+considered as being at a lower (sub)layer than HTTP.
 
 @menu
 * HTTP parent proxies::         Using an HTTP parent proxy.
@@ -1307,13 +1294,18 @@ $ polipo parentProxy=localhost:8124
 @cindex SOCKS
 @vindex socksParentProxy
 @vindex socksUserName
+@vindex socksProxyType
 
 The variable @code{socksParentProxy} specifies the hostname and port
-number of a SOCKS4a parent proxy; it should have the form
-@samp{host:port}.
+number of a SOCKS parent proxy; it should have the form
+@samp{host:port}.  The variant of the SOCKS protocol being used is
+defined by @code{socksProxyType}, which can be either @samp{socks4a}
+or @samp{socks5}; the latter value specifies ``SOCKS@tie{}5 with
+hostnames'', and is the default.
 
-The user name passed to the SOCKS proxy is defined by the variable
-@code{socksUserName}.
+The user name passed to the SOCKS4a proxy is defined by the variable
+@code{socksUserName}.  This value is currently ignored with a
+SOCKS@tie{}5 proxy.
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
 @section Tuning POST and PUT requests
@@ -1360,9 +1352,9 @@ If @code{expectContinue} is @code{maybe} (the default), Polipo will
 behave in a standards-compliant manner: it will forward expectations
 to the server when allowed to do so, and fail client expectations
 otherwise.  Finally, if @code{expectContinue} is @code{true}, Polipo
-will always send expectations whenever allowed to do so; this violates
-the relevant standards, but might decrease network traffic under some
-circumstances.
+will always send expectations when it is reasonable to do so; this
+violates the relevant standards and will break some websites, but
+might decrease network traffic under some circumstances.
 
 @node Tunnelling connections,  , Tuning POST and PUT, Network
 @section Tunnelling connections
@@ -1375,8 +1367,8 @@ circumstances.
 @vindex tunnelAllowedPorts
 
 Polipo is an HTTP proxy; it proxies HTTP traffic, and clients using
-other protocols should establish a direct connection to the server or
-use an @emph{ad hoc} proxy.
+other protocols should either establish a direct connection to the
+server or use an @emph{ad hoc} proxy.
 
 Due to wide-spread brain-damage@footnote{Sometimes known as NAT.},
 however, there are some circumstances in which establishing a direct
@@ -1386,15 +1378,14 @@ proxy that merely forwards traffic between the client and the server
 without understanding it.  Polipo enters tunnel mode when the server
 requests it by using the HTTP @samp{CONNECT} method.
 
-Most web browsers will use this technique for HTTP over SSL (sometimes
-known as `https') if configured to use Polipo as their `https proxy'.
-Recent versions of ssh can also use it to cross mis-configured
-firewalls.
+Most web browsers will use this technique for HTTP over SSL if
+configured to use Polipo as their `https proxy'.  Recent versions of
+ssh can also use it to cross mis-configured firewalls.
 
 The variable @code{tunnelAllowedPorts} specifies the set of ports that
 Polipo will accept to tunnel traffic to.  It defaults to @samp{22, 80,
-443, 873}, meaning that Polipo will only tunnel ssh, HTTP, https and
-rsync traffic.
+443, 873}, meaning that Polipo will only accept to tunnel ssh, HTTP,
+https and rsync traffic.
 
 @node Caching, Memory usage, Network, Top
 @chapter Caching
@@ -1480,21 +1471,50 @@ will become stale when its age reaches @code{maxNoModifiedAge}.
 @vindex cacheIsShared
 @vindex mindlesslyCacheVary
 @vindex uncachableFile
+@vindex dontCacheCookies
+@vindex dontCacheRedirects
 
 If @code{cacheIsShared} is false (the default), Polipo will ignore the
-server-side @samp{Cache-Control} directives @samp{s-maxage} and
-@samp{proxy-must-revalidate}.  This is highly desirable behaviour, but
-happens to violate RFC@tie{}2616 if the cache is shared among multiple
-users.
+server-side @samp{Cache-Control} directives @samp{private},
+@samp{s-maxage} and @samp{proxy-must-revalidate}.  This is highly
+desirable behaviour when the proxy is used by just one user, but
+happens to violate RFC@tie{}2616 if the cache is shared.
 
-If @code{mindlesslyCacheVary} is true, the presence of a Vary header
-(which indicates that content-negotiation occurred, @pxref{Censor
-Accept-Language}) is ignored, and cached negotiated instances are
-mindlessly returned to the client.  If it is false (the default),
-negotiated instances are revalidated on every client request.
+When connectivity is very poor, the variable @code{relaxTransparency}
+can be used to cause Polipo to serve stale instances under some
+circumstances.  If @code{relaxTransparency} is @code{false} (the
+default), all stale instances are validated (@pxref{Cache
+transparency}), and failures to connect are reported to the client.
+This is the default mode of operation of most other proxies, and the
+least likely to surprise the user.
 
-Cache transparency can be further relaxed by using the variables that
-control offline browsing (@pxref{Offline browsing}).
+If @code{relaxTransparency} is @code{maybe}, all stale instances are
+still validated, but a failure to connect is only reported as an error
+if no data is available in the cache.  If a connection fails and stale
+data is available, it is served to the client with a suitable HTTP/1.1
+@samp{Warning} header.  Current user-agents do not provide visible
+indication of such warnings, however, and this setting will typically
+cause the browser to display stale data with no indication that
+anything went wrong.  This setting is useful when you are consulting a
+live web site but don't want to be bothered with failed revalidations.
+
+If @code{relaxTransparency} is @code{true}, missing data is fetched
+from remote servers, but stale data are unconditionally served with no
+validation.  Client-side @samp{Cache-Control} directives are still
+honoured, which means that you can force an end-to-end revalidation
+from the browser's interface (typically by shift-clicking on
+``reload'').  This setting is only useful if you have very bad network
+connectivity or are consulting a very slow web site or one that
+provides wrong cache control
+information@footnote{@code{www.microsoft.com} comes to mind.} and are
+willing to manually revalidate pages that you suspect are stale.
+
+Finally, if @code{mindlesslyCacheVary} is true, the presence of a
+@samp{Vary} header (which indicates that content-negotiation occurred,
+@pxref{Censor Accept-Language}) is ignored, and cached negotiated
+instances are mindlessly returned to the client.  If it is false (the
+default), negotiated instances are revalidated on every client
+request.
 
 A number of servers incorrectly mark variable resources as cachable;
 such servers can be worked around in polipo by manually marking given
@@ -1528,6 +1548,7 @@ collision occurs, resources are written out to disk.
 @vindex diskCacheWriteoutOnClose
 @vindex diskCacheFilePermissions
 @vindex diskCacheDirectoryPermissions
+@vindex maxDiskCacheEntrySize
 
 The on-disk cache consists in a filesystem subtree rooted at a
 location defined by the variable @code{diskCacheRoot}, by default
@@ -1538,21 +1559,16 @@ should be safe in most implementations, but NFSv2 is definitely
 not@footnote{Polipo assumes that @samp{open(O_CREAT | O_EXCL)} works
 reliably.}.
 
-Polipo will accept to use a read-only cache.  Note, however, that
-using Polipo in this manner will prevent it from updating usage
-information of on-disk objects, which will make purge control
-problematic (@pxref{Purging}).
-
 If @code{diskCacheRoot} is an empty string, no disk cache is used.
 
 The value @code{maxDiskEntries} (32 by default) is the absolute
 maximum of file descriptors held open for on-disk objects.  When this
 limit is reached, Polipo will close descriptors on a
 least-recently-used basis, which will cause no harm other than a
-decrease in performance.  This value should be set to be larger than
-the number of resources that you expect to be live at a single time;
-defining the right notion of liveness is left as an exercise for the
-reader.
+decrease in performance.  This value should be set to be slightly
+larger than the number of resources that you expect to be live at a
+single time; defining the right notion of liveness is left as an
+exercise for the interested reader.
 
 The value @code{diskCacheWriteoutOnClose} (32@dmn{kB} by default) is
 the amount of data that Polipo will write out when closing a disk
@@ -1563,6 +1579,9 @@ instance is later superseded.
 The integers @code{diskCacheDirectoryPermissions} and
 @code{diskCacheFilePermissions} are the Unix filesystem permissions
 with which files and directories are created in the on-disk cache.
+
+The variable @code{maxDiskCacheEntrySize} specifies the maximum size,
+in bytes, of an instance that is stored in the disk cache.
 
 @menu
 * Asynchronous writing::        Writing out data when idle.
@@ -1605,7 +1624,7 @@ activity.
 @vindex diskCacheTruncateSize
 @vindex preciseExpiry
 
-Polipo never removes a file in its on-disk cache except when it finds
+Polipo never removes a file in its on-disk cache, except when it finds
 that the instance that it represents has been superseded by a newer
 version.  In order to keep the on-disk cache from growing without
 bound, it is necessary to @dfn{purge} it once in a while.  Purging the
@@ -1727,17 +1746,19 @@ somewhat, but at the cost of larger granularity of allocation and
 hence larger memory usage.
 
 By default, Polipo uses a hand-crafted memory allocator based on
-@code{mmap}(2) for allocating chunks; this is very slightly faster
-than the stock memory allocator and limits memory fragmentation.  It
-is possible to disable the chunk allocator, and use @code{malloc}(3)
-for all memory allocation, by defining @code{MALLOC_CHUNKS} at compile
-time; this is probably only useful for debugging.
+@code{mmap}(2) (@code{VirtualAlloc} under Windows) for allocating
+chunks; while this is very slightly faster than the stock memory
+allocator, its main benefit is that it limits memory fragmentation.
+It is possible to disable the chunk allocator, and use
+@code{malloc}(3) for all memory allocation, by defining
+@code{MALLOC_CHUNKS} at compile time; this is probably only useful for
+debugging.
 
 There is one assumption made about @code{CHUNK_SIZE}:
 @code{CHUNK_SIZE} multiplied by the number of bits in an
 @code{unsigned int} (actually in a @code{ChunkBitmap} --- see
 @file{chunk.c}) must be a multiple of the page size, which is 4096 on
-most systems (8192 on Alpha).
+most systems (8192 on Alpha, 65536 on Windows --- go figure).
 
 As all network I/O will be performed in units of one to two chunks,
 @code{CHUNK_SIZE} should be at least equal to your network interface's
@@ -1762,9 +1783,9 @@ atoms (unique strings).
 @cindex limiting memory
 @cindex memory
 
-Polipo is designed to work well when given little memory.  However,
-because it can be used in different environments, you need to inform
-it of the amount of memory it can use.
+Polipo is designed to work well when given little memory, but will
+happily scale to larger configurations.  For that reason, you need to
+inform it of the amount of memory it can use.
 
 @menu
 * Limiting chunk usage::        Discard objects when low on chunks.
@@ -1822,7 +1843,7 @@ disk (private objects are discarded as soon as possible).
 
 On 32-bit architectures, every object costs 108 bytes of memory, plus
 storage for every globally unique header that is not handled specially
-(hopefully negligible) plus an overhead of one word (4 bytes) for
+(hopefully negligible), plus an overhead of one word (4 bytes) for
 every chunk of data in the object.
 
 You may also want to change @code{objectHashTableSize}.  This is the
@@ -1844,10 +1865,10 @@ Typically, the effect is to cause calls to the @code{malloc} and
 @code{mmap} library functions to fail.
 
 Polipo will usually react gracefully to failures to allocate
-memory@footnote{There are exactly three places in the code where Polipo
-will give up and exit if out of memory; all three are extremely unlikely to
-happen in practice.}.  Nonetheless, you should avoid using OS limits
-to limit Polipo's memory usage.  Indeed, when it hits an OS limit,
+memory@footnote{There are exactly three places in the code where
+Polipo will give up and exit if out of memory; all three are extremely
+unlikely to happen in practice.}.  Nonetheless, you should avoid using
+OS limits to limit Polipo's memory usage: when it hits an OS limit,
 Polipo cannot allocate the memory needed to schedule recovery from the
 out-of-memory condition, and has no choice other than to drop a
 connection.
