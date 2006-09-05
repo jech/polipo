@@ -644,7 +644,7 @@ specialRequestHandler(int status,
 static void
 fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
 {
-    FILE *tmp;
+    FILE *tmp = NULL;
     char *buf = NULL;
     int rc, len, offset;
 
@@ -691,6 +691,8 @@ fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
  done:
     if(buf)
         dispose_chunk(buf);
+    if(tmp)
+        fclose(tmp);
     notifyObject(object);
 }
 #endif
