@@ -39,12 +39,8 @@ preinitLocal()
     atomWriteoutObjects = internAtom("writeout-objects");
     atomFreeChunkArenas = internAtom("free-chunk-arenas");
 
-#ifdef HAVE_FORK
     CONFIG_VARIABLE(disableLocalInterface, CONFIG_BOOLEAN,
                     "Disable the local configuration pages.");
-#else
-    disableLocalInterface = 1;
-#endif
 }
 
 #ifdef HAVE_FORK
