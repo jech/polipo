@@ -43,9 +43,7 @@ preinitLocal()
                     "Disable the local configuration pages.");
 }
 
-#ifdef HAVE_FORK
 static void fillSpecialObject(ObjectPtr, void (*)(FILE*, char*), void*);
-#endif
 
 int 
 httpLocalRequest(ObjectPtr object, int method, int from, int to,
@@ -87,7 +85,6 @@ alternatingHttpStyle(FILE *out, char *id)
             "</style>\n", id, id);
 }
 
-#ifdef HAVE_FORK
 static void
 printConfig(FILE *out, char *dummy)
 {
@@ -103,7 +100,6 @@ printConfig(FILE *out, char *dummy)
     fprintf(out, "<p><a href=\"/polipo/\">back</a></p>");
     fprintf(out, "</body></html>\n");
 }
-#endif
 
 #ifndef NO_DISK_CACHE
 
@@ -120,13 +116,11 @@ plainIndexDiskObjects(FILE *out, char *root)
 }
 #endif
 
-#ifdef HAVE_FORK
 static void
 serversList(FILE *out, char *dummy)
 {
     listServers(out);
 }
-#endif
 
 static int
 matchUrl(char *base, ObjectPtr object)
@@ -180,12 +174,10 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      "</head><body>\n"
                      "<h1>Polipo</h1>\n"
                      "<p><a href=\"status?\">Status report</a>.</p>\n"
-#ifdef HAVE_FORK
                      "<p><a href=\"config?\">Current configuration</a>.</p>\n"
                      "<p><a href=\"servers?\">Known servers</a>.</p>\n"
 #ifndef NO_DISK_CACHE
                      "<p><a href=\"index?\">Disk cache index</a>.</p>\n"
-#endif
 #endif
                      "</body></html>\n");
         object->length = object->size;
@@ -231,7 +223,6 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      used_atoms);
         object->expires = current_time.tv_sec;
         object->length = object->size;
-#ifdef HAVE_FORK
     } else if(matchUrl("/polipo/config", object)) {
         fillSpecialObject(object, printConfig, NULL);
         object->expires = current_time.tv_sec + 5;
@@ -264,7 +255,6 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
     } else if(matchUrl("/polipo/servers", object)) {
         fillSpecialObject(object, serversList, NULL);
         object->expires = current_time.tv_sec + 2;
-#endif
     } else {
         abortObject(object, 404, internAtom("Not found"));
     }
@@ -649,5 +639,58 @@ specialRequestHandler(int status,
     }
     free(request);
     return 1;
+}
+#else
+static void
+fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
+{
+    FILE *tmp;
+    char *buf = NULL;
+    int rc, len, offset;
+
+    if(object->flags & OBJECT_INPROGRESS)
+        return;
+
+    buf = get_chunk();
+    if(buf == NULL) {
+        abortObject(object, 503, internAtom("Couldn't allocate chunk"));
+        goto done;
+    }
+
+    tmp = tmpfile();
+    if(tmp == NULL) {
+        abortObject(object, 503, internAtom(pstrerror(errno)));
+        goto done;
+    }
+
+    (*fn)(tmp, closure);
+    fflush(tmp);
+
+    rewind(tmp);
+    offset = 0;
+    while(1) {
+        len = fread(buf, 1, CHUNK_SIZE, tmp);
+        if(len < 0) {
+            abortObject(object, 503, internAtom(pstrerror(errno)));
+            goto done;
+        }
+        if(len == 0)
+            break;
+
+        rc = objectAddData(object, buf, offset, len);
+        if(rc < 0) {
+            abortObject(object, 503, internAtom("Couldn't add data to object"));
+            goto done;
+        }
+
+        offset += len;
+    }
+
+    object->length = offset;
+
+ done:
+    if(buf)
+        dispose_chunk(buf);
+    notifyObject(object);
 }
 #endif
