@@ -41,13 +41,6 @@ THE SOFTWARE.
    */
   #define NO_IPv6 1
 
-  /* Mingw can't do the mmap() stuff required for the special allocator.
-   * So define MALLOC_CHUNKS to fall back to regular old malloc().
-   */
-  #ifndef MALLOC_CHUNKS
-    #define MALLOC_CHUNKS 1
-  #endif
-
   #include <io.h>
 
   #define S_IROTH S_IREAD

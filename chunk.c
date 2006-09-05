@@ -171,8 +171,38 @@ free_chunks()
 
 #else
 
+#ifdef MINGW
+#define MAP_FAILED NULL
+#define getpagesize() (64 * 1024)
+static void *
+alloc_arena(size_t size)
+{
+    return VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+}
+static int
+free_arena(void *addr, size_t size)
+{
+    int rc;
+    rc = VirtualFree(addr, size, MEM_RELEASE);
+    if(!rc)
+        rc = -1;
+    return rc;
+}
+#else
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void*)((long int)-1))
+#endif
+static void *
+alloc_arena(size_t size)
+{
+    return mmap(NULL, size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+}
+static int
+free_arena(void *addr, size_t size)
+{
+    return munmap(addr, size);
+}
 #endif
 
 /* Memory is organised into a number of chunks of ARENA_CHUNKS chunks
@@ -260,8 +290,7 @@ findArena()
 
     if(!arena->chunks) {
         void *p;
-        p = mmap(NULL, CHUNK_SIZE * ARENA_CHUNKS, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        p = alloc_arena(CHUNK_SIZE * ARENA_CHUNKS);
         if(p == MAP_FAILED) {
             do_log_error(L_ERROR, errno, "Couldn't allocate chunk");
             maybe_free_chunks(1, 1);
@@ -361,7 +390,7 @@ free_chunk_arenas()
     for(i = 0; i < numArenas; i++) {
         arena = &(chunkArenas[i]);
         if(arena->bitmap == EMPTY_BITMAP && arena->chunks) {
-            rc = munmap(arena->chunks, CHUNK_SIZE * ARENA_CHUNKS);
+            rc = free_arena(arena->chunks, CHUNK_SIZE * ARENA_CHUNKS);
             if(rc < 0) {
                 do_log_error(L_ERROR, errno, "Couldn't unmap memory");
                 continue;
