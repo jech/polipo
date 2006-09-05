@@ -144,7 +144,7 @@ initHttp()
             do_log(L_ERROR, "Couldn't allocate allowedPorts.\n");
             exit(1);
         }
-        intListCons(80, 86, allowedPorts);
+        intListCons(80, 100, allowedPorts);
         intListCons(1024, 0xFFFF, allowedPorts);
     }
 
