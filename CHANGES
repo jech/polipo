@@ -19,7 +19,7 @@ Polipo 0.10 (unreleased):
         Implemented maxPipelineTrain, which can be used to moderate
         Polipo's eagerness to pipeline.
         Unified parentHost and parentPort into parentProxy.
-        Initial port to native Windows (thanks to Dan Kennedy).
+        Ported Polipo to native Windows (thanks to Dan Kennedy).
         Implemented disableVia.
         Implemented SOCKS support.
         Made disableVia the default.
@@ -27,7 +27,11 @@ Polipo 0.10 (unreleased):
         Made the disk cache code quote all characters except for a
         small number of ``known safe'' ones.  This is an incompatible
         change to the on-disk format.
-        Pass all Pragma headers to the next hop.
+        Changed HTTP parser to pass all Pragma headers to the next
+        hop; this should make some media players work through Polipo.
+        Changed the connection scheduler to avoid pipelining when
+        there are idle connections to a given server.
+        Made Polipo obey parentProxy when tunnelling (proxying https).
 
 2 September 2006: Polipo 0.9.10:
 
