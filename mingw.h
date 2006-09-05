@@ -38,9 +38,6 @@ THE SOFTWARE.
 
   /* At time of writing, a fair bit of stuff doesn't work under Mingw.
    * Hopefully they will be fixed later (especially the disk-cache).
-   *
-   * Please also note that the forbidden-file is unavailable under Mingw,
-   * as the subsystem uses fork().
    */
   #define NO_IPv6 1
   #define NO_FANCY_RESOLVER 1
