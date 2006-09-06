@@ -1313,8 +1313,8 @@ SOCKS@tie{}5 proxy.
 
 @node Tuning POST and PUT, Tunnelling connections, Parent proxies, Network
 @section Tuning POST and PUT requests
-@cindex POST
-@cindex PUT
+@cindex POST request
+@cindex PUT request
 @vindex expectContinue
 
 The main assumption behind the design of the HTTP protocol is that
