@@ -45,7 +45,7 @@ void
 declareConfigVariable(AtomPtr name, int type, void *value, 
                       int (*setter)(ConfigVariablePtr, void*), char *help)
 {
-    ConfigVariablePtr var;
+    ConfigVariablePtr var, previous, next;
 
     var = findConfigVariable(name);
 
@@ -81,8 +81,25 @@ declareConfigVariable(AtomPtr name, int type, void *value,
     }
     var->setter = setter;
     var->help = help;
-    var->next = configVariables;
-    configVariables = var;
+
+    previous = NULL;
+    next = configVariables;
+    while(next && strcmp(next->name->string, var->name->string) < 0) {
+        previous = next;
+        next = next->next;
+    }
+    if(next && strcmp(next->name->string, var->name->string) == 0) {
+        do_log(L_ERROR, "Variable %s declared multiple times.\n",
+               next->name->string);
+        abort();
+    }
+    if(previous == NULL) {
+        var->next = configVariables;
+        configVariables = var;
+    } else {
+        var->next = next;
+        previous->next = var;
+    }
 }
 
 static void
