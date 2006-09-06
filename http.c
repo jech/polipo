@@ -83,9 +83,9 @@ preinitHttp()
                              timeoutSetter, "Server-side timeout.");
     CONFIG_VARIABLE(authRealm, CONFIG_ATOM,
                     "Authentication realm.");
-    CONFIG_VARIABLE(authCredentials, CONFIG_ATOM,
+    CONFIG_VARIABLE(authCredentials, CONFIG_PASSWORD,
                     "username:password.");
-    CONFIG_VARIABLE(parentAuthCredentials, CONFIG_ATOM,
+    CONFIG_VARIABLE(parentAuthCredentials, CONFIG_PASSWORD,
                     "username:password.");
     CONFIG_VARIABLE(allowedClients, CONFIG_ATOM_LIST_LOWER,
                     "Networks from which clients are allowed to connect.");
