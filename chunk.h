@@ -36,3 +36,4 @@ void *maybe_get_chunk(void) ATTRIBUTE ((malloc));
 
 void dispose_chunk(void*);
 void free_chunk_arenas(void);
+int totalChunkArenaSize(void);

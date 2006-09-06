@@ -169,6 +169,11 @@ free_chunks()
     return;
 }
 
+int
+totalChunkArenaSize()
+{
+    return used_chunks * CHUNK_SIZE;
+}
 #else
 
 #ifdef MINGW
@@ -400,5 +405,19 @@ free_chunk_arenas()
     }
     if(currentArena && currentArena->chunks == NULL)
         currentArena = NULL;
+}
+
+int
+totalChunkArenaSize()
+{
+    ChunkArenaPtr arena;
+    int i, size = 0;
+
+    for(i = 0; i < numArenas; i++) {
+        arena = &(chunkArenas[i]);
+        if(arena->chunks)
+            size += (CHUNK_SIZE * ARENA_CHUNKS);
+    }
+    return size;
 }
 #endif
