@@ -28,6 +28,9 @@ typedef struct _SpecialRequest {
     pid_t pid;
 } SpecialRequestRec, *SpecialRequestPtr;
 
+extern int disableConfiguration;
+extern int disableIndexing;
+
 void preinitLocal(void);
 void alternatingHttpStyle(FILE *out, char *id);
 int httpLocalRequest(ObjectPtr object, int method, int from, int to,

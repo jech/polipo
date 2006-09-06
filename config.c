@@ -232,7 +232,7 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
     char *disabled = "";
     int i;
     
-    if(!var->setter) disabled = "disabled=true";
+    if(disableConfiguration || !var->setter) disabled = "disabled=true";
 
     fprintf(out, "<form method=POST action=\"config?\">");
   

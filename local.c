@@ -23,6 +23,8 @@ THE SOFTWARE.
 #include "polipo.h"
 
 int disableLocalInterface = 0;
+int disableConfiguration = 0;
+int disableIndexing = 1;
 
 AtomPtr atomInitForbidden;
 AtomPtr atomReopenLog;
@@ -39,8 +41,13 @@ preinitLocal()
     atomWriteoutObjects = internAtom("writeout-objects");
     atomFreeChunkArenas = internAtom("free-chunk-arenas");
 
+    /* These should not be settable for obvious reasons */
     CONFIG_VARIABLE(disableLocalInterface, CONFIG_BOOLEAN,
                     "Disable the local configuration pages.");
+    CONFIG_VARIABLE(disableConfiguration, CONFIG_BOOLEAN,
+                    "Disable reconfiguring Polipo at runtime.");
+    CONFIG_VARIABLE(disableIndexing, CONFIG_BOOLEAN,
+                    "Disable indexing of the local cache.");
 }
 
 static void fillSpecialObject(ObjectPtr, void (*)(FILE*, char*), void*);
@@ -192,7 +199,8 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                      "<h1>Polipo proxy on %s:%d: status report</h1>\n"
                      "<p>The %s proxy on %s:%d is %s.</p>\n"
                      "<p>There are %d public and %d private objects "
-                     "currently in memory using %d KB in %d chunks.</p>\n"
+                     "currently in memory using %d KB in %d chunks "
+                     "(%d KB allocated).</p>\n"
                      "<p>There are %d atoms.</p>"
                      "<p><form method=POST action=\"/polipo/status?\">"
                      "<input type=submit name=\"init-forbidden\" "
@@ -220,6 +228,7 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
                       "on line"),
                      publicObjectCount, privateObjectCount,
                      used_chunks * CHUNK_SIZE / 1024, used_chunks,
+                     totalChunkArenaSize() / 1024,
                      used_atoms);
         object->expires = current_time.tv_sec;
         object->length = object->size;
@@ -228,8 +237,15 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
         object->expires = current_time.tv_sec + 5;
 #ifndef NO_DISK_CACHE
     } else if(matchUrl("/polipo/index", object)) {
-        int len = MAX(0, object->key_size - 14);
-        char *root = strdup_n((char*)object->key + 14, len);
+        int len;
+        char *root;
+        if(disableIndexing) {
+            abortObject(object, 403, internAtom("Action not allowed"));
+            notifyObject(object);
+            return 1;
+        }
+        len = MAX(0, object->key_size - 14);
+        root = strdup_n((char*)object->key + 14, len);
         if(root == NULL) {
             abortObject(object, 503, internAtom("Couldn't allocate root"));
             notifyObject(object);
@@ -240,8 +256,15 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
         free(root);
         object->expires = current_time.tv_sec + 5;
     } else if(matchUrl("/polipo/recursive-index", object)) {
-        int len = MAX(0, object->key_size - 24);
-        char *root = strdup_n((char*)object->key + 24, len);
+        int len;
+        char *root;
+        if(disableIndexing) {
+            abortObject(object, 403, internAtom("Action not allowed"));
+            notifyObject(object);
+            return 1;
+        }
+        len = MAX(0, object->key_size - 24);
+        root = strdup_n((char*)object->key + 24, len);
         if(root == NULL) {
             abortObject(object, 503, internAtom("Couldn't allocate root"));
             notifyObject(object);
@@ -365,8 +388,15 @@ httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
     ObjectPtr object = requestor->object;
 
     if(matchUrl("/polipo/config", object)) {
-        AtomListPtr list = urlDecode(data->string, data->length);
+        AtomListPtr list = NULL;
         int i, rc;
+
+        if(disableConfiguration) {
+            abortObject(object, 403, internAtom("Action not allowed"));
+            goto out;
+        }
+
+        list = urlDecode(data->string, data->length);
         if(list == NULL) {
             abortObject(object, 400,
                         internAtom("Couldn't parse variable to set"));
@@ -392,8 +422,15 @@ httpSpecialDoSideFinish(AtomPtr data, HTTPRequestPtr requestor)
         object->flags &= ~OBJECT_INITIAL;
         object->length = 0;
     } else if(matchUrl("/polipo/status", object)) {
-        AtomListPtr list = urlDecode(data->string, data->length);
+        AtomListPtr list = NULL;
         int i;
+
+        if(disableConfiguration) {
+            abortObject(object, 403, internAtom("Action not allowed"));
+            goto out;
+        }
+
+        list = urlDecode(data->string, data->length);
         if(list == NULL) {
             abortObject(object, 400,
                         internAtom("Couldn't parse action"));
