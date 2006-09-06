@@ -31,9 +31,10 @@ THE SOFTWARE.
 #define CONFIG_FLOAT 8
 #define CONFIG_ATOM 9
 #define CONFIG_ATOM_LOWER 10
-#define CONFIG_INT_LIST 11
-#define CONFIG_ATOM_LIST 12
-#define CONFIG_ATOM_LIST_LOWER 13
+#define CONFIG_PASSWORD 11
+#define CONFIG_INT_LIST 12
+#define CONFIG_ATOM_LIST 13
+#define CONFIG_ATOM_LIST_LOWER 14
 
 typedef struct _ConfigVariable {
     AtomPtr name;

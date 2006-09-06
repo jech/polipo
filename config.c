@@ -72,7 +72,8 @@ declareConfigVariable(AtomPtr name, int type, void *value,
     case CONFIG_PENTASTATE:
         var->value.i = value; break;
     case CONFIG_FLOAT: var->value.f = value; break;
-    case CONFIG_ATOM: case CONFIG_ATOM_LOWER: var->value.a = value; break;
+    case CONFIG_ATOM: case CONFIG_ATOM_LOWER: case CONFIG_PASSWORD:
+        var->value.a = value; break;
     case CONFIG_INT_LIST:
         var->value.il = value; break;
     case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER: 
@@ -192,6 +193,10 @@ printVariable(FILE *out, ConfigVariablePtr var, int html, int parseable)
                 fprintf(out, "(none)");
         }
         break;
+    case CONFIG_PASSWORD:
+        if(!parseable)
+            fprintf(out, "(hidden)");
+        break;
     case CONFIG_INT_LIST:
         if((*var->value.il) == NULL) {
             if(!parseable)
@@ -256,13 +261,15 @@ printVariableForm(FILE *out, ConfigVariablePtr var)
     switch(var->type) {
     case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
     case CONFIG_TIME: case CONFIG_FLOAT: case CONFIG_ATOM:
-    case CONFIG_ATOM_LOWER: case CONFIG_INT_LIST:
-    case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
+    case CONFIG_ATOM_LOWER: case CONFIG_PASSWORD:
+    case CONFIG_INT_LIST: case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
         fprintf(out, "<input value=\"");
         printVariable(out, var, 1, 1);
-        fprintf(out, "\" size=10 name=%s %s>\n", var->name->string, disabled);
+        fprintf(out, "\"%s size=14 name=%s %s>\n",
+                var->type == CONFIG_PASSWORD ? " type=password" : "",
+                var->name->string, disabled);
         break;
-    
+
     case CONFIG_BOOLEAN:
         {
             static char *states[] = {"false", "true"};
@@ -413,7 +420,8 @@ printConfigVariables(FILE *out, int html)
       case CONFIG_TETRASTATE: fprintf(out, "4-state"); break;
       case CONFIG_PENTASTATE: fprintf(out, "5-state"); break;
       case CONFIG_FLOAT: fprintf(out, "float"); break;
-      case CONFIG_ATOM: case CONFIG_ATOM_LOWER: fprintf(out, "atom"); break;
+      case CONFIG_ATOM: case CONFIG_ATOM_LOWER: case CONFIG_PASSWORD:
+          fprintf(out, "atom"); break;
       case CONFIG_INT_LIST: fprintf(out, "intlist"); break;
       case CONFIG_ATOM_LIST: case CONFIG_ATOM_LIST_LOWER:
 	  fprintf(out, "list"); break;
@@ -703,7 +711,7 @@ parseConfigLine(char *line, char *filename, int lineno, int set)
         else
             *var->value.f = fv;
         break;
-    case CONFIG_ATOM: case CONFIG_ATOM_LOWER:
+    case CONFIG_ATOM: case CONFIG_ATOM_LOWER: case CONFIG_PASSWORD:
         i = parseAtom(line, i, &av, (var->type == CONFIG_ATOM_LOWER));
         if(i < 0) goto syntax;
         if(!av) {
@@ -856,7 +864,8 @@ configFloatSetter(ConfigVariablePtr var, void* value)
 int
 configAtomSetter(ConfigVariablePtr var, void* value)
 {
-    assert(var->type == CONFIG_ATOM || var->type == CONFIG_ATOM_LOWER);
+    assert(var->type == CONFIG_ATOM || var->type == CONFIG_ATOM_LOWER ||
+           var->type == CONFIG_PASSWORD);
     if(*var->value.a)
         releaseAtom(*var->value.a);
     *var->value.a = *(AtomPtr*)value;
