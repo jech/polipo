@@ -1343,7 +1343,7 @@ stringToLabels(char *buf, int offset, int n, char *string)
 #define DO_NTOHS(_d, _s) _d = ntohs(*(short*)(_s));
 #define DO_NTOHL(_d, _s) _d = ntohl(*(unsigned*)(_s))
 #define DO_HTONS(_d, _s) *(short*)(_d) = htons(_s);
-#define DO_HTONL(_d, _s) *(short*)(_d) = htonl(_s)
+#define DO_HTONL(_d, _s) *(unsigned*)(_d) = htonl(_s)
 #else
 #define DO_NTOHS(_d, _s) \
     do { short _dd; \
@@ -1358,9 +1358,9 @@ stringToLabels(char *buf, int offset, int n, char *string)
          _dd = htons(_s); \
          memcpy((_d), &(_dd), sizeof(unsigned short)); } while(0);
 #define DO_HTONL(_d, _s) \
-    do { unsigned long _dd; \
+    do { unsigned _dd; \
          _dd = htonl(_s); \
-         memcpy((_d), &(_dd), sizeof(unsigned long)); } while(0);
+         memcpy((_d), &(_dd), sizeof(unsigned)); } while(0);
 #endif
 
 static int
