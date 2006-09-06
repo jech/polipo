@@ -32,6 +32,11 @@ Polipo 0.10 (unreleased):
         Changed the connection scheduler to avoid pipelining when
         there are idle connections to a given server.
         Made Polipo obey parentProxy when tunnelling (proxying https).
+        Changed the default value of allowedPorts to be slightly more
+        permissive.
+        Implemented tweakables for selectively disabling parts of the
+        configuration interface.  Indexing is now disabled by default.
+        Hide variables containing passwords.
 
 2 September 2006: Polipo 0.9.10:
 
