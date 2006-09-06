@@ -69,6 +69,10 @@
 
 # localDocumentRoot = ""
 
+# Uncomment this if you want to enable the pages under /polipo/index?
+
+# disableIndexing = false
+
 
 ### Domain Name System
 ### ******************
