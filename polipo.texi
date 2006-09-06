@@ -549,8 +549,8 @@ must be of the form
 where @var{var} is a variable to set and @var{val} is the value to set
 it to.
 
-It is currently not possible to change the configuration of a running
-Polipo without restarting it.
+It is possible to change the configuration of a running polipo by
+using the local configuration interface (@pxref{Web interface}).
 
 @node Daemon, Logging, Configuring Polipo, Polipo Invocation
 @subsection Running as a daemon
@@ -634,7 +634,6 @@ forbidden URLs file.
 @section The local web server
 @vindex localDocumentRoot
 @vindex disableProxy
-@vindex disableLocalInterface
 @cindex web server
 @cindex local server
 
@@ -666,6 +665,7 @@ a @emph{chroot} jail.)
 @cindex runtime configuration
 @cindex web interface
 @vindex disableLocalInterface
+@vindex disableConfiguration
 
 The subtree of the local web space rooted at
 @samp{http://localhost:8123/polipo/} is treated specially: URLs under
@@ -692,13 +692,17 @@ company:
 @example
 http://localhost:8123/polipo/index?http://www.microsoft.com/
 @end example
-
 The pages starting with
 @samp{http://localhost:8123/polipo/recursive-index?} contain recursive
-indices of various servers.
+indices of various servers.  This functionality is disabled by
+default, and can be enabled by setting the variable
+@code{disableIndexing}.
 
-The local interface is disabled if the variable
-@code{disableLocalInterface} is true.
+If you have multiple users, you will probably want to disable the
+local interface by setting the variable @code{disableLocalInterface}.
+You may also selectively control setting of variables and indexing by
+setting the variables @code{disableConfiguration} and
+@code{disableIndexing}.
 
 @node Network, Caching, Running, Top
 @chapter Polipo and the network
