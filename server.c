@@ -2339,7 +2339,7 @@ httpServerHandlerHeaders(int eof,
                             internAtom("Server closed connection"));
             return 1;
         } else {
-            if(code != 206 && eof != -ECLIENTRESET && object->length < 0) {
+            if(code != 206 && eof > 0 && object->length < 0) {
                 object->length = object->size;
                 objectMetadataChanged(object, 0);
             }
@@ -2415,7 +2415,7 @@ httpServerIndirectHandlerCommon(HTTPConnectionPtr connection, int eof)
                             internAtom("Server dropped connection"));
             return 1;
         } else {
-            if(request->object->length < 0 && eof != -ECLIENTRESET &&
+            if(request->object->length < 0 && eof > 0 &&
                (request->to < 0 || request->to > request->object->size)) {
                 request->object->length = request->object->size;
                 objectMetadataChanged(request->object, 0);
