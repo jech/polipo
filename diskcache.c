@@ -507,7 +507,7 @@ chooseBodyOffset(int n, ObjectPtr object)
     int length = MAX(object->size, object->length);
     int body_offset;
 
-    if(object->length >= 0 && object->length + n < 4 * 1024 - 50)
+    if(object->length >= 0 && object->length + n < 4096 - 50)
         return -1;              /* no gap for small objects */
 
     if(n <= 128)
@@ -526,12 +526,20 @@ chooseBodyOffset(int n, ObjectPtr object)
         body_offset = 4096;
     else body_offset = ((n + 4095) / 4096 + 1) * 4096;
 
+    /* Tweak the gap so that we don't use up a full disk block for
+       a small tail */
+    if(object->length >= 0 && object->length < 64 * 1024) {
+        int last = (body_offset + object->length) % 4096;
+        if(last < body_offset / 4 && n < body_offset - last - 50)
+            body_offset -= last;
+    }
 
+    /* Rewriting large objects is expensive -- don't use small gaps */
     if(length >= 64 * 1024)
         body_offset = MAX(body_offset, 1024);
     if(length >= 256 * 1024)
         body_offset = MAX(body_offset, 2048);
-    if(length >= 1024 * 1024)
+    if(length >= 512 * 1024)
         body_offset = MAX(body_offset, 4096);
     return body_offset;
 }
