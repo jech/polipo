@@ -1609,7 +1609,7 @@ In order to avoid the latency hit that this causes, Polipo will
 preemptively write out instances to the disk cache whenever it is
 idle.  The integer @code{idleTime} specifies the time during which
 Polipo will remain idle before it starts writing out random objects to
-the on-disk cache; this value defaults to 30@dmn{s}.  You may want to
+the on-disk cache; this value defaults to 20@dmn{s}.  You may want to
 decrease this value for a busy cache with little memory, or increase
 it if your cache is often idle and has a lot of memory.
 
