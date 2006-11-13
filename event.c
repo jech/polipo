@@ -25,7 +25,7 @@ THE SOFTWARE.
 #ifdef HAVE_FORK
 static volatile sig_atomic_t exitFlag = 0;
 #else
-int exitFlag = 0;
+static int exitFlag = 0;
 #endif
 static int in_signalCondition = 0;
 
