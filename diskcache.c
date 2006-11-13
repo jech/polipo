@@ -2310,6 +2310,7 @@ expireDiskObjects()
     FTSENT *fe;
     int files = 0, considered = 0, unlinked = 0, truncated = 0;
     int dirs = 0, rmdirs = 0;
+    long left = 0, total = 0;
 
     if(diskCacheRoot == NULL || 
        diskCacheRoot->length <= 0 || diskCacheRoot->string[0] != '/')
@@ -2361,15 +2362,17 @@ expireDiskObjects()
             }
 
             files++;
-            expireFile(fe->fts_accpath, fe->fts_statp,
-                       &considered, &unlinked, &truncated);
+            left += expireFile(fe->fts_accpath, fe->fts_statp,
+                               &considered, &unlinked, &truncated);
+            total += fe->fts_statp->st_size;
         }
         fts_close(fts);
     }
 
     printf("Disk cache purged.\n");
-    printf("%d files, %d considered, %d removed, %d truncated.\n",
-           files, considered, unlinked, truncated);
+    printf("%d files, %d considered, %d removed, %d truncated "
+           "(%ldkB -> %ldkB).\n",
+           files, considered, unlinked, truncated, total/1024, left/1024);
     printf("%d directories, %d removed.\n", dirs, rmdirs);
     return;
 }
