@@ -127,14 +127,20 @@ dirfd(DIR *dir)
 /*
  * Make the directory identified by the argument the current directory.
  */
-int change_to_dir(DIR *dir) {
 #ifdef MINGW
-    assert(!"Not yet implemented!!");
-    exit(-1);
-#else
-    return fchdir(dirfd(dir));
-#endif
+int
+change_to_dir(DIR *dir)
+{
+    errno = ENOSYS;
+    return -1;
 }
+#else
+int
+change_to_dir(DIR *dir)
+{
+    return fchdir(dirfd(dir));
+}
+#endif
 
 FTS*
 fts_open(char * const *path_argv, int options,
