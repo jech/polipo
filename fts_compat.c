@@ -280,9 +280,7 @@ fts_read(FTS *fts)
 
     name = dirent->d_name;
 
-#ifndef MINGW
  again2:
-#endif
     rc = stat(name, &fts->stat);
     if(rc < 0) {
         fts->ftsent.fts_info = FTS_NS;
@@ -323,7 +321,7 @@ fts_read(FTS *fts)
     } else if(S_ISREG(fts->stat.st_mode)) {
         fts->ftsent.fts_info = FTS_F;
         goto done;
-#ifndef MINGW
+#ifdef S_ISLNK
     } else if(S_ISLNK(fts->stat.st_mode)) {
         int rc;
         rc = readlink(name, buf, 1024);
