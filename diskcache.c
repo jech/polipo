@@ -2218,13 +2218,14 @@ copyFile(int from, char *filename, int n)
     return 1;
 }
 
-static void
+static long int
 expireFile(char *filename, struct stat *sb,
            int *considered, int *unlinked, int *truncated)
 {
     DiskObjectPtr dobject = NULL;
     time_t t;
     int fd, rc;
+    long int ret = sb->st_size;
 
     if(!preciseExpiry) {
         t = sb->st_mtime;
@@ -2237,7 +2238,7 @@ expireFile(char *filename, struct stat *sb,
         if(t > current_time.tv_sec - diskCacheUnlinkTime &&
            (sb->st_size < diskCacheTruncateSize ||
             t > current_time.tv_sec - diskCacheTruncateTime))
-            return;
+            return ret;
     }
     
     (*considered)++;
@@ -2249,10 +2250,11 @@ expireFile(char *filename, struct stat *sb,
         if(rc < 0) {
             do_log_error(L_ERROR, errno,
                          "Couldn't unlink %s", filename);
+            return ret;
         } else {
             (*unlinked)++;
+            return 0;
         }
-        return;
     }
     
     t = dobject->access;
@@ -2268,8 +2270,10 @@ expireFile(char *filename, struct stat *sb,
         rc = unlink(dobject->filename);
         if(rc < 0) {
             do_log_error(L_ERROR, errno, "Couldn't unlink %s", filename);
-        } else
+        } else {
             (*unlinked)++;
+            ret = 0;
+        }
     } else if(dobject->size > 
               diskCacheTruncateSize + 4 * dobject->body_offset && 
               t < current_time.tv_sec - diskCacheTruncateTime) {
@@ -2288,11 +2292,13 @@ expireFile(char *filename, struct stat *sb,
             close(fd);
             (*unlinked)--;
             (*truncated)++;
+            ret = sb->st_size - dobject->body_offset + diskCacheTruncateSize;
         }
     }
     free(dobject->location);
     free(dobject->filename);
     free(dobject);
+    return ret;
 }
     
 void
