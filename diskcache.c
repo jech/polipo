@@ -920,10 +920,13 @@ validateEntry(ObjectPtr object, int fd,
         if(etag && object->etag && strcmp(etag, object->etag) != 0)
             goto invalid;
 
-        /* If we have neither a usable ETag nor a last-modified date, we
-           validate disk entries by using their date. */
+        /* If we don't have a usable ETag, and either CACHE_VARY or we
+           don't have a last-modified date, we validate disk entries by
+           using their date. */
         if(!(etag && object->etag) &&
-           !(last_modified >= 0 && object->last_modified >= 0)) {
+           (!(last_modified >= 0 && object->last_modified >= 0) ||
+            ((cache_control.flags & CACHE_VARY) ||
+             (object->cache_control & CACHE_VARY)))) {
             if(date >= 0 && date != object->date)
                 goto invalid;
             if(polipo_age >= 0 && polipo_age != object->age)
