@@ -98,7 +98,7 @@ preinitHttp()
     CONFIG_VARIABLE(bigBufferSize, CONFIG_INT,
                     "Size of big buffers (max size of headers).");
     CONFIG_VARIABLE_SETTABLE(disableVia, CONFIG_BOOLEAN, configIntSetter,
-                             "Don't use Via headers (not recommended).");
+                             "Don't use Via headers.");
     preinitHttpParser();
 }
 
