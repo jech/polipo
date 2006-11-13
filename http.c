@@ -177,7 +177,9 @@ initHttp()
     /* gethostname doesn't necessarily NUL-terminate on overflow */
     buf[CHUNK_SIZE - 1] = '\0';
 
-    if(strcmp(buf, "(none)") == 0) {
+    if(strcmp(buf, "(none)") == 0 ||
+       strcmp(buf, "localhost") == 0 ||
+       strcmp(buf, "localhost.localdomain") == 0) {
         do_log(L_WARN, "Couldn't determine host name -- using ``polipo''.\n");
         strcpy(buf, "polipo");
         goto success;
@@ -196,7 +198,8 @@ initHttp()
 
     host = gethostbyaddr(host->h_addr_list[0], host->h_length,  AF_INET);
 
-    if(!host || !host->h_name || strcmp(host->h_name, "localhost") == 0)
+    if(!host || !host->h_name || strcmp(host->h_name, "localhost") == 0 ||
+       strcmp(host->h_name, "localhost.localdomain") == 0)
         goto success;
 
     namelen = strlen(host->h_name);
