@@ -43,7 +43,7 @@ float maxAgeFraction = 0.1;
 int maxNoModifiedAge = 23 * 60;
 int maxWriteoutWhenIdle = 64 * 1024;
 int maxObjectsWhenIdle = 32;
-int idleTime = 30;
+int idleTime = 20;
 int dontCacheCookies = 0;
 
 void
