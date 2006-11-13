@@ -525,7 +525,7 @@ redirectorStreamHandler2(int status,
     }
     c = memchr(redirector_buffer, '\n', srequest->offset);
     if(!c) {
-        if(!status && c < redirector_buffer + 512)
+        if(!status && srequest->offset < 512)
             return 0;
         do_log(L_ERROR, "Redirector returned incomplete reply.\n");
         request->handler(-EUNKNOWN, request->url, NULL, NULL, request->data);
