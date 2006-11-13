@@ -2184,7 +2184,7 @@ copyFile(int from, char *filename, int n)
         nread = read(from, buf, MIN(CHUNK_SIZE, n - offset));
         if(nread <= 0)
             break;
-        nzeroes = checkForZeroes(buf, nread);
+        nzeroes = checkForZeroes(buf, nread & -8);
         if(nzeroes > 0) {
             /* I like holes */
             rc = lseek(to, nzeroes, SEEK_CUR);
