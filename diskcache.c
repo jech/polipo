@@ -2015,9 +2015,12 @@ indexDiskObjects(FILE *out, const char *root, int recursive)
                     fe = fts_read(fts);
                     if(!fe) break;
                     if(fe->fts_info != FTS_DP)
-                        dobjects = 
-                            processObject(dobjects, fe->fts_path, 
-                                          fe->fts_statp);
+                        dobjects =
+                            processObject(dobjects,
+                                          fe->fts_path,
+                                          fe->fts_info == FTS_NS ||
+                                          fe->fts_info == FTS_NSOK ?
+                                          fe->fts_statp : NULL);
                 }
                 fts_close(fts);
             }
