@@ -34,10 +34,11 @@ THE SOFTWARE.
 #define FTS_DP 3
 #define FTS_DC 4
 #define FTS_NS 5
-#define FTS_DNR 6
-#define FTS_SLNONE 7
-#define FTS_DEFAULT 8
-#define FTS_ERR 9
+#define FTS_NSOK 6
+#define FTS_DNR 7
+#define FTS_SLNONE 8
+#define FTS_DEFAULT 9
+#define FTS_ERR 10
 
 struct _FTSENT {
     unsigned short fts_info;
