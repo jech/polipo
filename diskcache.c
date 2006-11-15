@@ -223,8 +223,8 @@ check_entry(DiskCacheEntryPtr entry)
 #define CHECK_ENTRY(entry) do {} while(0)
 #endif
 
-static int
-computeDiskEntrySize(ObjectPtr object)
+int
+diskEntrySize(ObjectPtr object)
 {
     struct stat buf;
     int rc;
@@ -264,7 +264,7 @@ entrySeek(DiskCacheEntryPtr entry, off_t offset)
     if(offset > entry->body_offset) {
         /* Avoid extending the file by mistake */
         if(entry->size < 0)
-            computeDiskEntrySize(entry->object);
+            diskEntrySize(entry->object);
         if(entry->size < 0)
             return -1;
         if(entry->size + entry->body_offset < offset)
@@ -1273,7 +1273,7 @@ rewriteEntry(ObjectPtr object)
         return -1;
     }
 
-    offset = computeDiskEntrySize(object);
+    offset = diskEntrySize(object);
     if(offset < 0) {
         close(fd);
         return -1;
@@ -1576,7 +1576,7 @@ reallyWriteoutToDisk(ObjectPtr object, int upto, int max)
     if(object->flags & OBJECT_DISK_ENTRY_COMPLETE)
         goto done;
 
-    computeDiskEntrySize(object);
+    diskEntrySize(object);
     if(entry->size < 0)
         return 0;
 
@@ -1594,7 +1594,7 @@ reallyWriteoutToDisk(ObjectPtr object, int upto, int max)
             return 0;
         if(!entry->writeable)
             return 0;
-        computeDiskEntrySize(object);
+        diskEntrySize(object);
         if(entry->size < 0)
             return 0;
     }

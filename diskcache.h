@@ -60,6 +60,7 @@ extern int maxDiskCacheEntrySize;
 void preinitDiskcache(void);
 void initDiskcache(void);
 int destroyDiskEntry(ObjectPtr object, int);
+int diskEntrySize(ObjectPtr object);
 ObjectPtr objectGetFromDisk(ObjectPtr);
 int objectFillFromDisk(ObjectPtr object, int offset, int chunks);
 int writeoutMetadata(ObjectPtr object);
