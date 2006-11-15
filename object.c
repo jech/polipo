@@ -573,8 +573,54 @@ objectHoleSize(ObjectPtr object, int offset)
     return size;
 }
 
-    
-        
+
+/* Returns 2 if the data is wholly in memory, 1 if it's available on disk */
+int
+objectHasData(ObjectPtr object, int from, int to)
+{
+    int first = from / CHUNK_SIZE;
+    int last = to / CHUNK_SIZE;
+    int i, upto;
+
+    if(to < 0) {
+        if(object->length >= 0)
+            to = object->length;
+        else
+            return 0;
+    }
+
+    if(from >= to)
+        return 2;
+
+    if(to > object->size) {
+        upto = to;
+        goto disk;
+    }
+
+    if(last > object->numchunks ||
+       object->chunks[last].size > to % CHUNK_SIZE) {
+        upto = to;
+        goto disk;
+    }
+
+    for(i = last - 1; i >= first; i--) {
+        if(object->chunks[i].size < CHUNK_SIZE) {
+            upto = (i + 1) * CHUNK_SIZE;
+            goto disk;
+        }
+    }
+
+    return 2;
+
+ disk:
+    if(object->flags & OBJECT_DISK_ENTRY_COMPLETE)
+        return 1;
+
+    if(diskEntrySize(object) >= upto)
+        return 1;
+
+    return 0;
+}
 
 void
 destroyObject(ObjectPtr object)

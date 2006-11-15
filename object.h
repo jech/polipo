@@ -174,6 +174,7 @@ void notifyObject(ObjectPtr);
 void releaseNotifyObject(ObjectPtr);
 ObjectPtr objectPartial(ObjectPtr object, int length, struct _Atom *headers);
 int objectHoleSize(ObjectPtr object, int offset);
+int objectHasData(ObjectPtr object, int from, int to);
 int objectAddData(ObjectPtr object, char *data, int offset, int len);
 void objectPrintf(ObjectPtr object, int offset, char *format, ...)
      ATTRIBUTE((format (printf, 3, 4)));
