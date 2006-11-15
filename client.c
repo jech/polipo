@@ -1202,8 +1202,11 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
             objectMustRevalidate(request->object, &request->cache_control);
     else if(request->cache_control.flags & CACHE_ONLY_IF_CACHED)
         validate = 0;
-    else if(request->object->flags & OBJECT_FAILED)
-        validate = !relaxTransparency;
+    else if((request->object->flags & OBJECT_FAILED) && !relaxTransparency)
+        validate = 1;
+    else if(request->method != METHOD_HEAD &&
+            !objectHasData(object, request->from, request->to))
+        validate = 1;
     else if(objectMustRevalidate((relaxTransparency <= 1 ? 
                                   request->object : NULL),
                                  &request->cache_control))
