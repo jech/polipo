@@ -36,6 +36,11 @@ CDEBUGFLAGS = -Os -g -Wall
 
 # LDLIBS = -lsocket -lnsl -lresolv
 
+# On mingw, you need
+
+# EXE=.exe
+# LDLIBS = -lwsock32
+
 FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
                -DDISK_CACHE_ROOT=\"$(DISK_CACHE_ROOT)/\"
 
@@ -69,14 +74,14 @@ OBJS = util.o event.o io.o chunk.o atom.o object.o log.o diskcache.o main.o \
        http_parse.o parse_time.o dns.o forbidden.o \
        md5import.o ftsimport.o socks.o mingw.o
 
-polipo: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o polipo $(OBJS) $(MD5LIBS) $(LDLIBS)
+polipo$(EXE): $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o polipo$(EXE) $(OBJS) $(MD5LIBS) $(LDLIBS)
 
 ftsimport.o: ftsimport.c fts_compat.c
 
 md5import.o: md5import.c md5.c
 
-all: polipo polipo.info html/index.html localindex.html
+all: polipo$(EXE) polipo.info html/index.html localindex.html
 
 install: install.binary install.man
 
