@@ -137,8 +137,6 @@ httpClientAbort(HTTPConnectionPtr connection, int closed)
     }
 }
 
-static void httpClientDelayedFinish(HTTPConnectionPtr connection);
-
 /* s != 0 specifies that the connection must be shut down.  It is 1 in
    order to linger the connection, 2 to close it straight away. */
 void
@@ -282,35 +280,6 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     }
     connection->fd = -1;
     free(connection);
-}
-
-static int
-httpClientDelayedFinishHandler(TimeEventHandlerPtr event)
-{
-    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
-    httpClientFinish(connection, 1);
-    return 1;
-}
-
-static void
-httpClientDelayedFinish(HTTPConnectionPtr connection)
-{
-    TimeEventHandlerPtr handler;
-
-    handler = scheduleTimeEvent(1, httpClientDelayedFinishHandler,
-                                sizeof(connection), &connection);
-    if(!handler) {
-        do_log(L_ERROR, 
-               "Couldn't schedule delayed finish -- freeing memory.");
-        free_chunk_arenas();
-        handler = scheduleTimeEvent(1, httpClientDelayedFinishHandler,
-                                    sizeof(connection), &connection);
-        if(!handler) {
-            do_log(L_ERROR, 
-                   "Couldn't schedule delayed finish -- aborting.\n");
-            polipoExit();
-        }
-    }
 }
 
 /* Extremely baroque implementation of close: we need to synchronise
