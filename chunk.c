@@ -212,9 +212,8 @@ free_arena(void *addr, size_t size)
 
 /* Memory is organised into a number of chunks of ARENA_CHUNKS chunks
    each.  Every arena is pointed at by a struct _ChunkArena. */
-/* If currentArena is not NULL, it points at an arena with free space.
-   This gives better locality, but is mostly useful in order to have
-   very fast dipose/get sequences. */
+/* If currentArena is not NULL, it points at the last arena used,
+   which gives very fast dispose/get sequences. */
 
 #define DEFINE_FFS(type, ffs_name) \
 int \
@@ -271,7 +270,7 @@ static int numArenas;
 #define CHUNK_IN_ARENA(chunk, arena) \
   ((arena)->chunks && \
    (char*)(chunk) >= (arena)->chunks && \
-   (char*)(chunk)<(arena)->chunks + (ARENA_CHUNKS * CHUNK_SIZE))
+   (char*)(chunk) < (arena)->chunks + (ARENA_CHUNKS * CHUNK_SIZE))
 
 #define CHUNK_ARENA_INDEX(chunk, arena) \
   (((char*)(chunk) - (arena)->chunks) / CHUNK_SIZE)
@@ -339,7 +338,7 @@ get_chunk()
     int i;
     ChunkArenaPtr arena = NULL;
 
-    if(currentArena) {
+    if(currentArena && currentArena->bitmap != 0) {
         arena = currentArena;
     } else {
         if(used_chunks >= CHUNKS(chunkHighMark))
@@ -351,13 +350,10 @@ get_chunk()
         arena = findArena();
         if(!arena)
             return NULL;
+        currentArena = arena;
     }
     i = BITMAP_FFS(arena->bitmap) - 1;
     arena->bitmap &= ~BITMAP_BIT(i);
-    if(arena->bitmap != 0)
-        currentArena = arena;
-    else
-        currentArena = NULL;
     used_chunks++;
     return arena->chunks + CHUNK_SIZE * i;
 }
@@ -368,7 +364,7 @@ maybe_get_chunk()
     int i;
     ChunkArenaPtr arena = NULL;
 
-    if(currentArena) {
+    if(currentArena && currentArena->bitmap != 0) {
         arena = currentArena;
     } else {
         if(used_chunks >= CHUNKS(chunkHighMark))
@@ -377,13 +373,10 @@ maybe_get_chunk()
         arena = findArena();
         if(!arena)
             return NULL;
+        currentArena = arena;
     }
     i = ffs(arena->bitmap) - 1;
     arena->bitmap &= ~BITMAP_BIT(i);
-    if(arena->bitmap != 0)
-        currentArena = arena;
-    else
-        currentArena = NULL;
     used_chunks++;
     return arena->chunks + CHUNK_SIZE * i;
 }
@@ -404,13 +397,13 @@ dispose_chunk(void *chunk)
             if(CHUNK_IN_ARENA(chunk, arena))
                 break;
         }
+        assert(arena != NULL);
+        currentArena = arena;
     }
-    assert(arena && arena->chunks);
 
     i = CHUNK_ARENA_INDEX(chunk, arena);
     arena->bitmap |= BITMAP_BIT(i);
     used_chunks--;
-    currentArena = arena;
 }
 
 void
