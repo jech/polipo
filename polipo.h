@@ -86,6 +86,8 @@ THE SOFTWARE.
 #ifndef __UCLIBC__
 #define HAVE_TIMEGM
 #define HAVE_FTS
+#define HAVE_FFSL
+#define HAVE_FFSLL
 #endif
 #define HAVE_SETENV
 #define HAVE_ASPRINTF
@@ -159,6 +161,7 @@ THE SOFTWARE.
 #ifndef MINGW
 #define HAVE_FORK 1
 #define HAVE_READV_WRITEV 1
+#define HAVE_FFS
 #define READ(x, y, z) read(x, y, z)
 #define WRITE(x, y, z) write(x, y, z)
 #define CLOSE(x) close(x)

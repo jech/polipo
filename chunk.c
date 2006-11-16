@@ -216,15 +216,42 @@ free_arena(void *addr, size_t size)
    This gives better locality, but is mostly useful in order to have
    very fast dipose/get sequences. */
 
+#define DEFINE_FFS(type, ffs_name) \
+int \
+ffs_name(type i) \
+{ \
+    int n; \
+    if(i == 0) return 0; \
+    n = 1; \
+    while((i & 1) == 0) { \
+        i >>= 1; \
+        n++; \
+    } \
+    return n; \
+}
+
 #ifndef LONG_LONG_ARENA_BITMAPS
 #ifndef LONG_ARENA_BITMAPS
+#ifndef HAVE_FFS
+DEFINE_FFS(int, ffs)
+#endif
 typedef unsigned int ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffs(bitmap))
+
 #else
+
+#ifndef HAVE_FFSL
+DEFINE_FFS(long, ffsl)
+#endif
 typedef unsigned long ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffsl(bitmap))
 #endif
+
 #else
+
+#ifndef HAVE_FFSLL
+DEFINE_FFS(long long, ffsll)
+#endif
 typedef unsigned long long ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffsll(bitmap))
 #endif
