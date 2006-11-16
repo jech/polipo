@@ -44,6 +44,7 @@ Polipo 0.10 (unreleased):
         Made disableVia the default, and changed the default value of idleTime.
         Made polipo delay serving of partial objects until after a
         a successful validation.  This should fix Mozilla's prefetching.
+        On 64-bit blatforms, made CHUNK_SIZE default to 8kB.
 
 2 September 2006: Polipo 0.9.10:
 
