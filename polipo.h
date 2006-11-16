@@ -30,6 +30,7 @@ THE SOFTWARE.
 #define MINGW
 #endif
 
+#include <limits.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
