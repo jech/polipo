@@ -239,8 +239,8 @@ httpSetTimeout(HTTPConnectionPtr connection, int secs)
         new = scheduleTimeEvent(secs, httpTimeoutHandler,
                                 sizeof(connection), &connection);
         if(!new) {
-            do_log(L_ERROR, "Couldn't schedule timeout for connection 0x%x\n",
-                   (unsigned)connection);
+            do_log(L_ERROR, "Couldn't schedule timeout for connection 0x%lx\n",
+                   (unsigned long)connection);
             return -1;
         }
     } else {

@@ -105,8 +105,8 @@ httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
     connection->fd = fd;
     connection->timeout = timeout;
 
-    do_log(D_CLIENT_CONN, "Accepted client connection 0x%x\n",
-           (unsigned)connection);
+    do_log(D_CLIENT_CONN, "Accepted client connection 0x%lx\n",
+           (unsigned long)connection);
 
     connection->flags = CONN_READER;
 
@@ -236,8 +236,8 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         return;
     }
     
-    do_log(D_CLIENT_CONN, "Closing client connection 0x%x\n",
-           (unsigned)connection);
+    do_log(D_CLIENT_CONN, "Closing client connection 0x%lx\n",
+           (unsigned long)connection);
 
     if(connection->flags & CONN_READER) {
         httpSetTimeout(connection, 10);
@@ -1780,8 +1780,8 @@ httpServeObject(HTTPConnectionPtr connection)
 
     connection->offset = request->from;
     httpSetTimeout(connection, clientTimeout);
-    do_log(D_CLIENT_DATA, "Serving on 0x%x for 0x%x: offset %d len %d\n",
-           (unsigned)connection, (unsigned)object,
+    do_log(D_CLIENT_DATA, "Serving on 0x%lx for 0x%lx: offset %d len %d\n",
+           (unsigned long)connection, (unsigned long)object,
            connection->offset, len);
     do_stream_h(IO_WRITE |
                 (connection->te == TE_CHUNKED && len > 0 ? IO_CHUNKED : 0),
@@ -1970,8 +1970,8 @@ httpServeChunk(HTTPConnectionPtr connection)
         if(len2 == 0) {
             httpSetTimeout(connection, clientTimeout);
             do_log(D_CLIENT_DATA, 
-                   "Serving on 0x%x for 0x%x: offset %d len %d\n",
-                   (unsigned)connection, (unsigned)object,
+                   "Serving on 0x%lx for 0x%lx: offset %d len %d\n",
+                   (unsigned long)connection, (unsigned long)object,
                    connection->offset, len);
             /* IO_NOTNOW in order to give other clients a chance to run. */
             do_stream(IO_WRITE | IO_NOTNOW |
@@ -1983,8 +1983,8 @@ httpServeChunk(HTTPConnectionPtr connection)
         } else {
             httpSetTimeout(connection, clientTimeout);
             do_log(D_CLIENT_DATA, 
-                   "Serving on 0x%x for 0x%x: offset %d len %d + %d\n",
-                   (unsigned)connection, (unsigned)object,
+                   "Serving on 0x%lx for 0x%lx: offset %d len %d + %d\n",
+                   (unsigned long)connection, (unsigned long)object,
                    connection->offset, len, len2);
             do_stream_2(IO_WRITE | IO_NOTNOW |
                         (connection->te == TE_CHUNKED ? IO_CHUNKED : 0) |
