@@ -20,8 +20,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+/* A larger chunk size gets you better I/O throughput, at the cost of
+   higer memory usage.  We assume you've got plenty of memory if you've
+   got 64-bit longs. */
+
 #ifndef CHUNK_SIZE
+#ifdef ULONG_MAX
+#if ULONG_MAX > 4294967295UL
+#define CHUNK_SIZE (8 * 1024)
+#else
 #define CHUNK_SIZE (4 * 1024)
+#endif
+#else
+#warn "ULONG_MAX not defined -- using 4kB chunks"
+#define CHUNK_SIZE (4 * 1024)
+#endif
 #endif
 
 #define CHUNKS(bytes) ((bytes) / CHUNK_SIZE)
