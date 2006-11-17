@@ -143,6 +143,10 @@ THE SOFTWARE.
 #if __NetBSD_Version__ >= 105000000
 #define HAVE_IPv6
 #endif
+#if __NetBSD_Version__ >= 200000000
+#define HAVE_TIMEGM
+#define HAVE_ASPRINTF
+#endif
 #endif
 
 #ifdef __OpenBSD__
