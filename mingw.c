@@ -62,41 +62,41 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
     assert(sizeof(val) == 4);
 
     c = *cp;
-    for (;;) {
+    while(1) {
         /*
          * Collect number up to ``.''.
          * Values are specified as for C:
          * 0x=hex, 0=octal, isdigit=decimal.
          */
-        if (!isdigit(c))
+        if(!isdigit(c))
             return (0);
         val = 0; base = 10;
-        if (c == '0') {
+        if(c == '0') {
             c = *++cp;
-            if (c == 'x' || c == 'X')
+            if(c == 'x' || c == 'X')
                 base = 16, c = *++cp;
             else
                 base = 8;
         }
-        for (;;) {
-            if (isascii(c) && isdigit(c)) {
+        while(1) {
+            if(isascii(c) && isdigit(c)) {
                 val = (val * base) + (c - '0');
                 c = *++cp;
-            } else if (base == 16 && isascii(c) && isxdigit(c)) {
+            } else if(base == 16 && isascii(c) && isxdigit(c)) {
                 val = (val << 4) |
                     (c + 10 - (islower(c) ? 'a' : 'A'));
                 c = *++cp;
             } else
                 break;
         }
-        if (c == '.') {
+        if(c == '.') {
             /*
              * Internet format:
              *    a.b.c.d
              *    a.b.c    (with c treated as 16 bits)
              *    a.b    (with b treated as 24 bits)
              */
-            if (pp >= parts + 3)
+            if(pp >= parts + 3)
                 return (0);
             *pp++ = val;
             c = *++cp;
@@ -106,14 +106,14 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
     /*
      * Check for trailing characters.
      */
-    if (c != '\0' && (!isascii(c) || !isspace(c)))
+    if(c != '\0' && (!isascii(c) || !isspace(c)))
         return (0);
     /*
      * Concoct the address according to
      * the number of parts specified.
      */
     n = pp - parts + 1;
-    switch (n) {
+    switch(n) {
 
     case 0:
         return (0);        /* initial nondigit */
@@ -122,35 +122,37 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
         break;
 
     case 2:                /* a.b -- 8.24 bits */
-        if ((val > 0xffffff) || (parts[0] > 0xff))
+        if((val > 0xffffff) || (parts[0] > 0xff))
             return (0);
         val |= parts[0] << 24;
         break;
 
     case 3:                /* a.b.c -- 8.8.16 bits */
-        if ((val > 0xffff) || (parts[0] > 0xff) || (parts[1] > 0xff))
+        if((val > 0xffff) || (parts[0] > 0xff) || (parts[1] > 0xff))
             return (0);
         val |= (parts[0] << 24) | (parts[1] << 16);
         break;
 
     case 4:                /* a.b.c.d -- 8.8.8.8 bits */
-        if ((val > 0xff) || (parts[0] > 0xff) || (parts[1] > 0xff) || (parts[2] > 0xff))
+        if((val > 0xff) || (parts[0] > 0xff) || (parts[1] > 0xff) || (parts[2] > 0xff))
             return (0);
         val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
         break;
     }
-    if (addr)
+    if(addr)
         addr->s_addr = htonl(val);
     return (1);
 }
 
-unsigned int mingw_sleep(unsigned int seconds)
+unsigned int
+mingw_sleep(unsigned int seconds)
 {
     Sleep(seconds * 1000);
     return 0;
 }
 
-int mingw_gettimeofday(struct timeval *tv, char *tz)
+int
+mingw_gettimeofday(struct timeval *tv, char *tz)
 {
     const long long EPOCHFILETIME = (116444736000000000LL);
     FILETIME        ft;
@@ -165,7 +167,7 @@ int mingw_gettimeofday(struct timeval *tv, char *tz)
     assert(tz == NULL);
     assert(sizeof(t) == 8);
 
-    if (tv) {
+    if(tv) {
         GetSystemTimeAsFileTime(&ft);
         li.LowPart  = ft.dwLowDateTime;
         li.HighPart = ft.dwHighDateTime;
@@ -190,11 +192,11 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     FD_ZERO(&efds);
     for (i = 0, op = ip = 0; i < nfds; ++i) {
 	fds[i].revents = 0;
-	if (fds[i].events & (POLLIN|POLLPRI)) {
+	if(fds[i].events & (POLLIN|POLLPRI)) {
 		ip = &ifds;
 		FD_SET(fds[i].fd, ip);
 	}
-	if (fds[i].events & POLLOUT) {
+	if(fds[i].events & POLLOUT) {
 		op = &ofds;
 		FD_SET(fds[i].fd, op);
 	}
@@ -202,7 +204,7 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     } 
 
     /* Set up the timeval structure for the timeout parameter */
-    if (timo < 0) {
+    if(timo < 0) {
 	toptr = 0;
     } else {
 	toptr = &timeout;
@@ -219,17 +221,17 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     printf("Exiting select rc=%d\n", rc);
 #endif
 
-    if (rc <= 0)
+    if(rc <= 0)
 	return rc;
 
-    if (rc > 0) {
+    if(rc > 0) {
         for (i = 0; i < nfds; ++i) {
             int fd = fds[i].fd;
-    	if (fds[i].events & (POLLIN|POLLPRI) && FD_ISSET(fd, &ifds))
+    	if(fds[i].events & (POLLIN|POLLPRI) && FD_ISSET(fd, &ifds))
     		fds[i].revents |= POLLIN;
-    	if (fds[i].events & POLLOUT && FD_ISSET(fd, &ofds))
+    	if(fds[i].events & POLLOUT && FD_ISSET(fd, &ofds))
     		fds[i].revents |= POLLOUT;
-    	if (FD_ISSET(fd, &efds))
+    	if(FD_ISSET(fd, &efds))
     		/* Some error was detected ... should be some way to know. */
     		fds[i].revents |= POLLHUP;
 #ifdef DEBUG_POLL
@@ -288,33 +290,17 @@ int mingw_read_socket(SOCKET fd, void *buf, int n)
  * the second argument (i.e. if the nonblocking argument is non-zero, the
  * socket is set to non-blocking mode). Zero is returned if the operation
  * is successful, other -1.
- *
- * This function is Mingw friendly, but only supports socket file 
- * descriptors, not regular files. 
  */
-int mingw_setnonblocking(SOCKET fd, int nonblocking)
+int
+mingw_setnonblocking(SOCKET fd, int nonblocking)
 {
     int rc;
 
-#ifdef MINGW
     unsigned long mode = 1;
     rc = ioctlsocket(fd, FIONBIO, &mode);
-    if (rc != 0) {
+    if(rc != 0) {
         set_errno(WSAGetLastError());
     }
-#else
-    int flags;
-    flags = fcntl(fd, F_GETFL, 0);
-    if(flags > 0) {
-        if (nonblocking) {flags |= O_NONBLOCK;}
-        else             {flags &= ~O_NONBLOCK;}
-        rc = fcntl(fd, F_SETFL, flags);
-    } else {
-        rc = -1;
-    }
-        
-#endif
-
     return (rc == 0 ? 0 : -1);
 }
 
@@ -323,7 +309,8 @@ int mingw_setnonblocking(SOCKET fd, int nonblocking)
  * is to ensure that the global errno symbol is set if an error occurs,
  * even if we are using winsock.
  */
-SOCKET mingw_socket(int domain, int type, int protocol)
+SOCKET
+mingw_socket(int domain, int type, int protocol)
 {
     SOCKET fd = socket(domain, type, protocol);
     if(fd == INVALID_SOCKET) {
@@ -352,7 +339,8 @@ set_connect_errno(int winsock_err)
  * is to ensure that the global errno symbol is set if an error occurs,
  * even if we are using winsock.
  */
-int mingw_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
+int
+mingw_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
 {
     int rc = connect(fd, addr, addr_len);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -367,7 +355,8 @@ int mingw_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
  * is to ensure that the global errno symbol is set if an error occurs,
  * even if we are using winsock.
  */
-SOCKET mingw_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
+SOCKET
+mingw_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
 {
     SOCKET newfd = accept(fd, addr, addr_len);
     if(newfd == INVALID_SOCKET) {
@@ -382,7 +371,8 @@ SOCKET mingw_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
  * is to ensure that the global errno symbol is set if an error occurs,
  * even if we are using winsock.
  */
-int mingw_shutdown(SOCKET fd, int mode)
+int
+mingw_shutdown(SOCKET fd, int mode)
 {
     int rc = shutdown(fd, mode);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -397,7 +387,8 @@ int mingw_shutdown(SOCKET fd, int mode)
  * is to ensure that the global errno symbol is set if an error occurs,
  * even if we are using winsock.
  */
-int mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
+int
+mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
 {
     int rc = getpeername(fd, name, namelen);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -411,54 +402,56 @@ int mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
 
 #ifndef HAVE_READV_WRITEV
 
-int polipo_writev(int fd, const struct iovec *vector, int count)
+int
+polipo_writev(int fd, const struct iovec *vector, int count)
 {
     int rc;                     /* Return Code */
     if(count == 1) {
         rc = WRITE(fd, vector->iov_base, vector->iov_len);
     } else {
-        int nBytes = 0;             /* Total bytes to write */
-        char *zBytes = 0;           /* Buffer to copy to before writing */
-        int i;                      /* Counter var for looping thru vector[] */
-        int iOffset = 0;            /* Offset for copying to zBytes */
+        int n = 0;              /* Total bytes to write */
+        char *buf = 0;          /* Buffer to copy to before writing */
+        int i;                  /* Counter var for looping over vector[] */
+        int offset = 0;        /* Offset for copying to buf */
 
         /* Figure out the required buffer size */
         for(i = 0; i < count; i++) {
-            nBytes += vector[i].iov_len;
+            n += vector[i].iov_len;
         }
 
         /* Allocate the buffer. If the allocation fails, bail out */
-        zBytes = malloc(nBytes);
-        if (!zBytes) {
+        buf = malloc(n);
+        if(!buf) {
             errno = ENOMEM;
             return -1;
         }
 
         /* Copy the contents of the vector array to the buffer */
         for(i = 0; i < count; i++) {
-            memcpy(&zBytes[iOffset], vector[i].iov_base, vector[i].iov_len);
-            iOffset += vector[i].iov_len;
+            memcpy(&buf[offset], vector[i].iov_base, vector[i].iov_len);
+            offset += vector[i].iov_len;
         }
-        assert(iOffset == nBytes);
+        assert(offset == n);
 
         /* Write the entire buffer to the socket and free the allocation */
-        rc = WRITE(fd, zBytes, nBytes);
-        free(zBytes);
+        rc = WRITE(fd, buf, n);
+        free(buf);
     }
     return rc;
 }
 
-int polipo_readv(int fd, const struct iovec *vector, int count)
+int
+polipo_readv(int fd, const struct iovec *vector, int count)
 {
     int ret = 0;                     /* Return value */
     int i;
     for(i = 0; i < count; i++) {
         int n = vector[i].iov_len;
         int rc = READ(fd, vector[i].iov_base, n);
-        if (rc == n) {
+        if(rc == n) {
             ret += rc;
         } else {
-            if (rc < 0) {
+            if(rc < 0) {
                 ret = (ret == 0 ? rc : ret);
             } else {
                 ret += rc;
