@@ -107,9 +107,6 @@ THE SOFTWARE.
 #define HAVE_TM_GMTOFF
 #define HAVE_FTS
 #define HAVE_SETENV
-#ifdef __FreeBSD__
-#define HAVE_ASPRINTF
-#endif
 #endif
 
 #ifdef __CYGWIN__
@@ -136,6 +133,7 @@ THE SOFTWARE.
 #endif
 
 #ifdef __FreeBSD__
+#define HAVE_ASPRINTF
 #if __FreeBSD_version >= 400000
 #define HAVE_IPv6
 #endif
@@ -160,8 +158,8 @@ THE SOFTWARE.
 #endif
 
 #ifndef MINGW
-#define HAVE_FORK 1
-#define HAVE_READV_WRITEV 1
+#define HAVE_FORK
+#define HAVE_READV_WRITEV
 #define HAVE_FFS
 #define READ(x, y, z) read(x, y, z)
 #define WRITE(x, y, z) write(x, y, z)
