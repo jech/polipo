@@ -495,7 +495,6 @@ expandTilde(AtomPtr filename)
 void
 do_daemonise(int noclose)
 {
-    /* If we cannot call fork(), then we cannot become a daemon. */
     int rc;
 
     fflush(stdout);
@@ -521,7 +520,9 @@ do_daemonise(int noclose)
         exit(1);
     }
 }
+
 #else
+
 void
 do_daemonise(int noclose)
 {
