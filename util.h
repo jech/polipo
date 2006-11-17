@@ -82,8 +82,10 @@ int h2i(char h) ATTRIBUTE ((const));
 char i2h(int i) ATTRIBUTE ((const));
 int log2_floor(int x) ATTRIBUTE ((const));
 int log2_ceil(int x) ATTRIBUTE ((const));
-char* vsprintf_a(const char *f, va_list args) ATTRIBUTE ((malloc));
-char* sprintf_a(const char *f, ...) ATTRIBUTE ((malloc));
+char* vsprintf_a(const char *f, va_list args)
+    ATTRIBUTE ((malloc, format (printf, 1, 0)));
+char* sprintf_a(const char *f, ...)
+    ATTRIBUTE ((malloc, format (printf, 1, 2)));
 unsigned int hash(unsigned seed, const void *restrict key, int key_size, 
                   unsigned int hash_size)
      ATTRIBUTE ((pure));
@@ -94,7 +96,8 @@ AtomPtr expandTilde(AtomPtr filename);
 void do_daemonise(int noclose);
 void writePid(char *pidfile);
 int b64cpy(char *restrict dst, const char *restrict src, int n, int fss);
-int b64cmp(const char *a, int an, const char *b, int bn) ATTRIBUTE ((pure));
+int b64cmp(const char *restrict a, int an, const char *restrict b, int bn)
+    ATTRIBUTE ((pure));
 IntListPtr makeIntList(int size) ATTRIBUTE ((malloc));
 void destroyIntList(IntListPtr list);
 int intListMember(int n, IntListPtr list) ATTRIBUTE ((pure));
