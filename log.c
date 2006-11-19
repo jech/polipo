@@ -110,7 +110,7 @@ really_do_log_error_v(int type, int e, const char *f, va_list args)
         if(es == NULL)
             es = "Unknown error";
         vfprintf(logF, f, args);
-        fprintf(logF, ": %s (%d)\n", es, e);
+        fprintf(logF, ": %s\n", es);
     }
 }
 
