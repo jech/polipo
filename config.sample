@@ -28,6 +28,10 @@
 
 # proxyName = "polipo.example.org"
 
+# Uncomment this if there's only one user using this instance of Polipo:
+
+# cacheIsShared = false
+
 # Uncomment this if you want to use a parent proxy:
 
 # parentProxy = "squid.example.org:3128"
@@ -137,7 +141,3 @@
 # Vary header (this violates RFC 2616, and is not a good idea):
 
 # mindlesslyCacheVary = true
-
-# Uncomment this if your Polipo is shared between multiple users:
-
-# cacheIsShared = true
