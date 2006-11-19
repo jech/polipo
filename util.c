@@ -339,6 +339,7 @@ pstrerror(int e)
     case EDOTIMEOUT: s = "Timeout"; break;
     case ECLIENTRESET: s = "Connection reset by client"; break;
     case ESYNTAX: s = "Incorrect syntax"; break;
+    case EREDIRECTOR: s = "Redirector error"; break;
     case EDNS_HOST_NOT_FOUND: s = "Host not found"; break;
     case EDNS_NO_ADDRESS: s = "No address"; break;
     case EDNS_NO_RECOVERY: s = "Permanent name server failure"; break;

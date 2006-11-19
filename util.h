@@ -34,6 +34,7 @@ THE SOFTWARE.
 #define EDOTIMEOUT (E0 + 3)
 #define ECLIENTRESET (E0 + 4)
 #define ESYNTAX (E0 + 5)
+#define EREDIRECTOR (E0 + 6)
 #define EDNS_HOST_NOT_FOUND (E1)
 #define EDNS_NO_ADDRESS (E1 + 1)
 #define EDNS_NO_RECOVERY (E1 + 2)
