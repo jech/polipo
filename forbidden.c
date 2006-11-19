@@ -51,11 +51,14 @@ static DomainPtr *domains;
 static char *regexbuf;
 static int rlen, rsize, dlen, dsize;
 
+#ifndef NO_REDIRECTOR
 static pid_t redirector_pid = 0;
 static int redirector_read_fd = -1, redirector_write_fd = -1;
-static char redirector_buffer[512];
-RedirectRequestPtr redirector_request_first = NULL, 
+#define REDIRECTOR_BUFFER_SIZE 512
+static char *redirector_buffer = NULL;
+RedirectRequestPtr redirector_request_first = NULL,
     redirector_request_last = NULL;
+#endif
 
 static int atomSetterForbidden(ConfigVariablePtr, void*);
 
@@ -156,10 +159,10 @@ readDomainFile(char *filename)
             DomainPtr new_domain;
             if(dlen >= dsize - 1) {
                 DomainPtr *new_domains;
-                new_domains = realloc(domains, (dsize * 2 + 1) * 
+                new_domains = realloc(domains, (dsize * 2 + 1) *
                                       sizeof(DomainPtr));
                 if(new_domains == NULL) {
-                    do_log(L_ERROR, 
+                    do_log(L_ERROR,
                            "Couldn't reallocate domain list.\n");
                     fclose(in);
                     return -1;
@@ -353,7 +356,7 @@ urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
                (url[i - (*domain)->length - 1] == '.' ||
                 url[i - (*domain)->length - 1] == '/') &&
                memcmp(url + i - (*domain)->length,
-                      (*domain)->domain, 
+                      (*domain)->domain,
                       (*domain)->length) == 0)
                 return 1;
             domain++;
@@ -371,8 +374,6 @@ urlIsUncachable(char *url, int length)
 {
     return urlIsMatched(url, length, uncachableDomains, uncachableRegex);
 }
-
-static char lf[1] = "\n";
 
 int
 urlForbidden(AtomPtr url,
@@ -416,6 +417,7 @@ urlForbidden(AtomPtr url,
             redirectorTrigger();
         return 1;
     }
+
 #endif
 
  done:
@@ -424,23 +426,53 @@ urlForbidden(AtomPtr url,
 }
 
 #ifndef NO_REDIRECTOR
+static void
+logExitStatus(int status)
+{
+    if(WIFEXITED(status) && WEXITSTATUS(status) == 142)
+        /* See child code in runRedirector */
+        do_log(L_ERROR, "Couldn't start redirector.\n");
+    else {
+        char *reason =
+            WIFEXITED(status) ? "with status" :
+            WIFSIGNALED(status) ? "on signal" :
+            "with unknown status";
+        int value =
+            WIFEXITED(status) ? WEXITSTATUS(status) :
+            WIFSIGNALED(status) ? WTERMSIG(status) :
+            status;
+        do_log(L_ERROR,
+               "Redirector exited %s %d.\n", reason, value);
+    }
+}
+
 void
 redirectorKill(void)
 {
-    int rc;
-    int status;
+    int rc, status, dead;
+
     if(redirector_read_fd >= 0) {
+        rc = waitpid(redirector_pid, &status, WNOHANG);
+        dead = (rc > 0);
         close(redirector_read_fd);
         redirector_read_fd = -1;
         close(redirector_write_fd);
         redirector_write_fd = -1;
-        kill(redirector_pid, SIGTERM);
-        do {
-            rc = waitpid(redirector_pid, &status, 0);
-        } while(rc < 0 && errno == EINTR);
-        if(rc < 0) {
-            do_log_error(L_ERROR, errno, "Couldn't wait for redirector");
-        }
+        if(!dead) {
+            rc = kill(redirector_pid, SIGTERM);
+            if(rc < 0 && errno != ESRCH) {
+                do_log_error(L_ERROR, errno, "Couldn't kill redirector");
+                redirector_pid = -1;
+                return;
+            }
+            do {
+                rc = waitpid(redirector_pid, &status, 0);
+            } while(rc < 0 && errno == EINTR);
+            if(rc < 0)
+                do_log_error(L_ERROR, errno,
+                             "Couldn't wait for redirector's death");
+        } else
+            logExitStatus(status);
         redirector_pid = -1;
     }
 }
@@ -468,7 +500,6 @@ redirectorTrigger(void)
         rc = runRedirector(&redirector_pid,
                            &redirector_read_fd, &redirector_write_fd);
         if(rc < 0) {
-            do_log_error(L_ERROR, -rc, "Couldn't run redirector");
             request->handler(rc, request->url, NULL, NULL, request->data);
             redirectorDestroyRequest(request);
             return;
@@ -476,7 +507,7 @@ redirectorTrigger(void)
     }
     do_stream_2(IO_WRITE, redirector_write_fd, 0,
                 request->url->string, request->url->length,
-                lf, 1,
+                "\n", 1,
                 redirectorStreamHandler1, request);
 }
 
@@ -491,19 +522,22 @@ redirectorStreamHandler1(int status,
         if(status >= 0)
             status = -EPIPE;
         do_log_error(L_ERROR, -status, "Write to redirector failed");
-        request->handler(status < 0 ? status : -EPIPE, 
-                         request->url, NULL, NULL, request->data);
-        redirectorDestroyRequest(request);
-        redirectorKill();
-        return 1;
+        goto fail;
     }
 
     if(!streamRequestDone(srequest))
         return 0;
 
     do_stream(IO_READ, redirector_read_fd, 0,
-              redirector_buffer, 512,
+              redirector_buffer, REDIRECTOR_BUFFER_SIZE,
               redirectorStreamHandler2, request);
+    return 1;
+
+ fail:
+    request->handler(status < 0 ? status : -EPIPE,
+                     request->url, NULL, NULL, request->data);
+    redirectorDestroyRequest(request);
+    redirectorKill();
     return 1;
 }
 
@@ -525,10 +559,10 @@ redirectorStreamHandler2(int status,
     }
     c = memchr(redirector_buffer, '\n', srequest->offset);
     if(!c) {
-        if(!status && srequest->offset < 512)
+        if(!status && srequest->offset < REDIRECTOR_BUFFER_SIZE)
             return 0;
         do_log(L_ERROR, "Redirector returned incomplete reply.\n");
-        request->handler(-EUNKNOWN, request->url, NULL, NULL, request->data);
+        request->handler(-EREDIRECTOR, request->url, NULL, NULL, request->data);
         goto kill;
     }
     *c = '\0';
@@ -536,7 +570,7 @@ redirectorStreamHandler2(int status,
     if(srequest->offset > c + 1 - redirector_buffer)
         do_log(L_WARN, "Stray bytes in redirector output.\n");
 
-    if(c > redirector_buffer + 1 && 
+    if(c > redirector_buffer + 1 &&
        (c - redirector_buffer != request->url->length ||
         memcmp(redirector_buffer, request->url->string,
                request->url->length) != 0)) {
@@ -571,26 +605,34 @@ redirectorStreamHandler2(int status,
     redirectorKill();
     goto cont;
 }
-            
+
 int
 runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
 {
-    int rc;
+    int rc, rc2, status;
     pid_t pid;
     int filedes1[2], filedes2[2];
     sigset_t ss, old_mask;
 
     assert(redirector);
 
+    if(redirector_buffer == NULL) {
+        redirector_buffer = malloc(REDIRECTOR_BUFFER_SIZE);
+        if(redirector_buffer == NULL)
+            return -errno;
+    }
+
     rc = pipe(filedes1);
-    if(rc < 0)
-        return -errno;
+    if(rc < 0) {
+        rc = -errno;
+        goto fail1;
+    }
+
 
     rc = pipe(filedes2);
     if(rc < 0) {
-        close(filedes1[0]);
-        close(filedes1[1]);
-        return -errno;
+        rc = -errno;
+        goto fail2;
     }
 
     fflush(stdout);
@@ -601,38 +643,55 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
     do {
         rc = sigprocmask(SIG_BLOCK, &ss, &old_mask);
     } while (rc < 0 && errno == EINTR);
-    if(rc < 0)
-        return -errno;
-    
+    if(rc < 0) {
+        rc = -errno;
+        goto fail3;
+    }
+
     pid = fork();
-    if(pid < 0)
-        return -errno;
+    if(pid < 0) {
+        rc = -errno;
+        goto fail4;
+    }
 
     if(pid > 0) {
-        close(filedes1[0]);
-        close(filedes2[1]);
         do {
             rc = sigprocmask(SIG_SETMASK, &old_mask, NULL);
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0) {
-            rc = errno;
-            close(filedes1[1]);
-            close(filedes2[0]);
-            return -rc;
+            rc = -errno;
+            goto fail4;
         }
+
         rc = setNonblocking(filedes1[1], 1);
         if(rc >= 0)
             rc = setNonblocking(filedes2[0], 1);
         if(rc < 0) {
-            rc = errno;
-            close(filedes1[1]);
-            close(filedes2[0]);
-            return -rc;
+            rc = -errno;
+            goto fail4;
         }
+
+        /* This is completely unnecesary -- if the redirector cannot be
+           started, redirectorStreamHandler1 will get EPIPE straight away --,
+           but it improves error messages somewhat. */
+        rc = waitpid(pid, &status, WNOHANG);
+        if(rc > 0) {
+            logExitStatus(status);
+            rc = -EREDIRECTOR;
+            goto fail4;
+        } else if(rc < 0) {
+            rc = -errno;
+            goto fail4;
+        }
+
         *read_fd_return = filedes2[0];
         *write_fd_return = filedes1[1];
+
         *pid_return = pid;
+        /* This comes at the end so that the fail* labels can work */
+        close(filedes1[0]);
+        close(filedes2[1]);
     } else {
         close(filedes1[1]);
         close(filedes2[0]);
@@ -641,7 +700,7 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
             rc = sigprocmask(SIG_SETMASK, &old_mask, NULL);
         } while (rc < 0 && errno == EINTR);
         if(rc < 0)
-            exit(1);
+            exit(142);
 
         if(filedes1[0] != 0)
             dup2(filedes1[0], 0);
@@ -649,10 +708,25 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
             dup2(filedes2[1], 1);
 
         execlp(redirector->string, redirector->string, NULL);
-        exit(1);
+        exit(142);
         /* NOTREACHED */
     }
     return 1;
+
+ fail4:
+    do {
+        rc2 = sigprocmask(SIG_SETMASK, &old_mask, NULL);
+    } while(rc2 < 0 && errno == EINTR);
+ fail3:
+    close(filedes2[0]);
+    close(filedes2[1]);
+ fail2:
+    close(filedes1[0]);
+    close(filedes1[1]);
+ fail1:
+    free(redirector_buffer);
+    redirector_buffer = NULL;
+    return rc;
 }
 
 #else
