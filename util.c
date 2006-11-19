@@ -331,6 +331,8 @@ char *
 pstrerror(int e)
 {
     char *s;
+    static char buf[200];
+
     switch(e) {
     case EDOSHUTDOWN: s = "Immediate shutdown requested"; break;
     case EDOGRACEFUL: s = "Graceful shutdown requested"; break;
@@ -374,13 +376,15 @@ pstrerror(int e)
         if(e >= WSABASEERR && e <= WSABASEERR + 2000) {
             /* This should be okay, as long as the caller discards the
                pointer before another error occurs. */
-            static char buf[200];
             snprintf(buf, 200, "Winsock error %d", e);
             s = buf;
         }
     }
 #endif
-    if(!s) s = "Unknown error";
+    if(!s) {
+        snprintf(buf, 200, "Unknown error %d", e);
+        s = buf;
+    }
     return s;
 }
 
