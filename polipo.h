@@ -137,6 +137,9 @@ THE SOFTWARE.
 #if __FreeBSD_version >= 400000
 #define HAVE_IPv6
 #endif
+#if __FreeBSD_version >= 500000
+#define HAVE_TIMEGM
+#endif
 #endif
 
 #ifdef __NetBSD__
