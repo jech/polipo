@@ -867,10 +867,14 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
             m = htmlString(body, m, CHUNK_SIZE, url, url_len);
             m = snnprintf(body, m, CHUNK_SIZE, "</strong>");
         }
-        
-                                          /*Mon, 24 Sep 2004 17:46:35 GMT*/
-        strftime(timeStr, sizeof(timeStr), "%a, %d %b %Y %H:%M:%S %Z",
-                localtime(&(current_time.tv_sec)));
+
+        {
+            /* On BSD systems, tv_sec is a long. */
+            const time_t ct = current_time.tv_sec;
+                                             /*Mon, 24 Sep 2004 17:46:35 GMT*/
+            strftime(timeStr, sizeof(timeStr), "%a, %d %b %Y %H:%M:%S %Z",
+                     localtime(&(ct)));
+        }
         
         m = snnprintf(body, m, CHUNK_SIZE,
                       ":<br><br>"
