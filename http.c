@@ -873,7 +873,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
             const time_t ct = current_time.tv_sec;
                                              /*Mon, 24 Sep 2004 17:46:35 GMT*/
             strftime(timeStr, sizeof(timeStr), "%a, %d %b %Y %H:%M:%S %Z",
-                     localtime(&(ct)));
+                     localtime(&ct));
         }
         
         m = snnprintf(body, m, CHUNK_SIZE,
