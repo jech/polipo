@@ -33,7 +33,7 @@ int objectExpiryScheduled;
 
 int publicObjectCount;
 int privateObjectCount;
-int cacheIsShared = 0;
+int cacheIsShared = 1;
 int publicObjectLowMark = 0, objectHighMark = 2048;
 
 static ObjectPtr *objectHashTable;
