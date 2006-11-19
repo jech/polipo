@@ -1118,7 +1118,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
            reply that we could not understand.  What about truncated
            replies? */
         if(rc < 0) {
-            do_log_error(L_WARN, -rc, "DNS: reply failure");
+            do_log_error(L_WARN, -rc, "DNS");
             if(dnsUseGethostbyname >= 2 ||
                (dnsUseGethostbyname && 
                 (rc != -EDNS_HOST_NOT_FOUND && rc != -EDNS_NO_RECOVERY &&
@@ -1126,7 +1126,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
                 dnsGethostbynameFallback(id, message);
                 return 0;
             } else {
-                message = internAtomError(-rc, "DNS reply failure");
+                message = internAtomError(-rc, NULL);
             }
         } else {
             assert(name != NULL && id >= 0 && af >= 0);
