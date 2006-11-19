@@ -1478,11 +1478,12 @@ will become stale when its age reaches @code{maxNoModifiedAge}.
 @vindex dontCacheCookies
 @vindex dontCacheRedirects
 
-If @code{cacheIsShared} is false (the default), Polipo will ignore the
-server-side @samp{Cache-Control} directives @samp{private},
-@samp{s-maxage} and @samp{proxy-must-revalidate}.  This is highly
-desirable behaviour when the proxy is used by just one user, but
-happens to violate RFC@tie{}2616 if the cache is shared.
+If @code{cacheIsShared} is false (it is true by the default), Polipo
+will ignore the server-side @samp{Cache-Control} directives
+@samp{private}, @samp{s-maxage} and @samp{proxy-must-revalidate}.
+This is highly desirable behaviour when the proxy is used by just one
+user, but might break some sites if the proxy is shared by multiple
+users.
 
 When connectivity is very poor, the variable @code{relaxTransparency}
 can be used to cause Polipo to serve stale instances under some
