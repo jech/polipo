@@ -22,7 +22,7 @@ Polipo 0.10 (unreleased):
         Ported Polipo to native Windows (thanks to Dan Kennedy).
         Implemented disableVia.
         Implemented SOCKS support.
-        Made disableVia the default.
+        Made disableVia and cacheIsShared to be true by default.
         Increased the default value of serverMaxSlots to 8.
         Made the disk cache code quote all characters except for a
         small number of ``known safe'' ones.  This is an incompatible
