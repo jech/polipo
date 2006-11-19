@@ -81,6 +81,8 @@ ftsimport.o: ftsimport.c fts_compat.c
 
 md5import.o: md5import.c md5.c
 
+.PHONY: all install install.binary install.man
+
 all: polipo$(EXE) polipo.info html/index.html localindex.html
 
 install: install.binary install.man
@@ -129,6 +131,8 @@ polipo.man.html: polipo.man
 
 TAGS: $(SRCS)
 	etags $(SRCS)
+
+.PHONY: clean
 
 clean:
 	-rm -f polipo$(EXE) *.o *~ core TAGS gmon.out
