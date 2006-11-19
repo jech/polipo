@@ -243,7 +243,7 @@ internAtomErrorV(int e, const char *f, va_list args)
     strcpy(s2, s1);
     free(s1);
 
-    rc = snprintf(s2 + n, 69, ": %s (%d)", es, e);
+    rc = snprintf(s2 + n, 69, ": %s", es);
     if(rc < 0 || rc >= 69) {
         free(s2);
         return NULL;
