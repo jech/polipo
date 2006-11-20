@@ -35,7 +35,8 @@ Polipo 0.10 (unreleased):
         Changed the default value of allowedPorts to be slightly more
         permissive.
         Implemented tweakables for selectively disabling parts of the
-        configuration interface.  Indexing is now disabled by default.
+        configuration interface.  Indexing and listing known servers
+        are now disabled by default.
         Hide variables containing passwords.
         Fixed a bug that could cause incorrect validation when speaking
         to an HTTP/1.0 server.
