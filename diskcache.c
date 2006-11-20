@@ -2434,4 +2434,9 @@ expireDiskObjects()
     exit(1);
 }
 
+int
+diskEntrySize(ObjectPtr object)
+{
+    return -1;
+}
 #endif
