@@ -93,7 +93,6 @@ unsigned int hash(unsigned seed, const void *restrict key, int key_size,
      ATTRIBUTE ((pure));
 char *pstrerror(int e);
 time_t mktime_gmt(struct tm *tm) ATTRIBUTE ((pure));
-char *expandTildeString(char *string);
 AtomPtr expandTilde(AtomPtr filename);
 void do_daemonise(int noclose);
 void writePid(char *pidfile);
