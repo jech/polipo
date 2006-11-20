@@ -123,7 +123,7 @@ initObject()
 }
 
 ObjectPtr
-findObject(int type, void *key, int key_size)
+findObject(int type, const void *key, int key_size)
 {
     int h;
     ObjectPtr object;
@@ -157,7 +157,7 @@ findObject(int type, void *key, int key_size)
 }
 
 ObjectPtr
-makeObject(int type, void *key, int key_size, int public, int fromdisk,
+makeObject(int type, const void *key, int key_size, int public, int fromdisk,
            RequestFunction request, void* request_closure)
 {
     ObjectPtr object;
@@ -387,7 +387,7 @@ objectPartial(ObjectPtr object, int length, struct _Atom *headers)
 }
 
 static int
-objectAddChunk(ObjectPtr object, char *data, int offset, int plen)
+objectAddChunk(ObjectPtr object, const char *data, int offset, int plen)
 {
     int i = offset / CHUNK_SIZE;
     int rc;
@@ -427,7 +427,7 @@ objectAddChunk(ObjectPtr object, char *data, int offset, int plen)
 }
 
 static int
-objectAddChunkEnd(ObjectPtr object, char *data, int offset, int plen)
+objectAddChunkEnd(ObjectPtr object, const char *data, int offset, int plen)
 {
     int i = offset / CHUNK_SIZE;
     int rc;
@@ -471,7 +471,7 @@ objectAddChunkEnd(ObjectPtr object, char *data, int offset, int plen)
 }
 
 int
-objectAddData(ObjectPtr object, char *data, int offset, int len)
+objectAddData(ObjectPtr object, const char *data, int offset, int len)
 {
     int rc;
 
@@ -527,7 +527,7 @@ objectAddData(ObjectPtr object, char *data, int offset, int len)
 }
 
 void
-objectPrintf(ObjectPtr object, int offset, char *format, ...)
+objectPrintf(ObjectPtr object, int offset, const char *format, ...)
 {
     char *buf;
     int rc;

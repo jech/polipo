@@ -155,8 +155,8 @@ struct _HTTPRequest;
 
 void preinitObject(void);
 void initObject(void);
-ObjectPtr findObject(int type, void *key, int key_size);
-ObjectPtr makeObject(int type, void *key, int key_size,
+ObjectPtr findObject(int type, const void *key, int key_size);
+ObjectPtr makeObject(int type, const void *key, int key_size,
                      int public, int fromdisk,
                      int (*request)(ObjectPtr, int, int, int, 
                                     struct _HTTPRequest*, void*), void*);
@@ -173,14 +173,17 @@ void supersedeObject(ObjectPtr);
 void notifyObject(ObjectPtr);
 void releaseNotifyObject(ObjectPtr);
 ObjectPtr objectPartial(ObjectPtr object, int length, struct _Atom *headers);
-int objectHoleSize(ObjectPtr object, int offset);
-int objectHasData(ObjectPtr object, int from, int to);
-int objectAddData(ObjectPtr object, char *data, int offset, int len);
-void objectPrintf(ObjectPtr object, int offset, char *format, ...)
-     ATTRIBUTE((format (printf, 3, 4)));
+int objectHoleSize(ObjectPtr object, int offset)
+    ATTRIBUTE ((pure));
+int objectHasData(ObjectPtr object, int from, int to)
+    ATTRIBUTE ((pure));
+int objectAddData(ObjectPtr object, const char *data, int offset, int len);
+void objectPrintf(ObjectPtr object, int offset, const char *format, ...)
+     ATTRIBUTE ((format (printf, 3, 4)));
 int discardObjectsHandler(TimeEventHandlerPtr);
 void writeoutObjects(int);
 int discardObjects(int all, int force);
-int objectIsStale(ObjectPtr object, CacheControlPtr cache_control);
-int objectMustRevalidate(ObjectPtr object, CacheControlPtr cache_control);
-
+int objectIsStale(ObjectPtr object, CacheControlPtr cache_control)
+    ATTRIBUTE ((pure));
+int objectMustRevalidate(ObjectPtr object, CacheControlPtr cache_control)
+    ATTRIBUTE ((pure));
