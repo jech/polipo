@@ -25,6 +25,7 @@ THE SOFTWARE.
 int disableLocalInterface = 0;
 int disableConfiguration = 0;
 int disableIndexing = 1;
+int disableServersList = 1;
 
 AtomPtr atomInitForbidden;
 AtomPtr atomReopenLog;
@@ -48,6 +49,8 @@ preinitLocal()
                     "Disable reconfiguring Polipo at runtime.");
     CONFIG_VARIABLE(disableIndexing, CONFIG_BOOLEAN,
                     "Disable indexing of the local cache.");
+    CONFIG_VARIABLE(disableServersList, CONFIG_BOOLEAN,
+                    "Disable the list of known servers.");
 }
 
 static void fillSpecialObject(ObjectPtr, void (*)(FILE*, char*), void*);
@@ -276,6 +279,11 @@ httpSpecialRequest(ObjectPtr object, int method, int from, int to,
         object->expires = current_time.tv_sec + 20;
 #endif
     } else if(matchUrl("/polipo/servers", object)) {
+        if(disableServersList) {
+            abortObject(object, 403, internAtom("Action not allowed"));
+            notifyObject(object);
+            return 1;
+        }
         fillSpecialObject(object, serversList, NULL);
         object->expires = current_time.tv_sec + 2;
     } else {
