@@ -1021,11 +1021,11 @@ bitmatch(const unsigned char *a, const unsigned char *b, int n)
 }
 
 static int
-match(int af, char *data, NetAddressPtr list)
+match(int af, unsigned char *data, NetAddressPtr list)
 {
     int i;
 #ifdef HAVE_IPv6
-    static const char v6mapped[] =
+    static const unsigned char v6mapped[] =
         { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF };
 #endif
 
@@ -1066,7 +1066,7 @@ int
 netAddressMatch(int fd, NetAddressPtr list)
 {
     int rc;
-    int len;
+    unsigned int len;
     struct sockaddr_in sain;
 #ifdef HAVE_IPv6
     struct sockaddr_in6 sain6;
@@ -1080,7 +1080,7 @@ netAddressMatch(int fd, NetAddressPtr list)
     }
 
     if(sain.sin_family == AF_INET) {
-        return match(4, (char*)&sain.sin_addr, list);
+        return match(4, (unsigned char*)&sain.sin_addr, list);
 #ifdef HAVE_IPv6
     } else if(sain.sin_family == AF_INET6) {
         len = sizeof(sain6);
@@ -1093,7 +1093,7 @@ netAddressMatch(int fd, NetAddressPtr list)
             do_log(L_ERROR, "Inconsistent peer name");
             return -1;
         }
-        return match(6, (char*)&sain6.sin6_addr, list);
+        return match(6, (unsigned char*)&sain6.sin6_addr, list);
 #endif
     } else {
         do_log(L_ERROR, "Unknown address family %d\n", sain.sin_family);
