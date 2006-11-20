@@ -404,7 +404,7 @@ urlFilename(char *restrict buf, int n, const char *url, int len)
     if(j < 0 || j + 24 >= n)
         return -1;
     md5((unsigned char*)url, len, md5buf);
-    b64cpy(buf + j, md5buf, 16, 1);
+    b64cpy(buf + j, (char*)md5buf, 16, 1);
     buf[j + 24] = '\0';
     return j + 24;
 }
