@@ -1,4 +1,4 @@
-Polipo 0.10 (unreleased):
+20 November 2006: Polipo 0.9.99.0:
 
         Implemented large buffers for headers larger than a chunk's worth.
         Made the HTTP parser lax by default (ignores unknown headers).
