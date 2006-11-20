@@ -9,12 +9,12 @@ DISK_CACHE_ROOT = /var/cache/polipo
 
 # CDEBUGFLAGS=-O
 
-# To compile with GCC (add -Wno-pointer-sign if using GCC 4):
+# To compile with GCC:
 
 # CC = gcc
-# CDEBUGFLAGS = -O2 -g -Wall -std=gnu99
+# CDEBUGFLAGS = -Os -g -Wall -std=gnu99
 CDEBUGFLAGS = -Os -g -Wall
-# CDEBUGFLAGS = -O2 -Wall
+# CDEBUGFLAGS = -Os -Wall
 # CDEBUGFLAGS = -g -Wall
 
 # To compile on a pure POSIX system:
