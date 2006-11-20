@@ -70,7 +70,7 @@ int strcmp_n(const char *string, const char *buf, int n) ATTRIBUTE ((pure));
 int digit(char) ATTRIBUTE ((const));
 int letter(char) ATTRIBUTE ((const));
 char lwr(char) ATTRIBUTE ((const));
-char* lwrcpy(char *dst, const char *src, int n);
+char* lwrcpy(char *restrict dst, const char *restrict src, int n);
 int lwrcmp(const char *as, const char *bs, int n) ATTRIBUTE ((pure));
 int strcasecmp_n(const char *string, const char *buf, int n)
      ATTRIBUTE ((pure));

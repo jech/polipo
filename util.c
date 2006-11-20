@@ -110,7 +110,7 @@ lwr(char a)
 }
 
 char *
-lwrcpy(char *dst, const char *src, int n)
+lwrcpy(char *restrict dst, const char *restrict src, int n)
 {
     int i;
     for(i = 0; i < n; i++)
@@ -602,7 +602,7 @@ b64cpy(char *restrict dst, const char *restrict src, int n, int fss)
 }
 
 int
-b64cmp(const char *a, int an, const char *b, int bn)
+b64cmp(const char *restrict a, int an, const char *restrict b, int bn)
 {
     char *buf;
     int r;
