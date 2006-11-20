@@ -49,6 +49,7 @@ THE SOFTWARE.
 #define ESOCKS_REJECT_FAIL (E2 + 1)
 #define ESOCKS_REJECT_IDENTD (E2 + 2)
 #define ESOCKS_REJECT_UID_MISMATCH (E2 + 3)
+/* (ESOCKS5_BASE + n) corresponds to SOCKS5 status code n (0 to 8) */
 #define ESOCKS5_BASE (E3)
 
 typedef struct _IntRange {
