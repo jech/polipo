@@ -74,8 +74,11 @@
 # localDocumentRoot = ""
 
 # Uncomment this if you want to enable the pages under /polipo/index?
+# and /polipo/servers?.  This is a serious privacy leak if your proxy
+# is shared.
 
 # disableIndexing = false
+# disableServersList = false
 
 
 ### Domain Name System
