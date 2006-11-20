@@ -58,7 +58,7 @@ TimeEventHandlerPtr scheduleTimeEvent(int seconds,
                                       int (*handler)(TimeEventHandlerPtr),
                                       int dsize, void *data);
 
-int timeval_minus_usec(struct timeval *s1, struct timeval *s2)
+int timeval_minus_usec(const struct timeval *s1, const struct timeval *s2)
      ATTRIBUTE((pure));
 void cancelTimeEvent(TimeEventHandlerPtr);
 int allocateFdEventNum(int fd);

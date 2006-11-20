@@ -59,7 +59,8 @@ timeval_cmp(struct timeval *t1, struct timeval *t2)
 }
 
 static inline void
-timeval_minus(struct timeval *d, struct timeval *s1, struct timeval *s2)
+timeval_minus(struct timeval *d,
+              const struct timeval *s1, const struct timeval *s2)
 {
     if(s1->tv_usec > s2->tv_usec) {
         d->tv_usec = s1->tv_usec - s2->tv_usec;
@@ -71,7 +72,7 @@ timeval_minus(struct timeval *d, struct timeval *s1, struct timeval *s2)
 }
 
 int
-timeval_minus_usec(struct timeval *s1, struct timeval *s2)
+timeval_minus_usec(const struct timeval *s1, const struct timeval *s2)
 {
     return (s1->tv_sec - s2->tv_sec) * 1000000 + s1->tv_usec - s2->tv_usec;
 }
