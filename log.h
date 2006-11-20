@@ -53,12 +53,14 @@ void initLog(void);
 void reopenLog(void);
 
 void really_do_log(int type, const char *f, ...)
-     ATTRIBUTE ((format (printf, 2, 3)));
-void really_do_log_v(int type, const char *f, va_list args);
+    ATTRIBUTE ((format (printf, 2, 3)));
+void really_do_log_v(int type, const char *f, va_list args)
+    ATTRIBUTE ((format (printf, 2, 0)));
 void really_do_log_n(int type, const char *s, int n);
 void really_do_log_error(int type, int e, const char *f, ...)
-     ATTRIBUTE((format (printf, 3, 4)));
-void really_do_log_error_v(int type, int e, const char *f, va_list args);
+    ATTRIBUTE ((format (printf, 3, 4)));
+void really_do_log_error_v(int type, int e, const char *f, va_list args)
+    ATTRIBUTE ((format (printf, 3, 0)));
 
 #ifdef __GNUC__
 #define DO_BACKTRACE()                  \
