@@ -665,6 +665,7 @@ Polipo in a @emph{chroot} jail.)
 @cindex web interface
 @vindex disableLocalInterface
 @vindex disableConfiguration
+@vindex disableServersList
 
 The subtree of the local web space rooted at
 @samp{http://localhost:8123/polipo/} is treated specially: URLs under
@@ -698,9 +699,10 @@ default, and can be enabled by setting the variable
 
 If you have multiple users, you will probably want to disable the
 local interface by setting the variable @code{disableLocalInterface}.
-You may also selectively control setting of variables and indexing by
-setting the variables @code{disableConfiguration} and
-@code{disableIndexing}.
+You may also selectively control setting of variables, indexing and
+listing known servers by setting the variables
+@code{disableConfiguration}, @code{disableIndexing} and
+@code{disableServersList}.
 
 @node Network, Caching, Running, Top
 @chapter Polipo and the network
