@@ -157,5 +157,5 @@ typedef struct _NetAddress {
 } NetAddressRec, *NetAddressPtr;
 
 NetAddressPtr parseNetAddress(AtomListPtr list);
-int netAddressMatch(int fd, NetAddressPtr list);
+int netAddressMatch(int fd, NetAddressPtr list) ATTRIBUTE ((pure));
 
