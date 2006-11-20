@@ -153,7 +153,7 @@ int lingeringClose(int fd);
 typedef struct _NetAddress {
     int prefix;
     int af;
-    char data[16];
+    unsigned char data[16];
 } NetAddressRec, *NetAddressPtr;
 
 NetAddressPtr parseNetAddress(AtomListPtr list);
