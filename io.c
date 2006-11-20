@@ -1003,6 +1003,7 @@ parseNetAddress(AtomListPtr list)
     return NULL;
 }
 
+/* Returns 1 if the first n bits of a and b are equal */
 static int
 bitmatch(const unsigned char *a, const unsigned char *b, int n)
 {
@@ -1020,6 +1021,7 @@ bitmatch(const unsigned char *a, const unsigned char *b, int n)
     return 1;
 }
 
+/* Returns 1 if the address in data is in list */
 static int
 match(int af, unsigned char *data, NetAddressPtr list)
 {
