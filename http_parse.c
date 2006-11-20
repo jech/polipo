@@ -1216,10 +1216,10 @@ httpParseHeaders(int client, AtomPtr url,
             if(name == atomPragma) {
                 /* Pragma is only defined for the client, and the only
                    standard value is no-cache (RFC 1945, 10.12).
-                   However, we honour a server-side Pragma: no-cache
-                   when there's no Cache-Control header.  In all
-                   cases, we pass the Pragma header to the next hop. */
-                if(client || !haveCacheControl) {
+                   However, we honour a Pragma: no-cache for both the client
+                   and the server when there's no Cache-Control header.  In
+                   all cases, we pass the Pragma header to the next hop. */
+                if(!haveCacheControl) {
                     j = getNextTokenInList(buf, value_start,
                                            &token_start, &token_end, NULL, NULL,
                                            &end);
@@ -1229,8 +1229,8 @@ httpParseHeaders(int client, AtomPtr url,
                             cache_control.flags |= CACHE_NO;
                             break;
                         }
-                        if(client && token_compare(buf, token_start, token_end,
-                                                   "no-cache"))
+                        if(token_compare(buf, token_start, token_end,
+                                         "no-cache"))
                             cache_control.flags = CACHE_NO;
                         if(end)
                             break;
