@@ -154,10 +154,14 @@ initHttp()
             do_log(L_ERROR, "Couldn't allocate tunnelAllowedPorts.\n");
             exit(1);
         }
-        intListCons(22, 22, tunnelAllowedPorts);
-        intListCons(80, 80, tunnelAllowedPorts);
-        intListCons(443, 443, tunnelAllowedPorts);
-        intListCons(873, 873, tunnelAllowedPorts);
+        intListCons(22, 22, tunnelAllowedPorts);   /* ssh */
+        intListCons(80, 80, tunnelAllowedPorts);   /* HTTP */
+        intListCons(109, 110, tunnelAllowedPorts); /* POP 2 and 3*/
+        intListCons(143, 143, tunnelAllowedPorts); /* IMAP 2/4 */
+        intListCons(443, 443, tunnelAllowedPorts); /* HTTP/SSL */
+        intListCons(873, 873, tunnelAllowedPorts); /* rsync */
+        intListCons(993, 993, tunnelAllowedPorts); /* IMAP/SSL */
+        intListCons(995, 995, tunnelAllowedPorts); /* POP/SSL */
     }
 
     if(proxyName)
