@@ -1404,9 +1404,8 @@ configured to use Polipo as their `https proxy'.  OpenSSH can also use
 it to cross misconfigured firewalls.
 
 The variable @code{tunnelAllowedPorts} specifies the set of ports that
-Polipo will accept to tunnel traffic to.  It defaults to @samp{22, 80,
-443, 873}, meaning that Polipo will only accept to tunnel ssh, HTTP,
-https and rsync traffic.
+Polipo will accept to tunnel traffic to.  It defaults to allowing ssh,
+HTTP, https, rsync, IMAP, imaps, POP and pops traffic.
 
 @node Caching, Memory usage, Network, Top
 @chapter Caching
