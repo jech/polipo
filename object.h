@@ -28,9 +28,15 @@ THE SOFTWARE.
 
 struct _HTTPRequest;
 
+#if defined(USHRT_MAX) && CHUNK_SIZE <= USHRT_MAX
+typedef unsigned short chunk_size_t;
+#else
+typedef unsigned int chunk_size_t;
+#endif
+
 typedef struct _Chunk {
-    int locked;
-    int size;
+    short int locked;
+    chunk_size_t size;
     char *data;
 } ChunkRec, *ChunkPtr;
 
