@@ -1749,7 +1749,7 @@ httpServeObject(HTTPConnectionPtr connection)
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 110 %s:%d Object is stale",
                           proxyName->string, proxyPort);
-        } else if(object->expires < 0 &&
+        } else if(object->expires < 0 && object->max_age < 0 &&
                   object->age < current_time.tv_sec - 24 * 3600) {
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 113 %s:%d Heuristic expiration",
