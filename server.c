@@ -2039,6 +2039,12 @@ httpServerHandlerHeaders(int eof,
                 supersede = 1;
         }
 
+        if(full_len < 0 && te == TE_IDENTITY) {
+            /* It's an HTTP/1.0 CGI.  Be afraid. */
+            if(expect_body && content_range.from < 0 && content_range.to < 0)
+                supersede = 1;
+        }
+
         if(!supersede && object->length >= 0 && full_len >= 0 &&
                 object->length != full_len) {
             do_log(L_WARN, "Inconsistent length.\n");
