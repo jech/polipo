@@ -775,8 +775,8 @@ httpParseHeaders(int client, AtomPtr url,
     cache_control.flags = 0;
     cache_control.max_age = -1;
     cache_control.s_maxage = -1;
-    cache_control.min_fresh = 0;
-    cache_control.max_stale = 0;
+    cache_control.min_fresh = -1;
+    cache_control.max_stale = -1;
     
     i = start;
 
