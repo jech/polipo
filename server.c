@@ -1966,7 +1966,8 @@ httpServerHandlerHeaders(int eof,
     }
 
     if(code == 412) {
-        if(request->method != METHOD_CONDITIONAL_GET) {
+        if(request->method != METHOD_CONDITIONAL_GET ||
+           (!object->etag && !object->last_modified)) {
             do_log(L_ERROR, 
                    "Unexpected \"precondition failed\" reply from server.\n");
             httpServerAbort(connection, 1, 502,
@@ -1974,7 +1975,6 @@ httpServerHandlerHeaders(int eof,
                                        "reply from server"));
             goto fail;
         }
-        assert(object->etag || object->last_modified);
     }
 
     releaseAtom(url);
