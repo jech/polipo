@@ -1,3 +1,9 @@
+Polipo 0.10 (unreleased):
+
+        Minor fixes to validation behaviour.
+        Don't use cached data when receiving the output from an HTTP/1.0
+        CGI -- this is notoriously unreliable.
+
 20 November 2006: Polipo 0.9.99.0:
 
         Implemented large buffers for headers larger than a chunk's worth.
