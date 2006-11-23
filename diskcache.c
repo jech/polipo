@@ -695,6 +695,7 @@ static const MimeEntryRec mimeEntries[] = {
     { "gif", "image/gif" },
     { "jpeg", "image/jpeg" },
     { "jpg", "image/jpeg" },
+    { "ico", "image/x-icon" },
     { "pdf", "application/pdf" },
     { "ps", "application/postscript" },
     { "tar", "application/x-tar" },
