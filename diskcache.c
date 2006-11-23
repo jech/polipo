@@ -36,8 +36,8 @@ AtomPtr localDocumentRoot;
 
 DiskCacheEntryPtr diskEntries = NULL, diskEntriesLast = NULL;
 int numDiskEntries = 0;
-int diskCacheDirectoryPermissions = 0755;
-int diskCacheFilePermissions = 0644;
+int diskCacheDirectoryPermissions = 0700;
+int diskCacheFilePermissions = 0600;
 int diskCacheWriteoutOnClose = (32 * 1024);
 
 int maxDiskCacheEntrySize = -1;
