@@ -2533,7 +2533,6 @@ void
 expireDiskObjects()
 {
     do_log(L_ERROR, "Disk cache not supported in this version.\n");
-    exit(1);
 }
 
 int
