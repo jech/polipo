@@ -551,18 +551,29 @@ static int
 writeHeaders(int fd, int *body_offset_return,
              ObjectPtr object, char *chunk, int chunk_len)
 {
-    char small_buf[2048];
     int n;
     int rc;
     int body_offset = *body_offset_return;
     char *buf;
+    int buf_is_chunk;
     int bufsize;
 
     if(object->flags & OBJECT_LOCAL)
         return -1;
 
-    buf = small_buf;
-    bufsize = 2048;
+    /* get_chunk might trigger object expiry */
+    bufsize = CHUNK_SIZE;
+    buf_is_chunk = 1;
+    buf = maybe_get_chunk();
+    if(!buf) {
+        bufsize = 2048;
+        buf_is_chunk = 0;
+        buf = malloc(2048);
+        if(buf == NULL) {
+            do_log(L_ERROR, "Couldn't allocate buffer.\n");
+            return -1;
+        }
+    }
 
  format_again:
     n = snnprintf(buf, 0, bufsize, "HTTP/1.1 %3d %s",
@@ -631,29 +642,41 @@ writeHeaders(int fd, int *body_offset_return,
         object->flags |= OBJECT_DISK_ENTRY_COMPLETE;
 
     *body_offset_return = body_offset;
-    if(buf != small_buf)
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
         free(buf);
     return rc;
 
  overflow:
-    if(buf == small_buf) {
+    if(bufsize < bigBufferSize) {
+        char *oldbuf = buf;
         buf = malloc(bigBufferSize);
         if(!buf) {
             do_log(L_ERROR, "Couldn't allocate big buffer.\n");
             goto fail;
         }
         bufsize = bigBufferSize;
+        if(buf_is_chunk)
+            dispose_chunk(oldbuf);
+        else
+            free(oldbuf);
+        buf_is_chunk = 0;
         goto format_again;
     }
     /* fall through */
 
  fail:
-    if(buf != small_buf)
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
         free(buf);
     return -1;
 
  fail2:
-    if(buf != small_buf)
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
         free(buf);
     return -1;
 }
@@ -803,9 +826,8 @@ int
 validateEntry(ObjectPtr object, int fd, 
               int *body_offset_return, off_t *offset_return)
 {
-    char small_buf[2048];
-    char *buf = small_buf;
-    int bufsize = 2048;
+    char *buf;
+    int buf_is_chunk, bufsize;
     int rc, n;
     int dummy;
     int code;
@@ -828,6 +850,20 @@ validateEntry(ObjectPtr object, int fd,
     if(!(object->flags & OBJECT_PUBLIC) && (object->flags & OBJECT_INITIAL))
         return 0;
 
+    /* get_chunk might trigger object expiry */
+    bufsize = CHUNK_SIZE;
+    buf_is_chunk = 1;
+    buf = maybe_get_chunk();
+    if(!buf) {
+        bufsize = 2048;
+        buf_is_chunk = 0;
+        buf = malloc(2048);
+        if(buf == NULL) {
+            do_log(L_ERROR, "Couldn't allocate buffer.\n");
+            return -1;
+        }
+    }
+
  again:
     rc = read(fd, buf, bufsize);
     if(rc < 0) {
@@ -841,14 +877,20 @@ validateEntry(ObjectPtr object, int fd,
  parse_again:
     n = findEndOfHeaders(buf, 0, rc, &dummy);
     if(n < 0) {
-        if(buf == small_buf) {
+        char *oldbuf = buf;
+        if(bufsize < bigBufferSize) {
             buf = malloc(bigBufferSize);
             if(!buf) {
                 do_log(L_ERROR, "Couldn't allocate big buffer.\n");
                 goto fail;
             }
             bufsize = bigBufferSize;
-            memcpy(buf, small_buf, offset);
+            memcpy(buf, oldbuf, offset);
+            if(buf_is_chunk)
+                dispose_chunk(oldbuf);
+            else
+                free(oldbuf);
+            buf_is_chunk = 0;
         again2:
             rc = read(fd, buf + offset, bufsize - offset);
             if(rc < 0) {
@@ -990,11 +1032,13 @@ validateEntry(ObjectPtr object, int fd,
                 object->chunks[0].data = maybe_get_chunk();
             if(object->chunks[0].data)
                 objectAddData(object, buf + body_offset,
-                              0, offset - body_offset);
+                              0, MIN(offset - body_offset, CHUNK_SIZE));
         }
     }
 
-    if(buf != small_buf)
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
         free(buf);
     if(body_offset_return) *body_offset_return = body_offset;
     if(offset_return) *offset_return = offset;
@@ -1008,7 +1052,9 @@ validateEntry(ObjectPtr object, int fd,
     /* fall through */
 
  fail:
-    if(buf != small_buf)
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
         free(buf);
     return -1;
 }
@@ -1253,7 +1299,8 @@ rewriteEntry(ObjectPtr object)
     int old_body_offset = object->disk_entry->body_offset;
     int fd, rc, n;
     DiskCacheEntryPtr entry;
-    char buf[CHUNK_SIZE];
+    char* buf;
+    int buf_is_chunk, bufsize;
     int offset;
 
     fd = dup(object->disk_entry->fd);
@@ -1279,13 +1326,27 @@ rewriteEntry(ObjectPtr object)
         return -1;
     }
 
+    bufsize = CHUNK_SIZE;
+    buf_is_chunk = 1;
+    buf = maybe_get_chunk();
+    if(!buf) {
+        bufsize = 2048;
+        buf_is_chunk = 0;
+        buf = malloc(2048);
+        if(buf == NULL) {
+            do_log(L_ERROR, "Couldn't allocate buffer.\n");
+            close(fd);
+            return -1;
+        }
+    }
+
     rc = lseek(fd, old_body_offset + offset, SEEK_SET);
     if(rc < 0)
         goto done;
 
     while(1) {
         CHECK_ENTRY(entry);
-        n = read(fd, buf, CHUNK_SIZE);
+        n = read(fd, buf, bufsize);
         if(n <= 0)
             goto done;
         rc = entrySeek(entry, entry->body_offset + offset);
@@ -1305,6 +1366,10 @@ rewriteEntry(ObjectPtr object)
     if(object->length >= 0 && entry->size == object->length)
         object->flags |= OBJECT_DISK_ENTRY_COMPLETE;
     close(fd);
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
+        free(buf);
     return 1;
 }
             
@@ -1716,7 +1781,8 @@ readDiskObject(char *filename, struct stat *sb)
     time_t date, last_modified, age, atime, expires;
     char *location = NULL, *fn = NULL;
     DiskObjectPtr dobject;
-    char buf[CHUNK_SIZE];
+    char *buf;
+    int buf_is_chunk, bufsize;
     int body_offset;
     struct stat ss;
 
@@ -1731,17 +1797,40 @@ readDiskObject(char *filename, struct stat *sb)
         sb = &ss;
     }
 
+    buf_is_chunk = 1;
+    bufsize = CHUNK_SIZE;
+    buf = get_chunk();
+    if(buf == NULL) {
+        do_log(L_ERROR, "Couldn't allocate buffer.\n");
+        return NULL;
+    }
+
     if(S_ISREG(sb->st_mode)) {
         fd = open(filename, O_RDONLY | O_BINARY);
         if(fd < 0)
             goto fail;
-        rc = read(fd, buf, CHUNK_SIZE);
+    again:
+        rc = read(fd, buf, bufsize);
         if(rc < 0)
             goto fail;
         
         n = findEndOfHeaders(buf, 0, rc, &dummy);
-        if(n < 0)
+        if(n < 0) {
+            long lrc;
+            if(buf_is_chunk) {
+                dispose_chunk(buf);
+                buf_is_chunk = 0;
+                bufsize = bigBufferSize;
+                buf = malloc(bigBufferSize);
+                if(buf == NULL)
+                    goto fail2;
+                lrc = lseek(fd, 0, SEEK_SET);
+                if(lrc < 0)
+                    goto fail;
+                goto again;
+            }
             goto fail;
+        }
         
         rc = httpParseServerFirstLine(buf, &code, &dummy, NULL);
         if(rc < 0)
@@ -1776,7 +1865,7 @@ readDiskObject(char *filename, struct stat *sb)
         date = -1;
         last_modified = -1;
     } else {
-        return NULL;
+        goto fail;
     }
 
     dobject = malloc(sizeof(DiskObjectRec));
@@ -1786,6 +1875,11 @@ readDiskObject(char *filename, struct stat *sb)
     fn = strdup(filename);
     if(!fn)
         goto fail;
+
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
+        free(buf);
 
     dobject->location = location;
     dobject->filename = fn;
@@ -1801,6 +1895,11 @@ readDiskObject(char *filename, struct stat *sb)
     return dobject;
 
  fail:
+    if(buf_is_chunk)
+        dispose_chunk(buf);
+    else
+        free(buf);
+ fail2:
     if(fd >= 0) close(fd);
     if(location) free(location);
     return NULL;
