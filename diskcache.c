@@ -807,9 +807,11 @@ validateLocalEntry(ObjectPtr object, int fd,
         if(encoding != NULL)
             n = snnprintf(buf, n, 512,
                           "\r\nContent-Encoding: %s", encoding);
+        if(n < 0)
+            return -1;
         object->headers = internAtomN(buf, n);
         if(object->headers == NULL)
-            return 0;
+            return -1;
         object->flags &= ~OBJECT_INITIAL;
     }
 
