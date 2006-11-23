@@ -114,7 +114,7 @@ timeoutSetter(ConfigVariablePtr var, void *value)
 void
 initHttp()
 {
-    char *buf = get_chunk();
+    char *buf = NULL;
     int namelen;
     int n;
     struct hostent *host;
@@ -167,6 +167,7 @@ initHttp()
     if(proxyName)
         return;
 
+    buf = get_chunk();
     if(buf == NULL) {
         do_log(L_ERROR, "Couldn't allocate chunk for host name.\n");
         goto fail;
