@@ -1600,7 +1600,7 @@ superseded.
 The integers @code{diskCacheDirectoryPermissions} and
 @code{diskCacheFilePermissions} are the Unix filesystem permissions
 with which files and directories are created in the on-disk cache;
-they default to @samp{0755} and @samp{0644} respectively.
+they default to @samp{0700} and @samp{0600} respectively.
 
 The variable @code{maxDiskCacheEntrySize} specifies the maximum size,
 in bytes, of an instance that is stored in the on-disk cache.  If set
