@@ -1580,6 +1580,7 @@ httpServeObject(HTTPConnectionPtr connection)
 
     if((request->error_code && relaxTransparency <= 0) ||
        object->flags & OBJECT_INITIAL) {
+        object->flags &= ~OBJECT_FAILED;
         unlockChunk(object, i);
         if(request->error_code)
             return httpClientRawError(connection,
@@ -1740,6 +1741,7 @@ httpServeObject(HTTPConnectionPtr connection)
                               " (%d %s)",
                               request->error_code, 
                               atomString(request->error_message));
+            object->flags &= ~OBJECT_FAILED;
         } else if(proxyOffline && 
                   objectMustRevalidate(object, &request->cache_control)) {
             n = snnprintf(connection->buf, n, bufsize,
