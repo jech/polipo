@@ -474,7 +474,6 @@ expandTilde(AtomPtr filename)
     
     home = getenv("HOME");
     if(home == NULL) {
-        do_log(L_ERROR, "Could not expand $HOME.\n");
         return NULL;
     }
     len = strlen(home);
