@@ -959,7 +959,7 @@ technical preferences.  Most of these headers do not expose sensitive
 information (who cares whether your browser supports PNG?).  The
 @samp{Accept-Language} header, however, is meant to convey the user's
 linguistic preferences.  In some cases, this information is sufficient
-to pinpoint with great precision the user's origins and even her
+to pinpoint with great precision the user's origins and even his
 political or religious opinions; think, for example, of the
 implications of sending @samp{Accept-Language: yi} or @samp{ar_PS}.
 
@@ -984,10 +984,10 @@ simple-minded @samp{Accept-Language} header.
 
 In an ideal world, all machines would have perfect connectivity to the
 network at all times and servers would never crash.  In the real
-world, it may be necessary to avoid hitting the network and having
+world, it may be necessary to avoid hitting the network and have
 Polipo serve stale objects from its cache.
 
-Setting @code{proxyOffline} to @code{true}, prevents Polipo from
+Setting @code{proxyOffline} to @code{true} prevents Polipo from
 contacting remote servers, no matter what.  This setting is suitable
 when you have no network connection whatsoever.
 
@@ -1197,41 +1197,40 @@ maps host names to IP addresses.  When an application wants to make
 use of the DNS, it invokes a @dfn{resolver}, a local library or
 process that contacts remote name servers.
 
-The Unix interface to the resolver is provided by the
-@code{gethostbyname}(3) library call (@code{getaddrinfo}(3) on recent
-systems), which was designed at a time when a host lookup consisted in
-searching for one of five hosts in a @samp{HOSTS.TXT} file.  The
-@code{gethostbyname} call is @dfn{blocking}, meaning that all activity
-must cease while a host lookup is in progress.  When the call
-eventually returns, it doesn't provide a @dfn{time to live} (TTL)
-value to indicate how long the address may be cached.  For these
-reasons, @code{gethostbyname} is hardly useful for programs that need
-to contact more than a few hosts@footnote{Recent systems replace
-@code{gethostbyname}(3) by @code{getaddrinfo}(3), which is reentrant.
-While this removes one important problem that multi-threaded programs
-encounter, it doesn't solve any of the other issues with
-@code{gethostbyname}.}.
-
-In order to avoid the @code{gethostname}(3)'s issues, Polipo usually
-tries to speak the DNS protocol itself rather than using the system
-resolver.  Its precise behaviour is controlled by the value of
+Polipo usually tries to speak the DNS protocol itself rather than
+using the system resolver@footnote{The Unix interface to the resolver
+is provided by the @code{gethostbyname}(3) library call
+(@code{getaddrinfo}(3) on recent systems), which was designed at
+a time when a host lookup consisted in searching for one of five hosts
+in a @samp{HOSTS.TXT} file.  The @code{gethostbyname} call is
+@dfn{blocking}, meaning that all activity must cease while a host
+lookup is in progress.  When the call eventually returns, it doesn't
+provide a @dfn{time to live} (TTL) value to indicate how long the
+address may be cached.  For these reasons, @code{gethostbyname} is
+hardly useful for programs that need to contact more than a few hosts.
+(Recent systems replace @code{gethostbyname}(3) by
+@code{getaddrinfo}(3), which is reentrant.  While this removes one
+important problem that multi-threaded programs encounter, it doesn't
+solve any of the other issues with @code{gethostbyname}.)}.  Its
+precise behaviour is controlled by the value of
 @code{dnsUseGethostbyname}.  If @code{dnsUseGethostbyname} is
 @code{false}, Polipo never uses the system resolver.  If it is
 @code{reluctantly} (the default), Polipo tries to speak DNS and falls
 back to the system resolver if a name server could not be contacted.
 If it is @code{happily}, Polipo tries to speak DNS, and falls back to
-the system resolver if the host couldn't be found for any reason.
-Finally, if @code{dnsUseGethostbyname} is @code{true}, Polipo never
-tries to speak DNS itself and uses the system resolver straight away.
+the system resolver if the host couldn't be found for any reason (this
+is not a good idea for shared proxies).  Finally, if
+@code{dnsUseGethostbyname} is @code{true}, Polipo never tries to speak
+DNS itself and uses the system resolver straight away (this is not
+recommended).
 
 If the internal DNS support is used, Polipo must be given a recursive
 name server to speak to.  By default, this information is taken from
-the @samp{/etc/resolv.conf} file; however, if you wish to use a
-different name server, you may set the variable @code{dnsNameServer}
+the @samp{/etc/resolv.conf} file; however, if you wish to use
+a different name server, you may set the variable @code{dnsNameServer}
 to an IP address@footnote{While Polipo does its own caching of DNS
-data, I strongly recommend that you run a local caching name server.
-I am very happy with
-@uref{http://home.t-online.de/home/Moestl/,,@code{pdnsd}},
+data, I recommend that you run a local caching name server.  I am very
+happy with @uref{http://home.t-online.de/home/Moestl/,,@code{pdnsd}},
 notwithstanding its somewhat bizarre handling of TCP connections.}.
 
 When the reply to a DNS request is late to come, Polipo will retry
