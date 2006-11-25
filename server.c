@@ -745,7 +745,7 @@ httpServerGetConnection(HTTPServerPtr server, int *idle_return)
             }
         }
     }
-    *idle_return = 0;
+    *idle_return = idle;
     return NULL;
 }
 
