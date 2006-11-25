@@ -921,7 +921,7 @@ sendQuery(DnsQueryPtr query)
         rc = send(dnsSocket, buf, buflen, 0);
         if(rc < buflen) {
             if(rc >= 0) {
-                do_log(L_ERROR, "Couldn't send DNS query: partial send");
+                do_log(L_ERROR, "Couldn't send DNS query: partial send.\n");
                 return -EAGAIN;
             } else {
                 do_log_error(L_ERROR, errno, "Couldn't send DNS query");
