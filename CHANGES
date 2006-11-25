@@ -7,6 +7,8 @@ Polipo 0.10 (unreleased):
         Made the disk cache unreadable by others by default.
         Fixed a possible crash that would happen when a DNS query timed out
         and couldn't be sent again (reported by Francesco Zappa).
+        Fixed a bug that could cause stale data to be served after
+        a connection failure (reported by Hondza).
 
 20 November 2006: Polipo 0.9.99.0:
 
