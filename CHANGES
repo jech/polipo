@@ -5,6 +5,8 @@ Polipo 0.10 (unreleased):
         Allowed tunnelling of IMAP and POP traffic by default.
         Changed the disk cache expiry and indexing functions to use chunks.
         Made the disk cache unreadable by others by default.
+        Fixed a possible crash that would happen when a DNS query timed out
+        and couldn't be sent again (reported by Francesco Zappa).
 
 20 November 2006: Polipo 0.9.99.0:
 
