@@ -556,6 +556,8 @@ chooseBodyOffset(int n, ObjectPtr object)
  
 /* Assumes the file descriptor is at offset 0.  Returns -1 on failure,
    otherwise the offset at which the file descriptor is left. */
+/* If chunk is not null, it should be the first chunk of the object,
+   and will be written out in the same operation if possible. */
 static int
 writeHeaders(int fd, int *body_offset_return,
              ObjectPtr object, char *chunk, int chunk_len)
