@@ -624,6 +624,8 @@ writeHeaders(int fd, int *body_offset_return,
                       body_offset);
 
     n = snnprintf(buf, n, bufsize, "\r\n\r\n");
+    if(n < 0)
+        goto overflow;
 
     if(body_offset < 0)
         body_offset = n;
