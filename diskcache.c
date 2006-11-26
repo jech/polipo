@@ -628,7 +628,7 @@ writeHeaders(int fd, int *body_offset_return,
     if(body_offset < 0)
         body_offset = n;
     if(n > body_offset)
-        goto fail2;
+        goto fail;
 
     if(n < body_offset)
         memset(buf + n, 0, body_offset - n);
@@ -683,13 +683,6 @@ writeHeaders(int fd, int *body_offset_return,
     /* fall through */
 
  fail:
-    if(buf_is_chunk)
-        dispose_chunk(buf);
-    else
-        free(buf);
-    return -1;
-
- fail2:
     if(buf_is_chunk)
         dispose_chunk(buf);
     else
