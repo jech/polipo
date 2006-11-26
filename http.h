@@ -54,6 +54,7 @@ typedef struct _HTTPRequest {
 #define REQUEST_REQUESTED 2
 #define REQUEST_WAIT_CONTINUE 4
 #define REQUEST_FORCE_ERROR 8
+#define REQUEST_PIPELINED 16
 
 typedef struct _HTTPConnection {
     int flags;

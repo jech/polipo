@@ -821,8 +821,9 @@ httpServerTrigger(HTTPServerPtr server)
             do_log_n(D_SERVER_CONN, 
                      request->object->key, request->object->key_size);
             do_log(D_SERVER_CONN, " (%d)\n", request->method);
-            if(connection->pipelined == 0)
-                request->time0 = current_time;
+            if(connection->pipelined > 0)
+                request->flags |= REQUEST_PIPELINED;
+            request->time0 = current_time;
             i++;
             server->request = request->next;
             request->next = NULL;
@@ -1158,23 +1159,25 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         int size = -1, d = -1, rtt = -1, rate = -1;
         if(connection->offset > 0 && request->from >= 0)
             size = connection->offset - request->from;
-        if(request->time0.tv_sec > 0 && request->time1.tv_sec > 0) {
+        if(request->time1.tv_sec != null_time.tv_sec) {
             d = timeval_minus_usec(&current_time, &request->time1);
-            rtt = timeval_minus_usec(&request->time1, &request->time0);
-            if(size >= 4096 && d > 50000)
+            if(!(request->flags & REQUEST_PIPELINED) &&
+               request->time0.tv_sec != null_time.tv_sec)
+                rtt = timeval_minus_usec(&request->time1, &request->time0);
+            if(size >= 8192 && d > 50000)
                 rate = ((double)size / (double)d) * 1000000.0 + 0.5;
         }
         request->time0 = null_time;
         request->time1 = null_time;
 
-        if(rtt > 0) {
-            if(server->rtt > 0)
+        if(rtt >= 0) {
+            if(server->rtt >= 0)
                 server->rtt = (3 * server->rtt + rtt + 2) / 4;
             else
                 server->rtt = rtt;
         }
-        if(rate > 0) {
-            if(server->rate > 0)
+        if(rate >= 0) {
+            if(server->rate >= 0)
                 server->rate = (3 * server->rate + rate + 2) / 4;
             else
                 server->rate = rate;
