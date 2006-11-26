@@ -8,7 +8,9 @@
 #doubleclick.net
 #www.cashcount.com
 
-# Forbid all hosts contaning a string matching a given regex:
+# Forbid all hosts contaning a string matching a given regex.  Note
+# that you need to quote dots, so that a regex is not misinterpreted
+# as a domain name.
 
 #^http://[^/]*counter\.com
 #/ads/
