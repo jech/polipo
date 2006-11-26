@@ -113,8 +113,14 @@
 # Uncomment this if you want to slightly reduce the amount of
 # information that you leak about yourself:
 
-# censoredHeaders = set-cookie, cookie, cookie2, from, accept-language, x-pad
+# censoredHeaders = from, accept-language
 # censorReferer = maybe
+
+# Uncomment this if you're paranoid.  This will break a lot of sites,
+# though:
+
+# censoredHeaders = set-cookie, cookie, cookie2, from, accept-language
+# censorReferer = true
 
 # Uncomment this if you want to use Poor Man's Multiplexing; increase
 # the sizes if you're on a fast line.  They should each amount to a few
@@ -141,6 +147,6 @@
 # proxyOffline = yes
 
 # Uncomment this if you want to avoid revalidating instances with a
-# Vary header (this violates RFC 2616, and is not a good idea):
+# Vary header (this is not a good idea):
 
 # mindlesslyCacheVary = true
