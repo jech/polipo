@@ -565,12 +565,15 @@ writeHeaders(int fd, int *body_offset_return,
     int n;
     int rc;
     int body_offset = *body_offset_return;
-    char *buf;
-    int buf_is_chunk;
-    int bufsize;
+    char *buf = NULL;
+    int buf_is_chunk = 0;
+    int bufsize = 0;
 
     if(object->flags & OBJECT_LOCAL)
         return -1;
+
+    if(body_offset > CHUNK_SIZE)
+        goto overflow;
 
     /* get_chunk might trigger object expiry */
     bufsize = CHUNK_SIZE;
@@ -668,10 +671,12 @@ writeHeaders(int fd, int *body_offset_return,
             goto fail;
         }
         bufsize = bigBufferSize;
-        if(buf_is_chunk)
-            dispose_chunk(oldbuf);
-        else
-            free(oldbuf);
+        if(oldbuf) {
+            if(buf_is_chunk)
+                dispose_chunk(oldbuf);
+            else
+                free(oldbuf);
+        }
         buf_is_chunk = 0;
         goto format_again;
     }
