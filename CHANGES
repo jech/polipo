@@ -10,6 +10,7 @@ Polipo 0.10 (unreleased):
         Fixed a bug that could cause stale data to be served after
         a connection failure (reported by Hondza).
         Fixed computation of age and rtt for pipelined requests.
+        Implemented dontTrustVaryETag.
 
 20 November 2006: Polipo 0.9.99.0:
 
