@@ -35,6 +35,7 @@ int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
 int serverMaxSlots = 8;
 int dontCacheRedirects = 0;
+int dontTrustVaryETag = 0;
 
 static HTTPServerPtr servers = 0;
 
@@ -73,6 +74,8 @@ preinitServer(void)
                     "Maximum number of connections per broken server.");
     CONFIG_VARIABLE(dontCacheRedirects, CONFIG_BOOLEAN,
                     "If true, don't cache redirects.");
+    CONFIG_VARIABLE(dontTrustVaryETag, CONFIG_BOOLEAN,
+                    "If true, don't trust the ETag when there's Vary.");
 }
 
 static int
@@ -2205,7 +2208,8 @@ httpServerHandlerHeaders(int eof,
     }
 
     if((new_object->cache_control & CACHE_NO_STORE) ||
-       ((new_object->cache_control & CACHE_VARY) && !new_object->etag))
+       ((new_object->cache_control & CACHE_VARY) &&
+        (!new_object->etag || dontTrustVaryETag)))
         new_object->cache_control |= CACHE_NO_HIDDEN;
 
     if(new_object->flags & OBJECT_INITIAL) {
