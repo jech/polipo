@@ -12,6 +12,11 @@ Polipo 0.10 (unreleased):
         Fixed computation of age and rtt for pipelined requests.
         Implemented dontTrustVaryETag.
 
+7 December 2006: Polipo 0.9.11
+
+        Fixed a crash that could happen when a network interface went down
+        while a DNS query was in progress (reported by Francesco Zappa).
+
 20 November 2006: Polipo 0.9.99.0:
 
         Implemented large buffers for headers larger than a chunk's worth.
