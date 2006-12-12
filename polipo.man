@@ -20,7 +20,7 @@ Polipo is a caching HTTP proxy.  It listens to requests for web pages
 from your browser and forwards them to web servers, and forwards the
 servers' replies to your browser.  In the process, it optimises and
 cleans up the network traffic.
-
+.PP
 By default, Polipo listens on TCP port 8123.  Please configure your
 web browser to use the proxy on 
 .B localhost 
@@ -69,7 +69,7 @@ write out all in-memory objects to disk and quit.
 The internal web server will follow symbolic links that point outside
 the local document tree.  You should run Polipo in a chroot jail if that
 is a problem.
-
+.PP
 There is no reason to run Polipo as root.
 .SH FULL DOCUMENTATION
 The full manual for Polipo is maintained in a texinfo file, and is
