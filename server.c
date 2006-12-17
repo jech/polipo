@@ -2179,7 +2179,7 @@ httpServerHandlerHeaders(int eof,
        code != 403 && code != 404 && code != 405 && code != 416) {
         new_object->cache_control |= (CACHE_NO_HIDDEN | OBJECT_LINEAR);
     } else if(code != 200 && code != 206 &&
-              code != 300 && code != 302 && code != 304 &&
+              code != 300 && code != 301 && code != 304 &&
               code != 410) {
         if(new_object->expires < 0 && !(cache_control.flags & CACHE_PUBLIC)) {
             new_object->cache_control |= CACHE_NO_HIDDEN;
