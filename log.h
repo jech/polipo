@@ -22,10 +22,11 @@ THE SOFTWARE.
 
 #define L_ERROR 0x1
 #define L_WARN 0x2
-#define L_FORBIDDEN 0x4
-#define L_UNCACHEABLE 0x8
-#define L_SUPERSEDED 0x10
-#define L_VARY 0x20
+#define L_INFO 0x4
+#define L_FORBIDDEN 0x8
+#define L_UNCACHEABLE 0x10
+#define L_SUPERSEDED 0x20
+#define L_VARY 0x40
 
 #define D_SERVER_CONN 0x100
 #define D_SERVER_REQ 0x200
@@ -42,7 +43,7 @@ THE SOFTWARE.
 #define D_CHILD 0x100000
 #define D_IO 0x200000
 
-#define LOGGING_DEFAULT (L_ERROR | L_WARN | L_UNCACHEABLE)
+#define LOGGING_DEFAULT (L_ERROR | L_WARN | L_INFO)
 #define LOGGING_MAX 0xFF
 
 extern AtomPtr logFile;
