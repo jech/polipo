@@ -758,7 +758,9 @@ create_listener(char *address, int port,
         assert(done);
         return NULL;
     }
-        
+
+    do_log(L_INFO, "Established listening socket on port %d.\n", port);
+
     return schedule_accept(fd, handler, data);
 }
 
