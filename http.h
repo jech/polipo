@@ -169,3 +169,4 @@ int httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                           int code, AtomPtr message, int close, AtomPtr,
                           char *url, int url_len, char *etag);
 AtomListPtr urlDecode(char*, int);
+void httpTweakCachability();

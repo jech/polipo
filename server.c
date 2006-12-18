@@ -2164,33 +2164,7 @@ httpServerHandlerHeaders(int eof,
         break;
     }
 
-    if((cache_control.flags & CACHE_AUTHORIZATION) &&
-       !(cache_control.flags & CACHE_PUBLIC))
-        new_object->cache_control |= (CACHE_NO_HIDDEN | OBJECT_LINEAR);
-
-    /* This is not required by RFC 2616 -- but see RFC 3143 2.1.1.  We
-       manically avoid caching replies that we don't know how to
-       handle, even if Expires or Cache-Control says otherwise.  As to
-       known uncacheable replies, we obey Cache-Control and default to
-       allowing sharing but not caching. */
-    if(code != 200 && code != 206 && 
-       code != 300 && code != 301 && code != 302 && code != 303 &&
-       code != 304 && code != 307 &&
-       code != 403 && code != 404 && code != 405 && code != 416) {
-        new_object->cache_control |= (CACHE_NO_HIDDEN | OBJECT_LINEAR);
-    } else if(code != 200 && code != 206 &&
-              code != 300 && code != 301 && code != 304 &&
-              code != 410) {
-        if(new_object->expires < 0 && !(cache_control.flags & CACHE_PUBLIC)) {
-            new_object->cache_control |= CACHE_NO_HIDDEN;
-        }
-    } else if(dontCacheRedirects && (code == 301 || code == 302)) {
-        new_object->cache_control |= CACHE_NO_HIDDEN;
-    }
-
-    if(urlIsUncachable(new_object->key, new_object->key_size)) {
-        new_object->cache_control |= CACHE_NO_HIDDEN;
-    }
+    httpTweakCachability(new_object);
 
     if(!via)
         new_via = internAtomF("%s %s",
@@ -2206,11 +2180,6 @@ httpServerHandlerHeaders(int eof,
         if(new_object->via) releaseAtom(new_object->via);
         new_object->via = new_via;
     }
-
-    if((new_object->cache_control & CACHE_NO_STORE) ||
-       ((new_object->cache_control & CACHE_VARY) &&
-        (!new_object->etag || dontTrustVaryETag)))
-        new_object->cache_control |= CACHE_NO_HIDDEN;
 
     if(new_object->flags & OBJECT_INITIAL) {
         objectPartial(new_object, full_len, headers);

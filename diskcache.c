@@ -1050,6 +1050,8 @@ validateEntry(ObjectPtr object, int fd,
         }
     }
 
+    httpTweakCachability(object);
+
     if(buf_is_chunk)
         dispose_chunk(buf);
     else
