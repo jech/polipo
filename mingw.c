@@ -135,7 +135,8 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
         break;
 
     case 4:                /* a.b.c.d -- 8.8.8.8 bits */
-        if((val > 0xff) || (parts[0] > 0xff) || (parts[1] > 0xff) || (parts[2] > 0xff))
+        if((val > 0xff) || (parts[0] > 0xff) ||
+           (parts[1] > 0xff) || (parts[2] > 0xff))
             return (0);
         val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
         break;
