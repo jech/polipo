@@ -38,6 +38,7 @@ static int dummy ATTRIBUTE((unused));
 #undef sleep
 #undef inet_aton
 #undef gettimeofday
+#undef stat
 
 /* Windows needs this header file for the implementation of inet_aton() */
 #include <ctype.h>
@@ -400,6 +401,31 @@ mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
     return rc;
 }
 
+/* Stat doesn't work on directories if the name ends in a slash. */
+
+int
+mingw_stat(const char *filename, struct stat *ss)
+{
+    int len, rc, saved_errno;
+    char *noslash;
+
+    len = strlen(filename);
+    if(len <= 1 || filename[len - 1] != '/')
+        return stat(filename, ss);
+
+    noslash = malloc(len);
+    if(noslash == NULL)
+        return -1;
+
+    memcpy(noslash, filename, len - 1);
+    noslash[len - 1] = '\0';
+
+    rc = stat(noslash, ss);
+    saved_errno = errno;
+    free(noslash);
+    errno = saved_errno;
+    return rc;
+}
 #endif /* #ifdef MINGW */
 
 #ifndef HAVE_READV_WRITEV

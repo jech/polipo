@@ -92,6 +92,7 @@ struct pollfd {
 #define sleep(x)             mingw_sleep(x)
 #define inet_aton(x, y)      mingw_inet_aton(x, y)
 #define gettimeofday(x, y)   mingw_gettimeofday(x, y)
+#define stat(x, y)           mingw_stat(x, y)
 
 #define mkdir(x, y) mkdir(x)
 
@@ -119,6 +120,7 @@ int mingw_write_socket(SOCKET, void *, int);
 int mingw_close_socket(SOCKET);
 
 int mingw_setnonblocking(SOCKET, int);
+int mingw_stat(const char*, struct stat*);
 #endif
 
 #ifndef HAVE_READV_WRITEV
