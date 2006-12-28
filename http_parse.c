@@ -1512,6 +1512,3 @@ checkVia(AtomPtr name, AtomPtr via)
     }
     return 1;
 }
-
-
-        
