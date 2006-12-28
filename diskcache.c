@@ -992,6 +992,12 @@ validateEntry(ObjectPtr object, int fd,
             if(polipo_age >= 0 && polipo_age != object->age)
                 goto invalid;
         }
+        if((object->cache_control & CACHE_VARY) && dontTrustVaryETag >= 1) {
+            /* Check content-type to work around mod_gzip bugs */
+            if(!httpHeaderMatch(atomContentType, object->headers, headers) ||
+               !httpHeaderMatch(atomContentEncoding, object->headers, headers))
+                goto invalid;
+        }
     }
 
     if(location)
