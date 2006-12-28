@@ -42,6 +42,7 @@ NetAddressPtr allowedNets = NULL;
 IntListPtr allowedPorts = NULL;
 IntListPtr tunnelAllowedPorts = NULL;
 int expectContinue = 1;
+int dontTrustVaryETag = 0;
 
 AtomPtr atom100Continue;
 
@@ -99,6 +100,8 @@ preinitHttp()
                     "Size of big buffers (max size of headers).");
     CONFIG_VARIABLE_SETTABLE(disableVia, CONFIG_BOOLEAN, configIntSetter,
                              "Don't use Via headers.");
+    CONFIG_VARIABLE(dontTrustVaryETag, CONFIG_BOOLEAN,
+                    "If true, don't trust the ETag when there's Vary.");
     preinitHttpParser();
 }
 

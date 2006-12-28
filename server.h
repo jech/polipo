@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-extern int serverExpireTime, dontCacheRedirects, dontTrustVaryETag;
+extern int serverExpireTime, dontCacheRedirects;
 
 typedef struct _HTTPServer {
     char *name;

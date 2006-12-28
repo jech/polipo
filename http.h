@@ -138,6 +138,7 @@ extern IntListPtr tunnelAllowedPorts;
 extern int expectContinue;
 extern AtomPtr atom100Continue;
 extern int disableVia;
+extern int dontTrustVaryETag;
 
 void preinitHttp(void);
 void initHttp(void);
