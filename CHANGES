@@ -8,6 +8,10 @@
         Fixed a bug that could cause stale data to be served after
         a connection failure (reported by Hondza).
         Fixed computation of age and rtt for pipelined requests.
+        Fixed incorrect cachability of redirects (reported by J.-P. Larocque).
+        Fixed a bug that would cause uncachable objects to become
+        cachable after being reloaded from the on-disk cache (reported
+        by J.-P. Larocque).
         Implemented dontTrustVaryETag.
 
 7 December 2006: Polipo 0.9.11
