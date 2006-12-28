@@ -27,6 +27,7 @@ typedef struct HTTPRange {
 } HTTPRangeRec, *HTTPRangePtr;
 
 extern int censorReferer;
+extern AtomPtr atomContentType, atomContentEncoding;
 
 void preinitHttpParser(void);
 void initHttpParser(void);

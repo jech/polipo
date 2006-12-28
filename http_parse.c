@@ -36,10 +36,12 @@ static AtomPtr atomConnection, atomProxyConnection, atomContentLength,
     atomIfModifiedSince, atomIfUnmodifiedSince, atomIfRange, atomLastModified,
     atomIfMatch, atomIfNoneMatch, atomAge, atomTransferEncoding, 
     atomETag, atomCacheControl, atomPragma, atomContentRange, atomRange,
-    atomVia, atomContentType, atomVary, atomExpect, atomAuthorization,
+    atomVia, atomVary, atomExpect, atomAuthorization,
     atomSetCookie, atomCookie, atomCookie2,
     atomXPolipoDate, atomXPolipoAccess, atomXPolipoLocation, 
     atomXPolipoBodyOffset;
+
+AtomPtr atomContentType, atomContentEncoding;
 
 int censorReferer = 0;
 int laxHttpParser = 1;
@@ -96,6 +98,7 @@ initHttpParser()
     A(atomRange, "range");
     A(atomVia, "via");
     A(atomContentType, "content-type");
+    A(atomContentEncoding, "content-encoding");
     A(atomVary, "vary");
     A(atomExpect, "expect");
     A(atomAuthorization, "authorization");
