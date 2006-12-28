@@ -1,6 +1,6 @@
-Polipo 0.10 (unreleased):
+28 December 2006: Polipo 0.9.99.1
 
-        Minor fixes to validation behaviour.
+        Validation improvements and bug fixes.
         Don't use cached data when receiving the output from an HTTP/1.0 CGI.
         Allowed tunnelling of IMAP and POP traffic by default.
         Changed the disk cache expiry and indexing functions to use chunks.
