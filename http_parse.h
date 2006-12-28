@@ -47,7 +47,8 @@ int httpParseHeaders(int, AtomPtr, const char *, int, HTTPRequestPtr,
                      time_t*, time_t*, time_t*, time_t*, time_t*,
                      int*, int*, char**, AtomPtr*,
                      HTTPRangePtr, HTTPRangePtr, char**, AtomPtr*, AtomPtr*);
-
+int httpFindHeader(AtomPtr header, const char *headers, int hlen,
+                   int *value_begin_return, int *value_end_return);
 int parseUrl(const char *url, int len,
              int *x_return, int *y_return, int *port_return, int *z_return);
 int urlIsLocal(const char *url, int len);
