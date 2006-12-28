@@ -1035,11 +1035,7 @@ httpTweakCachability(ObjectPtr object)
     }
 
     if(object->cache_control & CACHE_VARY) {
-        if(!object->etag) {
-            object->cache_control |= CACHE_MISMATCH;
-        } else if(dontTrustVaryETag) {
-            free(object->etag);
-            object->etag = NULL;
+        if(!object->etag || dontTrustVaryETag) {
             object->cache_control |= CACHE_MISMATCH;
         }
     }
