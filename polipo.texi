@@ -1541,8 +1541,10 @@ request.
 Unfortunately, a number of servers (most notably some versions of
 Apache's @code{mod_deflate} module) send objects with a @samp{ETag}
 header that will confuse Polipo in the presence of a @samp{Vary}
-header.  Polipo will work around such servers if you set
-@samp{dontTrustVaryETag} to true (it is false by default).
+header.  Polipo will make a reasonable check for consistency if
+@samp{dontTrustVaryETag} is set to @samp{maybe} (the default); it will
+systematically ignore @samp{ETag} headers on objects with @samp{Vary}
+headers if it is set to @samp{true}.
 
 A number of websites incorrectly mark variable resources as cachable;
 such issues can be worked around in polipo by manually marking given
