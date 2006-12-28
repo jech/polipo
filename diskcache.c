@@ -959,7 +959,7 @@ validateEntry(ObjectPtr object, int fd,
     }
 
     if(!(object->flags & OBJECT_INITIAL)) {
-        if((last_modified >=0) != (object->last_modified >= 0))
+        if((last_modified >= 0) != (object->last_modified >= 0))
             goto invalid;
 
         if((object->cache_control & CACHE_MISMATCH) ||
