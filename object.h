@@ -156,6 +156,8 @@ extern int log2ObjectHashTableSize;
 #define CACHE_AUTHORIZATION 1024
 /* set if cookie */
 #define CACHE_COOKIE 2048
+/* set if this object should never be combined with another resource */
+#define CACHE_MISMATCH 4096
 
 struct _HTTPRequest;
 

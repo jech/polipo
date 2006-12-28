@@ -1014,7 +1014,8 @@ httpTweakCachability(ObjectPtr object)
        code != 300 && code != 301 && code != 302 && code != 303 &&
        code != 304 && code != 307 &&
        code != 403 && code != 404 && code != 405 && code != 416) {
-        object->cache_control |= (CACHE_NO_HIDDEN | OBJECT_LINEAR);
+        object->cache_control |=
+            (CACHE_NO_HIDDEN | CACHE_MISMATCH | OBJECT_LINEAR);
     } else if(code != 200 && code != 206 &&
               code != 300 && code != 301 && code != 304 &&
               code != 410) {
@@ -1035,11 +1036,11 @@ httpTweakCachability(ObjectPtr object)
 
     if(object->cache_control & CACHE_VARY) {
         if(!object->etag) {
-            object->cache_control |= CACHE_NO_HIDDEN;
+            object->cache_control |= CACHE_MISMATCH;
         } else if(dontTrustVaryETag) {
             free(object->etag);
             object->etag = NULL;
-            object->cache_control |= CACHE_NO_HIDDEN;
+            object->cache_control |= CACHE_MISMATCH;
         }
     }
 }

@@ -962,6 +962,10 @@ validateEntry(ObjectPtr object, int fd,
         if((last_modified >=0) != (object->last_modified >= 0))
             goto invalid;
 
+        if((object->cache_control & CACHE_MISMATCH) ||
+           (cache_control.flags & CACHE_MISMATCH))
+            goto invalid;
+
         if(last_modified >= 0 && object->last_modified >= 0 &&
            last_modified != object->last_modified)
             goto invalid;

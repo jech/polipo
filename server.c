@@ -2015,6 +2015,9 @@ httpServerHandlerHeaders(int eof,
 
     connection->server->lies--;
 
+    if(object->cache_control & CACHE_MISMATCH)
+        supersede = 1;
+
     if(code == 304 || code == 412) {
         if((object->etag && etag && strcmp(object->etag, etag) != 0) ||
            (object->last_modified >= 0 && last_modified >= 0 &&
