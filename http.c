@@ -42,7 +42,7 @@ NetAddressPtr allowedNets = NULL;
 IntListPtr allowedPorts = NULL;
 IntListPtr tunnelAllowedPorts = NULL;
 int expectContinue = 1;
-int dontTrustVaryETag = 0;
+int dontTrustVaryETag = 1;
 
 AtomPtr atom100Continue;
 
@@ -100,8 +100,8 @@ preinitHttp()
                     "Size of big buffers (max size of headers).");
     CONFIG_VARIABLE_SETTABLE(disableVia, CONFIG_BOOLEAN, configIntSetter,
                              "Don't use Via headers.");
-    CONFIG_VARIABLE(dontTrustVaryETag, CONFIG_BOOLEAN,
-                    "If true, don't trust the ETag when there's Vary.");
+    CONFIG_VARIABLE(dontTrustVaryETag, CONFIG_TRISTATE,
+                    "Whether to trust the ETag when there's Vary.");
     preinitHttpParser();
 }
 
@@ -1035,7 +1035,7 @@ httpTweakCachability(ObjectPtr object)
     }
 
     if(object->cache_control & CACHE_VARY) {
-        if(!object->etag || dontTrustVaryETag) {
+        if(!object->etag || dontTrustVaryETag >= 2) {
             object->cache_control |= CACHE_MISMATCH;
         }
     }
