@@ -1031,6 +1031,9 @@ httpTweakCachability(ObjectPtr object)
 
     if((object->cache_control & CACHE_NO_STORE) ||
        ((object->cache_control & CACHE_VARY) &&
-        (!object->etag || dontTrustVaryETag)))
+        (!object->etag || dontTrustVaryETag))) {
+        free(object->etag);
+        object->etag = NULL;
         object->cache_control |= CACHE_NO_HIDDEN;
+    }
 }
