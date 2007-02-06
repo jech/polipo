@@ -36,8 +36,9 @@ void
 preinitIo()
 {
 #ifdef HAVE_IPV6_PREFER_TEMPADDR
-    CONFIG_VARIABLE_SETTABLE(useTemporarySourceAddress, CONFIG_TRISTATE, configIntSetter,
-                    "If true, prefer temporary source address in outgoing IPv6.");
+    CONFIG_VARIABLE_SETTABLE(useTemporarySourceAddress, CONFIG_TRISTATE,
+                             configIntSetter,
+                             "Prefer IPv6 temporary source address.");
 #endif
 
 #ifdef HAVE_WINSOCK
@@ -430,14 +431,14 @@ serverSocket(int af)
         }
 #ifdef HAVE_IPV6_PREFER_TEMPADDR
 	if (af == 6 && useTemporarySourceAddress != 1) {
-		int value;
-		value = (useTemporarySourceAddress == 2) ? 1 : 0;
-		rc = setsockopt(fd, IPPROTO_IPV6, IPV6_PREFER_TEMPADDR,
-			&value, sizeof(value));
-		if (rc < 0) {
-			/* no error, warning only */
-			do_log_error(L_WARN, errno, "Couldn't set IPV6CTL_USETEMPADDR");
-		}
+            int value;
+            value = (useTemporarySourceAddress == 2) ? 1 : 0;
+            rc = setsockopt(fd, IPPROTO_IPV6, IPV6_PREFER_TEMPADDR,
+                            &value, sizeof(value));
+            if (rc < 0) {
+                /* no error, warning only */
+                do_log_error(L_WARN, errno, "Couldn't set IPV6CTL_USETEMPADDR");
+            }
 	}
 
 #endif
