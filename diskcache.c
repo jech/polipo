@@ -380,7 +380,7 @@ urlDirname(char *buf, int n, const char *url, int len)
         if(url[i] == '.' && i != len - 1 && url[i + 1] == '.')
             return -1;
         if(url[i] == '%' || !fssafe(url[i])) {
-            if(j >= n + 3) return -1;
+            if(j + 3 >= n) return -1;
             buf[j++] = '%';
             buf[j++] = i2h((url[i] & 0xF0) >> 4);
             buf[j++] = i2h(url[i] & 0x0F);
