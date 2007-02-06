@@ -107,7 +107,7 @@ static int
 socksProxyTypeSetter(ConfigVariablePtr var, void *value)
 {
     if(*var->value.a != aSocks4a && *var->value.a != aSocks5) {
-        do_log(L_ERROR, "Unknown scksProxyType %s\n", (*var->value.a)->string);
+        do_log(L_ERROR, "Unknown socksProxyType %s\n", (*var->value.a)->string);
         return -1;
     }
 
