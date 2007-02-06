@@ -42,6 +42,7 @@ static int httpServerContinueConditionHandler(int, ConditionHandlerPtr);
 static int initParentProxy(void);
 static int parentProxySetter(ConfigVariablePtr var, void *value);
 static void httpServerDelayedFinish(HTTPConnectionPtr);
+static int allowUnalignedRangeRequests = 0;
 
 void
 preinitServer(void)
@@ -73,6 +74,9 @@ preinitServer(void)
                     "Maximum number of connections per broken server.");
     CONFIG_VARIABLE(dontCacheRedirects, CONFIG_BOOLEAN,
                     "If true, don't cache redirects.");
+    CONFIG_VARIABLE_SETTABLE(allowUnalignedRangeRequests,
+                             CONFIG_BOOLEAN, configIntSetter,
+                             "Allow unaligned range requests (unreliable).");
 }
 
 static int
@@ -390,9 +394,13 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
     /* Because we allocate objects in chunks, we cannot have data that
        doesn't start at a chunk boundary. */
     if(from % CHUNK_SIZE != 0) {
-        objectFillFromDisk(object, from / CHUNK_SIZE * CHUNK_SIZE, 1);
-        if(objectHoleSize(object, from - 1) != 0)
+        if(allowUnalignedRangeRequests) {
+            objectFillFromDisk(object, from / CHUNK_SIZE * CHUNK_SIZE, 1);
+            if(objectHoleSize(object, from - 1) != 0)
+                from = from / CHUNK_SIZE * CHUNK_SIZE;
+        } else {
             from = from / CHUNK_SIZE * CHUNK_SIZE;
+        }
     }
 
     request->object = retainObject(object);
