@@ -22,9 +22,24 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+#ifdef HAVE_IPv6
+#ifdef IPV6_PREFER_TEMPADDR
+#define HAVE_IPV6_PREFER_TEMPADDR 1
+#endif
+#endif
+
+#ifdef HAVE_IPV6_PREFER_TEMPADDR
+int useTemporarySourceAddress = 1;
+#endif
+
 void
 preinitIo()
 {
+#ifdef HAVE_IPV6_PREFER_TEMPADDR
+    CONFIG_VARIABLE_SETTABLE(useTemporarySourceAddress, CONFIG_TRISTATE, configIntSetter,
+                    "If true, prefer temporary source address in outgoing IPv6.");
+#endif
+
 #ifdef HAVE_WINSOCK
     /* Load the winsock dll */
     WSADATA wsaData;
@@ -413,6 +428,19 @@ serverSocket(int af)
             errno = errno_save;
             return -1;
         }
+#ifdef HAVE_IPV6_PREFER_TEMPADDR
+	if (af == 6 && useTemporarySourceAddress != 1) {
+		int value;
+		value = (useTemporarySourceAddress == 2) ? 1 : 0;
+		rc = setsockopt(fd, IPPROTO_IPV6, IPV6_PREFER_TEMPADDR,
+			&value, sizeof(value));
+		if (rc < 0) {
+			/* no error, warning only */
+			do_log_error(L_WARN, errno, "Couldn't set IPV6CTL_USETEMPADDR");
+		}
+	}
+
+#endif
     }
     return fd;
 }
