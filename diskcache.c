@@ -433,6 +433,7 @@ dirnameUrl(char *url, int n, char *name, int len)
             if(c1 < 0 || c2 < 0)
                 return NULL;
             url[j++] = c1 * 16 + c2; if(j >= n) goto fail;
+            i += 2;             /* skip extra digits */
         } else if(i < len - 1 && 
                   name[i] == '.' && name[i + 1] == '/') {
                 return NULL;
