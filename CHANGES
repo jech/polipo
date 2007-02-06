@@ -1,3 +1,9 @@
+6 February 2007: Polipo 0.9.12
+
+        Fixed incorrect caching of redirects (reported by Lawrence Lu).
+        Fixed a possible hang when falling back to gethostbyname
+        (reported by Chris Moore).
+
 28 December 2006: Polipo 0.9.99.1
 
         Validation improvements and bug fixes.
