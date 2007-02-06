@@ -1,3 +1,14 @@
+Polipo 0.9.99.2 (unreleased):
+
+        Fixed a buffer overflow in urlDirname (the 0.9 branch is not
+        vulnerable) (reported by J. P. Larocque).
+        Implemented use of IPv6 temporary source addresses (Frank Behrens).
+        Disabled use of unaligned range requests by default.  This is
+        controlled by the variable allowUnalignedRangeRequests (reported
+        by Chris Moore).
+        Fixed descriptor leaks in SOCKS error handling (reported by
+        Roger Dingledine).
+
 6 February 2007: Polipo 0.9.12
 
         Fixed incorrect caching of redirects (reported by Lawrence Lu).
