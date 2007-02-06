@@ -138,12 +138,7 @@ expireServersHandler(TimeEventHandlerPtr event)
 static int
 roundSize(int size)
 {
-    if(size < CHUNK_SIZE)
-        return 1 << log2_ceil(pmmSize);
-    else if(size > CHUNK_SIZE)
-        return (size + CHUNK_SIZE - 1) / CHUNK_SIZE * CHUNK_SIZE;
-    else
-        return size;
+    return (size + CHUNK_SIZE - 1) / CHUNK_SIZE * CHUNK_SIZE;
 }
 
 static int
