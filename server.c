@@ -613,6 +613,7 @@ httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
            connection->server->name, connection->server->port);
 
     connection->connecting = 0;
+    /* serverTrigger will take care of inserting any timeouts */
     httpServerTrigger(connection->server);
     return 1;
 }
