@@ -1268,6 +1268,7 @@ dnsGethostbynameFallback(int id, AtomPtr message)
                 query = previous->next;
                 break;
             }
+            previous = previous->next;
         }
         if(!query) {
             previous = NULL;
