@@ -409,9 +409,9 @@ httpParseClientFirstLine(const char *restrict buf, int offset,
     if(i < 0) return -1;
     if(y == x + 3 && memcmp(buf + x, "GET", 3) == 0)
         method = METHOD_GET;
-    else if(y == x + 4 && memcmp(buf + x, "HEAD", 3) == 0)
+    else if(y == x + 4 && memcmp(buf + x, "HEAD", 4) == 0)
         method = METHOD_HEAD;
-    else if(y == x + 4 && memcmp(buf + x, "POST", 3) == 0)
+    else if(y == x + 4 && memcmp(buf + x, "POST", 4) == 0)
         method = METHOD_POST;
     else if(y == x + 3 && memcmp(buf + x, "PUT", 3) == 0)
         method = METHOD_PUT;
