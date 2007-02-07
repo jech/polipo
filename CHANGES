@@ -8,6 +8,7 @@ Polipo 0.9.99.2 (unreleased):
         by Chris Moore).
         Fixed descriptor leaks in SOCKS error handling (reported by
         Roger Dingledine).
+        Implemented maxSideBuffering.
 
 6 February 2007: Polipo 0.9.12
 
