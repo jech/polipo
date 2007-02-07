@@ -1048,7 +1048,7 @@ The most important piece of information about a server is whether it
 supports persistent connections.  If this is the case, Polipo will
 open at most @code{serverSlots} connections to that server, and
 attempt to pipeline; if not, Polipo will hit the server harder,
-opening up to @code{maxServerSlots} connections.
+opening up to @code{serverMaxSlots} connections.
 
 Another use of server information is to decide whether to pipeline
 additional requests on a connection that already has in-flight
