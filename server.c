@@ -35,6 +35,7 @@ int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
 int serverMaxSlots = 8;
 int dontCacheRedirects = 0;
+int maxSideBuffering = 1500;
 
 static HTTPServerPtr servers = 0;
 
@@ -77,6 +78,9 @@ preinitServer(void)
     CONFIG_VARIABLE_SETTABLE(allowUnalignedRangeRequests,
                              CONFIG_BOOLEAN, configIntSetter,
                              "Allow unaligned range requests (unreliable).");
+    CONFIG_VARIABLE_SETTABLE(maxSideBuffering,
+                             CONFIG_INT, configIntSetter,
+                             "Maximum buffering for PUT and POST requests.");
 }
 
 static int
@@ -955,7 +959,7 @@ httpServerDoSide(HTTPConnectionPtr connection)
                   connection->bodylen - connection->reqoffset);
     int doflush = 
         len > 0 &&
-        (len >= 1500 ||
+        (len >= maxSideBuffering ||
          client->reqbegin > 0 ||
          (connection->reqoffset + client->reqlen - client->reqbegin) >=
          connection->bodylen);
