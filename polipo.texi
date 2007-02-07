@@ -1039,6 +1039,7 @@ servers.
 @vindex replyUnpipelineSize
 @vindex maxPipelineTrain
 @vindex pipelineAdditionalRequests
+@vindex maxSideBuffering
 @cindex small request
 @cindex large request
 @cindex breaking pipelines
@@ -1073,6 +1074,11 @@ requests that will be pipelined in a single write (default 10).
 Setting this variable to a very low value might (or might not) fix
 interaction with some unreliable servers that the normal heuristics
 are unable to detect.
+
+The variable @code{maxSideBuffering} specifies how much data will be
+buffered in a PUT or POST request; it defaults to 1500 bytes.  Setting
+this variable to 0 may cause some media players that abuse the HTTP
+protocol to work.
 
 @node PMM, Forbidden, Server-side behaviour, Network
 @section Poor Man's Multiplexing
