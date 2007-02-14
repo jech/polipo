@@ -1327,12 +1327,12 @@ The variable @code{socksParentProxy} specifies the hostname and port
 number of a SOCKS parent proxy; it should have the form
 @samp{host:port}.  The variant of the SOCKS protocol being used is
 defined by @code{socksProxyType}, which can be either @samp{socks4a}
-or @samp{socks5}; the latter value specifies ``SOCKS@tie{}5 with
+or @samp{socks5}; the latter value specifies ``SOCKS5 with
 hostnames'', and is the default.
 
 The user name passed to the SOCKS4a proxy is defined by the variable
 @code{socksUserName}.  This value is currently ignored with a
-SOCKS@tie{}5 proxy.
+SOCKS5 proxy.
 
 The main application of the SOCKS support is to use
 @uref{http://tor.eff.org,,Tor} to evade overly restrictive or
@@ -1375,7 +1375,7 @@ from the server.  If the latter arrives, the client is welcome to send
 the rest of the POST request@footnote{This, of course, is only part of
 the story.  Additionally, the server is not required to reply with
 @samp{100 Continue}, hence the client must implement a timeout.
-Furthermore, according to the obsolete RFC@tie{}2068, the server is
+Furthermore, according to the obsolete RFC2068, the server is
 allowed to spontaneously send @samp{100 Continue}, so the client must
 be prepared to ignore such a reply at any time.}.
 
