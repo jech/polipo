@@ -1,4 +1,8 @@
-Polipo 0.9.99.2 (unreleased):
+6 March 2007: Polipo 1.0.0
+
+        No changes since 0.9.99.2.
+
+7 February 2007: Polipo 0.9.99.2
 
         Fixed a buffer overflow in urlDirname (the 0.9 branch is not
         vulnerable) (reported by J. P. Larocque).
