@@ -101,7 +101,7 @@ install.man: all
 	mkdir -p $(TARGET)$(INFODIR)
 	cp -f polipo.man $(TARGET)$(MANDIR)/man1/polipo.1
 	cp polipo.info $(TARGET)$(INFODIR)/
-	install-info --info-dir=$(INFODIR) polipo.info
+	install-info --info-dir=$(TARGET)$(INFODIR) polipo.info
 
 
 polipo.info: polipo.texi
