@@ -252,7 +252,6 @@ int mingw_close_socket(SOCKET fd) {
     int rc;
 
     rc = closesocket(fd);
-    assert(rc == 0);
     return 0;
 }
 
