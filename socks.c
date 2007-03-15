@@ -267,7 +267,7 @@ socksConnectHandler(int status,
                               socksUserName->length + 1 +
                               request->name->length + 1);
         if(request->buf == NULL) {
-            close(request->fd);
+            CLOSE(request->fd);
             request->fd = -1;
             request->handler(-ENOMEM, request);
             destroySocksRequest(request);
@@ -295,7 +295,7 @@ socksConnectHandler(int status,
     } else if(socksProxyType == aSocks5) {
         request->buf = malloc(8); /* 8 needed for the subsequent read */
         if(request->buf == NULL) {
-            close(request->fd);
+            CLOSE(request->fd);
             request->fd = -1;
             request->handler(-ENOMEM, request);
             destroySocksRequest(request);
@@ -338,7 +338,7 @@ socksWriteHandler(int status,
     return 1;
 
  error:
-    close(request->fd);
+    CLOSE(request->fd);
     request->fd = -1;
     request->handler(status, request);
     destroySocksRequest(request);
@@ -376,7 +376,7 @@ socksReadHandler(int status,
     return 1;
 
  error:
-    close(request->fd);
+    CLOSE(request->fd);
     request->fd = -1;
     request->handler(status, request);
     destroySocksRequest(request);
@@ -428,7 +428,7 @@ socks5ReadHandler(int status,
     return 1;
 
  error:
-    close(request->fd);
+    CLOSE(request->fd);
     request->fd = -1;
     request->handler(status, request);
     destroySocksRequest(request);
@@ -504,7 +504,7 @@ socks5ReadHandler2(int status,
     return 1;
 
  error:
-    close(request->fd);
+    CLOSE(request->fd);
     request->fd = -1;
     request->handler(status, request);
     destroySocksRequest(request);
