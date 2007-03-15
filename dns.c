@@ -863,7 +863,7 @@ establishDnsSocket()
 
         rc = connect(dnsSocket, &nameserverAddress, sa_size);
         if(rc < 0) {
-            close(dnsSocket);
+            CLOSE(dnsSocket);
             dnsSocket = -1;
             do_log_error(L_ERROR, errno, "Couldn't create DNS \"connection\"");
             return -errno;
@@ -875,7 +875,7 @@ establishDnsSocket()
             registerFdEvent(dnsSocket, POLLIN, dnsReplyHandler, 0, NULL);
         if(dnsSocketHandler == NULL) {
             do_log(L_ERROR, "Couldn't register DNS socket handler.\n");
-            close(dnsSocket);
+            CLOSE(dnsSocket);
             dnsSocket = -1;
             return -ENOMEM;
         }
