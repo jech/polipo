@@ -77,7 +77,7 @@ httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
     if(allowedNets) {
         if(netAddressMatch(fd, allowedNets) != 1) {
             do_log(L_WARN, "Refusing connection from unauthorised net\n");
-            close(fd);
+            CLOSE(fd);
             return 0;
         }
     }
@@ -85,7 +85,7 @@ httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
     rc = setNonblocking(fd, 1);
     if(rc < 0) {
         do_log_error(L_WARN, errno, "Couldn't set non blocking mode");
-        close(fd);
+        CLOSE(fd);
         return 0;
     }
     rc = setNodelay(fd, 1);
@@ -97,7 +97,7 @@ httpAccept(int fd, FdEventHandlerPtr event, AcceptRequestPtr request)
     timeout = scheduleTimeEvent(clientTimeout, httpTimeoutHandler,
                                 sizeof(connection), &connection);
     if(!timeout) {
-        close(fd);
+        CLOSE(fd);
         free(connection);
         return 0;
     }
@@ -274,7 +274,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
     connection->timeout = NULL;
     if(connection->fd >= 0) {
         if(s >= 2)
-            close(connection->fd);
+            CLOSE(connection->fd);
         else
             lingeringClose(connection->fd);
     }
