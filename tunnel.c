@@ -123,7 +123,7 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
         do_log(L_ERROR, "Couldn't allocate tunnel.\n");
         releaseAtom(url);
         dispose_chunk(buf);
-        close(fd);
+        CLOSE(fd);
         return;
     }
 
@@ -251,7 +251,7 @@ tunnelHandlerParent(int fd, TunnelPtr tunnel)
     return 1;
 
  fail:
-    close(fd);
+    CLOSE(fd);
     tunnel->fd2 = -1;
     tunnelError(tunnel, 501, internAtom(message));
     return 1;
@@ -268,7 +268,7 @@ tunnelHandlerCommon(int fd, TunnelPtr tunnel)
 
     tunnel->buf1.buf = get_chunk();
     if(tunnel->buf1.buf == NULL) {
-        close(fd);
+        CLOSE(fd);
         tunnelError(tunnel, 501, internAtom("Couldn't allocate buffer"));
         return 1;
     }
@@ -377,7 +377,7 @@ tunnelDispatch(TunnelPtr tunnel)
         }
         if((tunnel->flags & TUNNEL_EOF1) && (tunnel->flags & TUNNEL_EPIPE1)) {
             if(!(tunnel->flags & (TUNNEL_READER1 | TUNNEL_WRITER1))) {
-                close(tunnel->fd1);
+                CLOSE(tunnel->fd1);
                 tunnel->fd1 = -1;
             }
         }
@@ -406,7 +406,7 @@ tunnelDispatch(TunnelPtr tunnel)
         }
         if((tunnel->flags & TUNNEL_EOF2) && (tunnel->flags & TUNNEL_EPIPE2)) {
             if(!(tunnel->flags & (TUNNEL_READER2 | TUNNEL_WRITER2))) {
-                close(tunnel->fd2);
+                CLOSE(tunnel->fd2);
                 tunnel->fd2 = -1;
             }
         }
@@ -506,7 +506,7 @@ tunnelError(TunnelPtr tunnel, int code, AtomPtr message)
 {
     int n;
     if(tunnel->fd2 > 0) {
-        close(tunnel->fd2);
+        CLOSE(tunnel->fd2);
         tunnel->fd2 = -1;
     }
 
@@ -527,7 +527,7 @@ tunnelError(TunnelPtr tunnel, int code, AtomPtr message)
     return 1;
 
  fail:
-    close(tunnel->fd1);
+    CLOSE(tunnel->fd1);
     tunnel->fd1 = -1;
     tunnelDispatch(tunnel);
     return 1;
