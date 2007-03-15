@@ -1239,7 +1239,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         connection->timeout = NULL;
         httpConnectionDestroyBuf(connection);
         if(connection->fd >= 0)
-            close(connection->fd);
+            CLOSE(connection->fd);
         connection->fd = -1;
         server->persistent -= 1;
         if(server->persistent < -5)
