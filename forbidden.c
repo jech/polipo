@@ -54,7 +54,7 @@ static int rlen, rsize, dlen, dsize;
 #ifndef NO_REDIRECTOR
 static pid_t redirector_pid = 0;
 static int redirector_read_fd = -1, redirector_write_fd = -1;
-#define REDIRECTOR_BUFFER_SIZE 512
+#define REDIRECTOR_BUFFER_SIZE 1024
 static char *redirector_buffer = NULL;
 RedirectRequestPtr redirector_request_first = NULL,
     redirector_request_last = NULL;
