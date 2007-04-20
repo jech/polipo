@@ -1033,6 +1033,7 @@ servers.
 @node Server-side behaviour, PMM, Server statistics, Network
 @section Tweaking server-side behaviour
 @vindex serverSlots
+@vindex serverSlots1
 @vindex serverMaxSlots
 @vindex smallRequestTime
 @vindex replyUnpipelineTime
@@ -1046,7 +1047,8 @@ servers.
 
 The most important piece of information about a server is whether it
 supports persistent connections.  If this is the case, Polipo will
-open at most @code{serverSlots} connections to that server, and
+open at most @code{serverSlots} connections to that server
+(@code{serverSlots1} if the server only implements HTTP/1.0), and
 attempt to pipeline; if not, Polipo will hit the server harder,
 opening up to @code{serverMaxSlots} connections.
 
