@@ -556,6 +556,7 @@ httpMakeConnection()
     connection->request_last = NULL;
     connection->serviced = 0;
     connection->version = HTTP_UNKNOWN;
+    connection->time = current_time.tv_sec;
     connection->timeout = NULL;
     connection->te = TE_IDENTITY;
     connection->reqbuf = NULL;

@@ -37,6 +37,8 @@ int serverSlots1 = 4;
 int serverMaxSlots = 8;
 int dontCacheRedirects = 0;
 int maxSideBuffering = 1500;
+int maxConnectionAge = 1260;
+int maxConnectionRequests = 400;
 
 static HTTPServerPtr servers = 0;
 
@@ -84,6 +86,12 @@ preinitServer(void)
     CONFIG_VARIABLE_SETTABLE(maxSideBuffering,
                              CONFIG_INT, configIntSetter,
                              "Maximum buffering for PUT and POST requests.");
+    CONFIG_VARIABLE_SETTABLE(maxConnectionAge,
+                             CONFIG_TIME, configIntSetter,
+                             "Maximum age of a server-side connection.");
+    CONFIG_VARIABLE_SETTABLE(maxConnectionRequests,
+                             CONFIG_INT, configIntSetter,
+                             "Maximum number of requests on a server-side connection.");
 }
 
 static int
@@ -1156,6 +1164,10 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 
     if(s == 0 && (!connection->request ||
                   !(connection->request->flags & REQUEST_PERSISTENT)))
+        s = 1;
+
+    if(connection->serviced >= maxConnectionRequests ||
+       connection->time < current_time.tv_sec - maxConnectionAge)
         s = 1;
 
     if(connection->reqbuf) {

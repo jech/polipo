@@ -66,6 +66,7 @@ typedef struct _HTTPConnection {
     HTTPRequestPtr request_last;
     int serviced;
     int version;
+    int time;
     TimeEventHandlerPtr timeout;
     int te;
     char *reqbuf;
