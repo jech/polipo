@@ -33,6 +33,7 @@ AtomPtr parentHost = NULL;
 int parentPort = -1;
 int pmmFirstSize = 0, pmmSize = 0;
 int serverSlots = 2;
+int serverSlots1 = 4;
 int serverMaxSlots = 8;
 int dontCacheRedirects = 0;
 int maxSideBuffering = 1500;
@@ -71,6 +72,8 @@ preinitServer(void)
                     "The size of a PMM chunk.");
     CONFIG_VARIABLE(serverSlots, CONFIG_INT,
                     "Maximum number of connections per server.");
+    CONFIG_VARIABLE(serverSlots1, CONFIG_INT,
+                    "Maximum number of connections per HTTP/1.0 server.");
     CONFIG_VARIABLE(serverMaxSlots, CONFIG_INT,
                     "Maximum number of connections per broken server.");
     CONFIG_VARIABLE(dontCacheRedirects, CONFIG_BOOLEAN,
@@ -212,6 +215,10 @@ initServer(void)
         serverSlots = 1;
     if(serverSlots > serverMaxSlots)
         serverSlots = serverMaxSlots;
+    if(serverSlots1 < serverSlots)
+        serverSlots1 = serverSlots;
+    if(serverSlots1 > serverMaxSlots)
+        serverSlots1 = serverMaxSlots;
 
     initParentProxy();
 
@@ -1281,7 +1288,9 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
     } else {
         server->persistent += 1;
         if(server->persistent > 0)
-            server->numslots = MIN(server->maxslots, serverSlots);
+            server->numslots = MIN(server->maxslots,
+                                   server->version == HTTP_10 ?
+                                   serverSlots1 : serverSlots);
         httpSetTimeout(connection, serverTimeout);
         /* See httpServerTrigger */
         if(connection->pipelined ||
