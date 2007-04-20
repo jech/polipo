@@ -28,6 +28,7 @@ int proxyPort = 8123;
 
 int clientTimeout = 120;
 int serverTimeout = 90;
+int serverIdleTimeout = 45;
 
 int bigBufferSize = (32 * 1024);
 
@@ -82,6 +83,8 @@ preinitHttp()
                              timeoutSetter, "Client-side timeout.");
     CONFIG_VARIABLE_SETTABLE(serverTimeout, CONFIG_TIME,
                              timeoutSetter, "Server-side timeout.");
+    CONFIG_VARIABLE_SETTABLE(serverIdleTimeout, CONFIG_TIME,
+                             timeoutSetter, "Server-side idle timeout.");
     CONFIG_VARIABLE(authRealm, CONFIG_ATOM,
                     "Authentication realm.");
     CONFIG_VARIABLE(authCredentials, CONFIG_PASSWORD,

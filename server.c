@@ -878,6 +878,7 @@ httpServerTrigger(HTTPServerPtr server)
                 do_log(L_ERROR, "Couldn't register idle handler.\n");
                 httpServerFinish(server->connection[i], 1, 0);
             }
+            httpSetTimeout(server->connection[i], serverIdleTimeout);
         }
     }
 
