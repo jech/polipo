@@ -1189,11 +1189,12 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
     if(request->cache_control.flags & CACHE_ONLY_IF_CACHED) {
         validate = 0;
         if(!haveData) {
-            if(serveNow)
+            if(serveNow) {
+                connection->flags |= CONN_WRITER;
                 return httpClientRawError(connection, 504,
                                           internAtom("Object not in cache"),
                                           0);
-            else
+            } else
                 return 1;
         }
     }
