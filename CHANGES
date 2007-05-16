@@ -2,6 +2,9 @@ Polipo 1.0.1 (unreleased):
 
         Made Polipo slightly more aggressive when speaking to
         HTTP/1.0 servers (thanks to Fabian Keil for noticing that).
+        Fixed a crash that would happen when a client used
+        Cache-Control: only-if-cached, and the object was not in cache.
+        (Reported by F. Zappa, A. Patala and V. Ghosal.)
 
 6 March 2007: Polipo 1.0.0
 
