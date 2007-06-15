@@ -1437,7 +1437,7 @@ dnsReplyId(char *buf, int offset, int n, int *id_return)
 {
     if(n - offset < 12)
         return -1;
-    *id_return = ntohs(*(short*)&buf[offset]);
+    DO_NTOHS(*id_return, &buf[offset]);
     return 1;
 }
 
