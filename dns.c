@@ -1412,7 +1412,7 @@ dnsBuildQuery(int id, char *buf, int offset, int n, AtomPtr name, int af)
     switch(af) {
     case 4: type = 1; break;
     case 6: type = 28; break;
-    default: return EINVAL;
+    default: return -EINVAL;
     }
 
     if(i + 12 >= n) return -1;
