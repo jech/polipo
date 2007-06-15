@@ -1664,7 +1664,7 @@ do { \
         i += rdlength;
     }
 
-#if (LOGGING & D_DNS)
+#if (LOGGING_MAX & D_DNS)
     for(j = 0; j < nscount; j++) {
         PARSE_ANSWER("ns", nofail);
         i += rdlength;
