@@ -771,7 +771,6 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
             expect = NULL;
         }
         if(code) {
-            if(expect) releaseAtom(expect);
             request->flags |= REQUEST_FORCE_ERROR;
             httpClientDiscardBody(connection);
             httpClientNoticeErrorHeaders(request, code, message, challenge);
@@ -785,8 +784,14 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
     }
 
     if(expect) {
-        if(expect == atom100Continue) {
+        if(expect == atom100Continue && REQUEST_SIDE(request)) {
             request->flags |= REQUEST_WAIT_CONTINUE;
+        } else {
+            httpClientDiscardBody(connection);
+            httpClientNoticeError(request, 417,
+                                  internAtom("Expectation failed"));
+            releaseAtom(expect);
+            return 1;
         }
         releaseAtom(expect);
     }
