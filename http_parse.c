@@ -1178,10 +1178,25 @@ httpParseHeaders(int client, AtomPtr url,
             }
         } else if(name == atomVia) {
             if(via_return) {
-                via = internAtomN(buf + value_start, value_end - value_start);
-                if(via == NULL) {
+                AtomPtr new_via, full_via;
+                new_via =
+                    internAtomN(buf + value_start, value_end - value_start);
+                if(new_via == NULL) {
                     do_log(L_ERROR, "Couldn't allocate via.\n");
                     goto fail;
+                }
+                if(via) {
+                    full_via =
+                        internAtomF("%s, %s", via->string, new_via->string);
+                    releaseAtom(new_via);
+                    if(full_via == NULL) {
+                        do_log(L_ERROR, "Couldn't allocate via");
+                        goto fail;
+                    }
+                    releaseAtom(via);
+                    via = full_via;
+                } else {
+                    via = new_via;
                 }
             }
         } else if(name == atomExpect) {
