@@ -1250,6 +1250,9 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
     if(!mindlesslyCacheVary && (request->object->cache_control & CACHE_VARY))
         conditional = conditional && (request->object->etag != NULL);
 
+    conditional =
+        conditional && !(request->object->cache_control & CACHE_MISMATCH);
+
     request->object->flags |= OBJECT_VALIDATING;
     rc = request->object->request(request->object,
                                   conditional ? METHOD_CONDITIONAL_GET : 
