@@ -1930,6 +1930,9 @@ httpServerHandlerHeaders(int eof,
         return 1;
     }
 
+    if(date < 0)
+        date = current_time.tv_sec;
+
     if(code == 100) {
         releaseAtom(url);
         releaseAtom(message);
