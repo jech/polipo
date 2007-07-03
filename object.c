@@ -562,6 +562,10 @@ objectHoleSize(ObjectPtr object, int offset)
         else {
             size += CHUNK_SIZE - offset % CHUNK_SIZE;
             offset += CHUNK_SIZE - offset % CHUNK_SIZE;
+            if(offset < 0) {
+                /* Overflow */
+                return -1;
+            }
         }
     }
 
