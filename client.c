@@ -817,6 +817,7 @@ httpClientRequest(HTTPRequestPtr request, AtomPtr url)
             httpClientNoticeError(request, 500,
                                   internAtom("CONNECT over big buffer "
                                              "not supported"));
+            return 1;
         }
         connection->flags &= ~CONN_READER;
         do_tunnel(connection->fd, connection->reqbuf, 
