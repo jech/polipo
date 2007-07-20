@@ -1413,7 +1413,7 @@ however, there are some circumstances in which establishing a direct
 connection to the server is not possible.  In such situations, it is
 possible to have Polipo behave as a @emph{tunnelling} proxy --- a
 proxy that merely forwards traffic between the client and the server
-without understanding it.  Polipo enters tunnel mode when the server
+without understanding it.  Polipo enters tunnel mode when the client
 requests it by using the HTTP @samp{CONNECT} method.
 
 Most web browsers will use this technique for HTTP over SSL if
