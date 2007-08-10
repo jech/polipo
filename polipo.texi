@@ -557,7 +557,6 @@ using the local configuration interface (@pxref{Web interface}).
 @cindex pid
 @vindex daemonise
 @vindex pidFile
-@vindex logLevel
 
 If the configuration variable @code{daemonise} is set to true, Polipo
 will run as a daemon: it will fork and detach from its controlling
@@ -572,20 +571,32 @@ is started, Polipo will refuse to run.
 @node Logging,  , Daemon, Polipo Invocation
 @subsection Logging
 @cindex logging
+@vindex logLevel
 @vindex logFile
+@vindex logSyslog
+@vindex logFacility
 
 When it encounters a difficulty, Polipo will print a friendly message.
 The location where these messages go is controlled by the
-configuration variable @code{logFile}.  If it is empty, messages go to
-the error output of the process (normally the terminal); otherwise, it
-is the name of a file where all output will accumulate.
+configuration variables @code{logFile} and @code{logSyslog}.
+If @code{logSyslog} is @code{true}, error messages go to the system log
+facility given by @code{logFacility}.  If @code{logFile} is set, it is
+the name of a file where all output will accumulate.  If @code{logSyslog}
+is @code{false} and @code{logFile} is empty, messages go to the error
+output of the process (normally the terminal).
 
 The variable @code{logFile} defaults to empty if @code{daemonise} is
 false, and to @samp{/var/log/polipo} otherwise.
 
+The variable @code{logSyslog} defaults to @code{false}, and
+@code{logFacility} defaults to @samp{user}.
+
 The amount of logging is controlled by the variable @code{logLevel}.
 Please see the file @samp{log.h} in the Polipo sources for the
 possible values of @code{logLevel}.
+
+(Note that if you are using a shared cache, or logging to syslog,
+an overly low @code{logLevel} could be a privacy violation.)
 
 @node Browser configuration, Stopping, Polipo Invocation, Running
 @section Configuring your browser

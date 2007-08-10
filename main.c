@@ -150,7 +150,7 @@ main(int argc, char **argv)
     }
 
     if(daemonise)
-        do_daemonise(logFile == NULL || logFile->length == 0);
+        do_daemonise(loggingToStderr());
 
     if(pidFile)
         writePid(pidFile->string);

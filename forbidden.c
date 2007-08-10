@@ -637,7 +637,7 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
 
     fflush(stdout);
     fflush(stderr);
-    fflush(logF);
+    flushLog();
 
     interestingSignals(&ss);
     do {

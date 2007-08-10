@@ -46,12 +46,11 @@ THE SOFTWARE.
 #define LOGGING_DEFAULT (L_ERROR | L_WARN | L_INFO)
 #define LOGGING_MAX 0xFF
 
-extern AtomPtr logFile;
-extern FILE *logF;
-
 void preinitLog(void);
 void initLog(void);
 void reopenLog(void);
+void flushLog(void);
+int loggingToStderr(void);
 
 void really_do_log(int type, const char *f, ...)
     ATTRIBUTE ((format (printf, 2, 3)));

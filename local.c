@@ -512,7 +512,7 @@ fillSpecialObject(ObjectPtr object, void (*fn)(FILE*, char*), void* closure)
 
     fflush(stdout);
     fflush(stderr);
-    fflush(logF);
+    flushLog();
 
     /* Block signals that we handle specially until the child can
        disable the handlers. */
