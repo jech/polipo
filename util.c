@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003-2006 by Juliusz Chroboczek
+Copyright (c) 2003-2007 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,12 +39,20 @@ int
 snnprintf(char *restrict buf, int n, int len, const char *format, ...)
 {
     va_list args;
+    int rc;
+    va_start(args, format);
+    rc = snnvprintf(buf,n,len,format,args);
+    va_end(args);
+    return rc;
+}
+
+int
+snnvprintf(char *restrict buf, int n, int len, const char *format, va_list args)
+{
     int rc = -1;
     if(n < 0) return -2;
-    va_start(args, format);
     if(n < len)
         rc = vsnprintf(buf + n, len - n, format, args);
-    va_end(args);
     if(rc >= 0 && n + rc <= len)
         return n + rc;
     else

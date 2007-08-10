@@ -66,6 +66,8 @@ typedef struct _IntList {
 char *strdup_n(const char *restrict buf, int n) ATTRIBUTE ((malloc));
 int snnprintf(char *restrict buf, int n, int len, const char *format, ...)
      ATTRIBUTE ((format (printf, 4, 5)));
+int snnvprintf(char *restrict buf, int n, int len, const char *format, va_list args)
+     ATTRIBUTE ((format (printf, 4, 0)));
 int snnprint_n(char *restrict buf, int n, int len, const char *s, int slen);
 int strcmp_n(const char *string, const char *buf, int n) ATTRIBUTE ((pure));
 int digit(char) ATTRIBUTE ((const));
