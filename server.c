@@ -1001,10 +1001,12 @@ httpServerDoSide(HTTPConnectionPtr connection)
         connection->reqbuf = NULL;
         connection->reqlen = 0;
         pokeFdEvent(connection->fd, -ESHUTDOWN, POLLIN);
-        client->flags |= CONN_SIDE_READER;
-        do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
-                  client->fd, 0, NULL, 0,
-                  httpClientSideHandler, client);
+        if(client->flags & CONN_READER) {
+            client->flags |= CONN_SIDE_READER;
+            do_stream(IO_READ | IO_IMMEDIATE | IO_NOTNOW,
+                      client->fd, 0, NULL, 0,
+                      httpClientSideHandler, client);
+        }
     } else if(!(request->flags & REQUEST_WAIT_CONTINUE) && doflush) {
         /* Make sure there's a reqbuf, as httpServerFinish uses
            it to determine if there's a writer. */
