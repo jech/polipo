@@ -41,7 +41,7 @@ snnprintf(char *restrict buf, int n, int len, const char *format, ...)
     va_list args;
     int rc;
     va_start(args, format);
-    rc = snnvprintf(buf,n,len,format,args);
+    rc = snnvprintf(buf, n, len, format, args);
     va_end(args);
     return rc;
 }
