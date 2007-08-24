@@ -341,10 +341,13 @@ really_do_log_v(int type, const char *f, va_list args)
             vfprintf(logF, f, args);
 #ifdef HAVE_SYSLOG
         if(logSyslog) {
+            int n;
             char msg[256];
-
-            vsnprintf(msg, 256, f, args);
-            accumulateSyslog(type, msg, strlen(msg));
+            n = vsnprintf(msg, 256, f, args);
+            if(n >= 0 && n < 255)
+                accumulateSyslog(type, msg, n);
+            else
+                accumulateSyslog(LOG_ERR, "Syslog message lost.\n", 21);
         }
 #endif
     }
