@@ -233,10 +233,7 @@ translatePriority(int type)
         current++;
     }
 
-    do_log(L_INFO, "Following message logged with unknown L_ type %i",
-           type);
-
-    return LOG_NOTICE;
+    return LOG_DEBUG;
 }
 
 /* Accumulate a message for syslogging, emitting pieces ending in linefeeds.
