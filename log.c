@@ -281,6 +281,7 @@ accumulateSyslog(int type, const char *msg, int len)
 static void
 initSyslog()
 {
+    return;
 }
 #endif
 
