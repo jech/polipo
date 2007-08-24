@@ -59,6 +59,7 @@ FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
 #  -DNO_SOCKS to compile out the SOCKS gateway code.
 #  -DNO_FORBIDDEN to compile out the all of the forbidden URL code
 #  -DNO_REDIRECTOR to compile out the Squid-style redirector code
+#  -DNO_SYSLOG to compile out logging to syslog
 
 DEFINES = $(FILE_DEFINES) $(PLATFORM_DEFINES)
 

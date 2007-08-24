@@ -164,7 +164,9 @@ THE SOFTWARE.
 
 #ifndef MINGW
 #define HAVE_FORK
+#ifndef NO_SYSLOG
 #define HAVE_SYSLOG
+#endif
 #define HAVE_READV_WRITEV
 #define HAVE_FFS
 #define READ(x, y, z) read(x, y, z)
