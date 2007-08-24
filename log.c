@@ -29,9 +29,11 @@ THE SOFTWARE.
 static int logLevel = LOGGING_DEFAULT;
 static int logSyslog = 0;
 static AtomPtr logFile = NULL;
+static FILE *logF;
+#ifdef HAVE_SYSLOG
 static AtomPtr logFacility = NULL;
 static int facility;
-static FILE *logF;
+#endif
 
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
