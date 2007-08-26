@@ -1,3 +1,14 @@
+26 August 2007: Polipo 1.0.2:
+
+        Fixed a crash that could happen with entities more than 2GB in
+        size.  Such entities are still not supported, but Polipo
+        should no longer crash.
+        Minor HTTP compliance fixes, due to testing with Co-Advisor.
+        Fixed a crash that would happen when a POST request was aborted
+        by the server.  Reported by Tero Pelander.
+        Worked around a DNS-related bug that I'm unable to track down,
+        waiting for a proper fix.
+
 25 June 2007: Polipo 1.0.1:
 
         Made Polipo slightly more aggressive when speaking to
