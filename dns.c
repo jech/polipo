@@ -749,6 +749,19 @@ dnsHandler(int status, ConditionHandlerPtr chandler)
     return 1;
 }
 
+static int
+queryInFlight(DnsQueryPtr query)
+{
+    DnsQueryPtr other;
+    other = inFlightDnsQueries;
+    while(other) {
+        if(other == query)
+            return 1;
+        other = other->next;
+    }
+    return 0;
+}
+
 static void
 removeQuery(DnsQueryPtr query)
 {
@@ -800,6 +813,13 @@ dnsTimeoutHandler(TimeEventHandlerPtr event)
     DnsQueryPtr query = *(DnsQueryPtr*)event->data;
     ObjectPtr object = query->object;
     int rc;
+
+    /* People are reporting that this does happen.  And I have no idea why. */
+    if(!queryInFlight(query)) {
+        do_log(L_ERROR, "BUG: timing out martian query (%s, flags: 0x%x).\n",
+               query->name->string, (unsigned)object->flags);
+        return 1;
+    }
 
     query->timeout = MAX(10, query->timeout * 2);
 
