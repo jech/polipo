@@ -294,7 +294,7 @@ void flushLog()
 #ifdef HAVE_SYSLOG
     /* There shouldn't really be anything here, but let's be paranoid.
        We can't pick a good value for `type', so just invent one. */
-    if(syslogBuf[0] != '\0') {
+    if(logSyslog && syslogBuf[0] != '\0') {
         accumulateSyslog(L_INFO, "\n", 1);
     }
 
