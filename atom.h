@@ -21,9 +21,9 @@ THE SOFTWARE.
 */
 
 typedef struct _Atom {
-    unsigned short refcount;
-    unsigned short length;
+    unsigned int refcount;
     struct _Atom *next;
+    unsigned short length;
     char string[1];
 } AtomRec, *AtomPtr;
 
@@ -34,6 +34,7 @@ typedef struct _AtomList {
 } AtomListRec, *AtomListPtr;
 
 #define LOG2_ATOM_HASH_TABLE_SIZE 10
+#define LARGE_ATOM_REFCOUNT 0xFFFFFF00U
 
 extern int used_atoms;
 

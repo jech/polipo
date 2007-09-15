@@ -156,7 +156,7 @@ retainAtom(AtomPtr atom)
 
     do_log(D_ATOM_REFCOUNT, "A 0x%lx %d++\n",
            (unsigned long)atom, atom->refcount);
-    assert(atom->refcount >= 1 && atom->refcount < 50000);
+    assert(atom->refcount >= 1 && atom->refcount < LARGE_ATOM_REFCOUNT);
     atom->refcount++;
     return atom;
 }
@@ -169,7 +169,7 @@ releaseAtom(AtomPtr atom)
 
     do_log(D_ATOM_REFCOUNT, "A 0x%lx %d--\n",
            (unsigned long)atom, atom->refcount);
-    assert(atom->refcount >= 1 && atom->refcount < 50000);
+    assert(atom->refcount >= 1 && atom->refcount < LARGE_ATOM_REFCOUNT);
 
     atom->refcount--;
 
