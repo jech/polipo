@@ -168,6 +168,8 @@ initHttp()
         intListCons(873, 873, tunnelAllowedPorts); /* rsync */
         intListCons(993, 993, tunnelAllowedPorts); /* IMAP/SSL */
         intListCons(995, 995, tunnelAllowedPorts); /* POP/SSL */
+        intListCons(2401, 2401, tunnelAllowedPorts); /* CVS */
+        intListCons(5222, 5223, tunnelAllowedPorts); /* Jabber */
         intListCons(9418, 9418, tunnelAllowedPorts); /* Git */
     }
 
