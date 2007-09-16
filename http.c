@@ -168,6 +168,7 @@ initHttp()
         intListCons(873, 873, tunnelAllowedPorts); /* rsync */
         intListCons(993, 993, tunnelAllowedPorts); /* IMAP/SSL */
         intListCons(995, 995, tunnelAllowedPorts); /* POP/SSL */
+        intListCons(9418, 9418, tunnelAllowedPorts); /* Git */
     }
 
     if(proxyName)
