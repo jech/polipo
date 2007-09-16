@@ -1435,7 +1435,7 @@ using OpenSSH, rsync, Jabber, IRC, etc.
 
 The variable @code{tunnelAllowedPorts} specifies the set of ports that
 Polipo will accept to tunnel traffic to.  It defaults to allowing ssh,
-HTTP, https, rsync, IMAP, imaps, POP, pops and Git traffic.
+HTTP, https, rsync, IMAP, imaps, POP, pops, Jabber, CVS and Git traffic.
 
 @node Caching, Memory usage, Network, Top
 @chapter Caching
