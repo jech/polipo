@@ -42,12 +42,13 @@ static void initSyslog(void);
 
 #ifdef HAVE_SYSLOG
 static char *syslogBuf;
-static ssize_t syslogBufSize;
-static size_t syslogBufLength;
+static int syslogBufSize;
+static int syslogBufLength;
 
 static int translateFacility(AtomPtr facility);
 static int translatePriority(int type);
-static void accumulateSyslog(int type, const char *msg, int len);
+static void accumulateSyslogV(int type, const char *f, va_list args);
+static void accumulateSyslogN(int type, const char *s, int len);
 #endif
 
 void
@@ -59,7 +60,8 @@ preinitLog()
 
 #ifdef HAVE_SYSLOG
     CONFIG_VARIABLE(logSyslog, CONFIG_BOOLEAN, "Log to syslog.");
-    CONFIG_VARIABLE(logFacility, CONFIG_ATOM, "Facility to use.");
+    CONFIG_VARIABLE(logFacility, CONFIG_ATOM, "Syslog facility to use.");
+    logFacility = internAtom("user");
 #endif
 
     logF = stderr;
@@ -236,47 +238,76 @@ translatePriority(int type)
     return LOG_DEBUG;
 }
 
-/* Accumulate a message for syslogging, emitting pieces ending in linefeeds.
+static int
+expandSyslog(int len)
+{
+    int newsize;
+    char *newbuf;
 
-   Argument formatting is done by the caller. */
+    if(len < 0)
+        newsize = syslogBufSize * 2;
+    else
+        newsize = syslogBufLength + len + 1;
+
+    newbuf = realloc(syslogBuf, newsize);
+    if(!newbuf)
+        return -1;
+
+    syslogBuf = newbuf;
+    syslogBufSize = newsize;
+    return 1;
+}
 
 static void
-accumulateSyslog(int type, const char *msg, int len)
+maybeFlushSyslog(int type)
 {
-    ssize_t new_syslogBufSize;
     char *linefeed;
-
-    /* First, expand (possibly) and concatenate. */
-
-    new_syslogBufSize = syslogBufLength + len;
-
-    if(new_syslogBufSize >= syslogBufSize) {
-        char *new_syslogBuf;
-
-        new_syslogBuf = realloc(syslogBuf, new_syslogBufSize);
-
-        if(!new_syslogBuf)
-            return;
-        syslogBuf = new_syslogBuf;
-        syslogBufSize = new_syslogBufSize;
-    }
-
-    memcpy(syslogBuf + syslogBufLength, msg, len);
-    syslogBufLength += len;
-
-    /* Now look for a linefeed and flush as long as one is found. */
-
-    while((linefeed = memchr(syslogBuf, '\n', syslogBufLength)) != NULL) {
+    while(1) {
+        linefeed = memchr(syslogBuf, '\n', syslogBufLength);
+        if(linefeed == NULL)
+            break;
         *linefeed = '\0';
         syslog(translatePriority(type), "%s", syslogBuf);
         linefeed++;
-
-        /* Some is printed: flush it. */
-
-        syslogBufLength -= linefeed - syslogBuf;
-        memmove(syslogBuf, linefeed, syslogBufLength);
+        syslogBufLength -= (linefeed - syslogBuf);
+        if(syslogBufLength > 0)
+            memmove(syslogBuf, linefeed, syslogBufLength);
     }
 }
+
+static void
+accumulateSyslogV(int type, const char *f, va_list args)
+{
+    int rc;
+
+ again:
+    rc = vsnprintf(syslogBuf + syslogBufLength,
+                   syslogBufSize - syslogBufLength,
+                   f, args);
+
+    if(rc < 0 || rc >= syslogBufSize - syslogBufLength) {
+        rc = expandSyslog(rc);
+        if(rc < 0)
+            return;
+        goto again;
+    }
+
+    maybeFlushSyslog(type);
+}
+
+static void
+accumulateSyslogN(int type, const char *s, int len)
+{
+    while(syslogBufSize - syslogBufLength <= len)
+        expandSyslog(len);
+
+    memcpy(syslogBuf + syslogBufLength, s, len);
+    syslogBufLength += len;
+    syslogBuf[syslogBufLength] = '\0';
+
+    maybeFlushSyslog(type);
+}
+
 #else
 static void
 initSyslog()
@@ -295,7 +326,7 @@ void flushLog()
     /* There shouldn't really be anything here, but let's be paranoid.
        We can't pick a good value for `type', so just invent one. */
     if(logSyslog && syslogBuf[0] != '\0') {
-        accumulateSyslog(L_INFO, "\n", 1);
+        accumulateSyslogN(L_INFO, "\n", 1);
     }
 
     assert(syslogBufLength == 0);
@@ -341,20 +372,13 @@ really_do_log_v(int type, const char *f, va_list args)
         if(logF)
             vfprintf(logF, f, args);
 #ifdef HAVE_SYSLOG
-        if(logSyslog) {
-            int n;
-            char msg[256];
-            n = vsnprintf(msg, 256, f, args);
-            if(n >= 0 && n < 255)
-                accumulateSyslog(type, msg, n);
-            else
-                accumulateSyslog(LOG_ERR, "Syslog message lost.\n", 21);
-        }
+        if(logSyslog)
+            accumulateSyslogV(type, f, args);
 #endif
     }
 }
 
-void 
+void
 really_do_log_error(int type, int e, const char *f, ...)
 {
     va_list args;
@@ -393,7 +417,7 @@ really_do_log_error_v(int type, int e, const char *f, va_list args)
             else
                 msg[n] = '\0';
 
-            accumulateSyslog(type, msg, n);
+            accumulateSyslogN(type, msg, n);
         }
 #endif
     }
@@ -407,9 +431,8 @@ really_do_log_n(int type, const char *s, int n)
             fwrite(s, n, 1, logF);
         }
 #ifdef HAVE_SYSLOG
-        if(logSyslog) {
-            accumulateSyslog(type, s, n);
-        }
+        if(logSyslog)
+            accumulateSyslogN(type, s, n);
 #endif
     }
 }
