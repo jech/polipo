@@ -761,8 +761,27 @@ intListCons(int from, int to, IntListPtr list)
 
 /* Return the amount of physical memory on the box, -1 if unknown or
    over two gigs. */
+#ifdef __linux__
+#include <sys/sysinfo.h>
+int
+physicalMemory()
+{
+    int rc;
+    struct sysinfo info;
+
+    rc = sysinfo(&info);
+    if(rc < 0)
+        return -1;
+
+    if(info.totalram <= 0x7fffffff / info.mem_unit)
+        return (int)(info.totalram * info.mem_unit);
+
+    return -1;
+}
+#else
 int
 physicalMemory()
 {
     return -1;
 }
+#endif
