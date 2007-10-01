@@ -761,7 +761,8 @@ intListCons(int from, int to, IntListPtr list)
 
 /* Return the amount of physical memory on the box, -1 if unknown or
    over two gigs. */
-#ifdef __linux__
+#if defined(__linux__)
+
 #include <sys/sysinfo.h>
 int
 physicalMemory()
@@ -778,7 +779,27 @@ physicalMemory()
 
     return -1;
 }
+
+#elif defined(__FreeBSD__)
+
+#include <sys/sysctl.h>
+int
+physicalMemory()
+{
+    int membytes;
+    size_t len;
+    int rc;
+
+    len = sizeof(membytes);
+    res = sysctlbyname("hw.physmem", &membytes, &len, NULL, 0);
+    if (res)
+        return -1;
+
+    return membytes;
+}
+
 #else
+
 int
 physicalMemory()
 {
