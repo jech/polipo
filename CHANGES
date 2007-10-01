@@ -1,3 +1,15 @@
+Polipo 1.0.3 (unreleased):
+
+        Changed the default for chunkMemory: it is now 24 MB or
+        one-quarter of physical memory, whichever is smaller.
+        Support for logging to syslog (thanks to Nix).
+        Made atom reference counts 32-bit longs; this should fix
+        problems that people were seeing when running Polipo with
+        humongous in-memory caches.
+        Added Git, Jabber and CVS to default tunnelAllowedPorts.
+        Fixed a bug that could cause URL matching to fail when using
+        anchored regular expressions (thanks to phuel).
+
 26 August 2007: Polipo 1.0.2:
 
         Fixed a crash that could happen with entities more than 2GB in
