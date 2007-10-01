@@ -292,6 +292,8 @@ accumulateSyslogV(int type, const char *f, va_list args)
         goto again;
     }
 
+    syslogBufLength += rc;
+
     maybeFlushSyslog(type);
 }
 
