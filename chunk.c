@@ -25,7 +25,7 @@ THE SOFTWARE.
 #define MB (1024 * 1024)
 int chunkLowMark = 0, 
     chunkCriticalMark = 0,
-    chunkHighMark = 8 * MB;
+    chunkHighMark = 0;
 
 void
 preinitChunks()
@@ -54,10 +54,18 @@ initChunksCommon()
     ROUND_CHUNKS(chunkLowMark);
 
     if(chunkHighMark < 8 * CHUNK_SIZE) {
-        chunkHighMark = 8 * CHUNK_SIZE;
-        do_log(L_WARN, "Impossibly low chunkHighMark -- setting to %d.\n",
-               chunkHighMark);
+        int mem = physicalMemory();
+        if(mem > 0)
+            chunkHighMark = physicalMemory();
+        else
+            chunkHighMark = 24 * MB;
+        chunkHighMark = MIN(chunkHighMark, 24 * MB);
+        chunkHighMark = MAX(chunkHighMark, 8 * CHUNK_SIZE);
     }
+
+    if(chunkHighMark < MB / 2)
+        fprintf(stderr,
+                "Warning: little chunk memory (%d bytes)\n", chunkHighMark);
 
     q = 0;
     if(chunkLowMark <= 0) q = 1;
