@@ -788,7 +788,7 @@ physicalMemory()
 {
     int membytes;
     size_t len;
-    int rc;
+    int res;
 
     len = sizeof(membytes);
     res = sysctlbyname("hw.physmem", &membytes, &len, NULL, 0);
