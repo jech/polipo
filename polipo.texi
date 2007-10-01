@@ -1874,9 +1874,11 @@ You can limit Polipo's usage of chunk memory by setting
 @code{chunkHighMark} and @code{chunkLowMark}.
 
 The value @code{chunkHighMark} is the absolute maximum number of bytes
-of allocated chunk memory.  When this value is reached, Polipo will
-try to purge objects from its in-memory cache; if that fails to free
-memory, Polipo will start dropping connections.
+of allocated chunk memory.  When this value is reached, Polipo will try
+to purge objects from its in-memory cache; if that fails to free memory,
+Polipo will start dropping connections.  This value defaults to
+24@dmn{MB} or one quarter of the machine's physical memory, whichever is
+less.
 
 When chunk usage falls back below @code{chunkLowMark}, Polipo will
 stop discarding in-memory objects.  The value
