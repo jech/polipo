@@ -758,3 +758,11 @@ intListCons(int from, int to, IntListPtr list)
     }
     return insertRange(from, to, list, i);
 }
+
+/* Return the amount of physical memory on the box, -1 if unknown or
+   over two gigs. */
+int
+physicalMemory()
+{
+    return -1;
+}

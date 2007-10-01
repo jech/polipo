@@ -105,3 +105,4 @@ IntListPtr makeIntList(int size) ATTRIBUTE ((malloc));
 void destroyIntList(IntListPtr list);
 int intListMember(int n, IntListPtr list) ATTRIBUTE ((pure));
 int intListCons(int from, int to, IntListPtr list);
+int physicalMemory(void);
