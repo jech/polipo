@@ -56,7 +56,7 @@ initChunksCommon()
     if(chunkHighMark < 8 * CHUNK_SIZE) {
         int mem = physicalMemory();
         if(mem > 0)
-            chunkHighMark = mem;
+            chunkHighMark = mem / 4;
         else
             chunkHighMark = 24 * MB;
         chunkHighMark = MIN(chunkHighMark, 24 * MB);
