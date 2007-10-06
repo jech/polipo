@@ -1,4 +1,4 @@
-Polipo 1.0.3 (unreleased):
+6 October 2007: Polipo 1.0.3
 
         Changed the default for chunkMemory: it is now 24 MB or
         one-quarter of physical memory, whichever is smaller.
