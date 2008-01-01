@@ -90,12 +90,17 @@ makeTunnel(int fd, char *buf, int offset, int len)
     tunnel->flags = 0;
     tunnel->fd1 = fd;
     tunnel->fd2 = -1;
-    tunnel->buf1.buf = NULL;
-    tunnel->buf1.tail = 0;
-    tunnel->buf1.head = 0;
-    tunnel->buf2.buf = buf;
+    tunnel->buf1.buf = buf;
+    if(offset == len) {
+        tunnel->buf1.tail = 0;
+        tunnel->buf1.head = 0;
+    } else {
+        tunnel->buf1.tail = offset;
+        tunnel->buf1.head = len;
+    }
+    tunnel->buf2.buf = NULL;
     tunnel->buf2.tail = 0;
-    tunnel->buf2.head = offset;
+    tunnel->buf2.head = 0;
     return tunnel;
 }
 
@@ -230,15 +235,19 @@ tunnelHandlerParent(int fd, TunnelPtr tunnel)
     char *message;
     int n;
 
-    tunnel->fd2 = fd;
-
-    tunnel->buf2.buf = get_chunk();
-    if(tunnel->buf2.buf == NULL) {
+    if(tunnel->buf1.buf == NULL)
+        tunnel->buf1.buf = get_chunk();
+    if(tunnel->buf1.buf == NULL) {
         message = "Couldn't allocate buffer";
         goto fail;
     }
+    if(tunnel->buf1.tail != tunnel->buf1.head) {
+        message = "Pipelined connect to parent proxy not implemented";
+        goto fail;
+    }
 
-    n = snnprintf(tunnel->buf2.buf, 0, CHUNK_SIZE,
+    n = snnprintf(tunnel->buf1.buf, tunnel->buf1.tail,
+                  CHUNK_SIZE - tunnel->buf1.tail,
                   "CONNECT %s:%d HTTP/1.1"
                   "\r\n\r\n",
                   tunnel->hostname->string, tunnel->port);
@@ -246,7 +255,7 @@ tunnelHandlerParent(int fd, TunnelPtr tunnel)
         message = "Buffer overflow";
         goto fail;
     }
-    tunnel->buf2.head = n;
+    tunnel->buf1.head = n;
     tunnelDispatch(tunnel);
     return 1;
 
@@ -261,23 +270,23 @@ static int
 tunnelHandlerCommon(int fd, TunnelPtr tunnel)
 {
     const char *message = "HTTP/1.1 200 Tunnel established\r\n\r\n";
-    assert(tunnel->buf1.buf == NULL);
+
+    tunnel->fd2 = fd;
 
     if(parentHost)
         return tunnelHandlerParent(fd, tunnel);
 
-    tunnel->buf1.buf = get_chunk();
-    if(tunnel->buf1.buf == NULL) {
+    if(tunnel->buf2.buf == NULL)
+        tunnel->buf2.buf = get_chunk();
+    if(tunnel->buf2.buf == NULL) {
         CLOSE(fd);
         tunnelError(tunnel, 501, internAtom("Couldn't allocate buffer"));
         return 1;
     }
 
-    tunnel->fd2 = fd;
-
     memcpy(tunnel->buf2.buf, message, MIN(CHUNK_SIZE - 1, strlen(message)));
     tunnel->buf2.head = MIN(CHUNK_SIZE - 1, strlen(message));
-        
+
     tunnelDispatch(tunnel);
     return 1;
 }
