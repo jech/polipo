@@ -1,3 +1,8 @@
+Polipo 1.0.4 (unreleased):
+
+        Fixed the handling of tunnels with a parent proxy (thanks to
+        Richard Šputa).
+
 6 October 2007: Polipo 1.0.3
 
         Changed the default for chunkMemory: it is now 24 MB or
