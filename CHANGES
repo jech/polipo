@@ -5,6 +5,10 @@ Polipo 1.0.4 (unreleased):
   * Fixed a bug that could cause connections to be shut down when
     a server used the old (RFC 2068) semantics of ``100 Continue''
     (thanks to Thomas Wiesel).
+  * Fixed a crash when a request URL was larger than 10 kB (thanks to
+    Fabian Keil).
+  * Fixed a possible failure to read client requests larger than one
+    chunk.
 
 6 October 2007: Polipo 1.0.3
 
