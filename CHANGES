@@ -2,6 +2,9 @@ Polipo 1.0.4 (unreleased):
 
   * Fixed the handling of tunnels with a parent proxy (thanks to
     Richard Šputa).
+  * Fixed a bug that could cause connections to be shut down when
+    a server used the old (RFC 2068) semantics of ``100 Continue''
+    (thanks to Thomas Wiesel).
 
 6 October 2007: Polipo 1.0.3
 
