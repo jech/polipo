@@ -412,7 +412,8 @@ httpClientHandler(int status,
         int rc = 0;
         if(!(connection->flags & CONN_BIGREQBUF))
             rc = httpConnectionBigifyReqbuf(connection);
-        if(rc > 0) {
+        if((connection->flags & CONN_BIGREQBUF) &&
+           connection->reqlen < bigBufferSize) {
             do_stream(IO_READ, connection->fd, connection->reqlen,
                       connection->reqbuf, bigBufferSize,
                       httpClientHandler, connection);
