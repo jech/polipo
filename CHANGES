@@ -355,7 +355,7 @@ Polipo 1.0.4 (unreleased):
 23 November 2003: Polipo 0.8:
 
   * IPv6 support, on both the client and server side, including
-  * DNS support and RFC 2732.
+    DNS support and RFC 2732.
   * Reworked the DNS code.
   * Made it possible to compile without any particular resolver
     and without the on-disk cache.
