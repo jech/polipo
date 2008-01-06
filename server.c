@@ -1148,8 +1148,7 @@ httpServerContinueConditionHandler(int status, ConditionHandlerPtr chandler)
     return 1;
 }
 
-/* s is 0 to keep the connection alive, 1 to shutdown the connection,
-   and -1 to keep the connection alive and keep the current request. */
+/* s is 0 to keep the connection alive, 1 to shutdown the connection */
 void
 httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 {
@@ -1164,7 +1163,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         assert(connection->pipelined == 0);
     }
 
-    if(s == 0 && (!connection->request ||
+    if(!s && (!connection->request ||
                   !(connection->request->flags & REQUEST_PERSISTENT)))
         s = 1;
 
@@ -1184,7 +1183,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         goto done;
     }
 
-    if(s >= 0 && request) {
+    if(request) {
         /* Update statistics about the server */
         int size = -1, d = -1, rtt = -1, rate = -1;
         if(connection->offset > 0 && request->from >= 0)
@@ -1230,7 +1229,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
 
     assert(offset <= connection->len);
 
-    if(s <= 0) {
+    if(!s) {
         if(offset < connection->len) {
             assert(connection->buf != NULL);
             if(!connection->pipelined) {
@@ -1255,7 +1254,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
     connection->server->time = current_time.tv_sec;
     connection->serviced++;
 
-    if(s > 0) {
+    if(s) {
         if(connection->timeout)
             cancelTimeEvent(connection->timeout);
         connection->timeout = NULL;
@@ -1313,7 +1312,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
            (server->pipeline == 3)) {
             server->pipeline++;
         }
-        if(s < 0 || connection->pipelined) {
+        if(connection->pipelined) {
             httpServerReply(connection, 1);
         } else {
             httpConnectionDestroyBuf(connection);
