@@ -1941,7 +1941,10 @@ httpServerHandlerHeaders(int eof,
         /* We've already reset wait_continue above, but we must still
            ensure that the writer notices. */
         notifyObject(request->object);
-        httpServerFinish(connection, -1, rc);
+        connection->len -= rc;
+        if(connection->len > 0)
+            memmove(connection->buf, connection->buf + rc, connection->len);
+        httpServerReply(connection, 1);
         return 1;
     }
 
