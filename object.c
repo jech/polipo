@@ -128,7 +128,8 @@ findObject(int type, const void *key, int key_size)
     int h;
     ObjectPtr object;
 
-    assert(key_size <= 10000);
+    if(key_size >= 50000)
+        return NULL;
 
     h = hash(type, key, key_size, log2ObjectHashTableSize);
     object = objectHashTable[h];
