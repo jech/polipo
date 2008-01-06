@@ -34,7 +34,7 @@ Polipo 1.0.4 (unreleased):
   * Made Polipo slightly more aggressive when speaking to
     HTTP/1.0 servers (thanks to Fabian Keil for noticing that).
   * Fixed a crash that would happen when a client used
-  * Cache-Control: only-if-cached, and the object was not in cache.
+    Cache-Control: only-if-cached, and the object was not in cache.
     (Reported by F. Zappa, A. Patala and V. Ghosal.)
   * Fixed a descriptor leak when running under Windows.
   * Made Polipo optionally drop connections after servicing
