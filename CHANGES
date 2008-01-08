@@ -1,4 +1,4 @@
-Polipo 1.0.4 (unreleased):
+8 January 2008: Polipo 1.0.4:
 
   * Fixed the handling of tunnels with a parent proxy (thanks to
     Richard Šputa).
