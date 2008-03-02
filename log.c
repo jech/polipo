@@ -56,7 +56,7 @@ preinitLog()
 {
     CONFIG_VARIABLE_SETTABLE(logLevel, CONFIG_HEX, configIntSetter,
                              "Logging level (max = " STR(LOGGING_MAX) ").");
-    CONFIG_VARIABLE(logFile, CONFIG_ATOM, "Log file (stderr if empty and logSyslog is unset).");
+    CONFIG_VARIABLE(logFile, CONFIG_ATOM, "Log file (stderr if empty and logSyslog is unset, /var/log/polipo if empty and daemonise is true).");
 
 #ifdef HAVE_SYSLOG
     CONFIG_VARIABLE(logSyslog, CONFIG_BOOLEAN, "Log to syslog.");
