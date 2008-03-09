@@ -128,7 +128,7 @@ polipo.dvi: polipo.texi
 	texi2dvi polipo.texi
 
 polipo.man.html: polipo.man
-	groff -man -Thtml polipo.man > polipo.man.html
+	rman -f html polipo.man > polipo.man.html
 
 TAGS: $(SRCS)
 	etags $(SRCS)
