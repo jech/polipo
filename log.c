@@ -405,7 +405,7 @@ really_do_log_error_v(int type, int e, const char *f, va_list args)
 #ifdef HAVE_SYSLOG
         if(logSyslog) {
             char msg[256];
-            size_t n = 0;
+            int n = 0;
 
             n = snnvprintf(msg, n, 256, f, args);
             n = snnprintf(msg, n, 256, ": ");
