@@ -835,7 +835,7 @@ httpServerTrigger(HTTPServerPtr server)
             rc = httpWriteRequest(connection, request, -1);
             if(rc < 0) {
                 if(i == 0)
-                    httpServerAbortRequest(request, rc != -ECLIENTRESET, 503,
+                    httpServerAbortRequest(request, rc != -ECLIENTRESET, 502,
                                            internAtom("Couldn't "
                                                       "write request"));
                 break;
@@ -948,7 +948,7 @@ httpServerSideRequest(HTTPServerPtr server)
     rc = httpWriteRequest(connection, request, client->bodylen);
     if(rc < 0) {
         do_log(L_ERROR, "Couldn't write POST or PUT request.\n");
-        httpServerAbortRequest(request, rc != -ECLIENTRESET, 503, 
+        httpServerAbortRequest(request, rc != -ECLIENTRESET, 502,
                                internAtom("Couldn't write request"));
         return 0;
     }
@@ -1089,7 +1089,7 @@ httpServerSideHandlerCommon(int kind, int status,
         httpConnectionDestroyReqbuf(connection);
         if(status != -ECLIENTRESET)
             shutdown(connection->fd, 2);
-        abortObject(request->object, 503,
+        abortObject(request->object, 502,
                     internAtom("Couldn't write to server"));
         /* Let the read side handle the error */
         httpServerDoSide(connection);
