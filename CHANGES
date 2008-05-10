@@ -2,6 +2,8 @@ Polipo 1.0.5 (unreleased)
 
   * Fixed a bug that could cause incorrect logging to syslog (thanks
     to Sami Farin).
+  * Proper va_list handling for AMD64 and other RISC-like
+    architectures on non-GNU platforms.
 
 8 January 2008: Polipo 1.0.4:
 
