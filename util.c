@@ -268,21 +268,32 @@ vsprintf_a(const char *f, va_list args)
 {
     char *r;
     int rc;
+
     rc = vasprintf(&r, f, args);
     if(rc < 0)
         return NULL;
     return r;
     
 }
+
 #else
+
+/* This is not going to work if va_list is interesting.  But then, if you
+   have a non-trivial implementation of va_list, you should have va_copy. */
+#ifndef va_copy
+#define va_copy(a, b) do { a = b; } while(0)
+#endif
+
 char*
 vsprintf_a(const char *f, va_list args)
 {
     int n, size;
     char buf[64];
     char *string;
+    va_list args_copy;
 
-    n = vsnprintf(buf, 64, f, args);
+    va_copy(args_copy, args);
+    n = vsnprintf(buf, 64, f, args_copy);
     if(n >= 0 && n < 64) {
         return strdup_n(buf, n);
     }
@@ -295,7 +306,8 @@ vsprintf_a(const char *f, va_list args)
         string = malloc(size);
         if(!string)
             return NULL;
-        n = vsnprintf(string, size, f, args);
+        va_copy(args_copy, args);
+        n = vsnprintf(string, size, f, args_copy);
         if(n >= 0 && n < size)
             return string;
         else if(n >= size)
