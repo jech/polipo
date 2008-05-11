@@ -4,6 +4,7 @@ Polipo 1.0.5 (unreleased)
     to Sami Farin).
   * Proper va_list handling for AMD64 and other RISC-like
     architectures on non-GNU platforms.
+  * Implemented work-around for broken Content-Range headers.
 
 8 January 2008: Polipo 1.0.4:
 
