@@ -605,9 +605,11 @@ parseContentRange(const char *restrict buf, int i,
 
     i = skipWhitespace(buf, i);
     if(i < 0) return -1;
-    if(!token_compare(buf, i, i + 5, "bytes"))
-        return -1;
-    i += 5;
+    if(!token_compare(buf, i, i + 5, "bytes")) {
+        do_log(L_WARN, "Incorrect Content-Range header -- chugging along.\n");
+    } else {
+        i += 5;
+    }
     i = skipWhitespace(buf, i);
     if(buf[i] == '*') {
         from = 0;
