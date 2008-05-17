@@ -779,7 +779,7 @@ create_listener(char *address, int port,
         return NULL;
     }
         
-    rc = listen(fd, 32);
+    rc = listen(fd, 1024);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't listen");
         CLOSE(fd);
