@@ -38,6 +38,7 @@ DiskCacheEntryPtr diskEntries = NULL, diskEntriesLast = NULL;
 int numDiskEntries = 0;
 int diskCacheDirectoryPermissions = 0700;
 int diskCacheFilePermissions = 0600;
+int diskCacheNoAtime = 1;
 int diskCacheWriteoutOnClose = (32 * 1024);
 
 int maxDiskCacheEntrySize = -1;
@@ -96,6 +97,9 @@ preinitDiskcache()
     CONFIG_VARIABLE_SETTABLE(maxDiskCacheEntrySize, CONFIG_INT,
                              configIntSetter,
                              "Maximum size of objects cached on disk.");
+    CONFIG_VARIABLE_SETTABLE(diskCacheNoAtime, CONFIG_BOOLEAN,
+                             configIntSetter,
+                             "Try to set noatime on the disk cache.");
 }
 
 static int
@@ -459,6 +463,11 @@ createFile(const char *name, int path_start)
     char buf[1024];
     int n;
     int rc;
+#ifdef O_NOATIME
+    int noatime = diskCacheNoAtime ? O_NOATIME : 0;
+#else
+    const int noatime = 0;
+#endif
 
     if(name[path_start] == '/')
         path_start++;
@@ -468,7 +477,7 @@ createFile(const char *name, int path_start)
         return -1;
     }
 
-    fd = open(name, O_RDWR | O_CREAT | O_EXCL | O_BINARY,
+    fd = open(name, O_RDWR | O_CREAT | O_EXCL | O_BINARY | noatime,
 	      diskCacheFilePermissions);
     if(fd >= 0)
         return fd;
@@ -492,7 +501,7 @@ createFile(const char *name, int path_start)
         }
         n++;
     }
-    fd = open(name, O_RDWR | O_CREAT | O_EXCL | O_BINARY,
+    fd = open(name, O_RDWR | O_CREAT | O_EXCL | O_BINARY | noatime,
 	      diskCacheFilePermissions);
     if(fd < 0) {
         do_log_error(L_ERROR, errno, "Couldn't create file %s", name);
@@ -1143,6 +1152,11 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
     int rc;
     int local = (object->flags & OBJECT_LOCAL) != 0;
     int dirty = 0;
+#ifdef O_NOATIME
+    int noatime = diskCacheNoAtime ? O_NOATIME : 0;
+#else
+    const int noatime = 0;
+#endif
 
     if(local && (writeable || create))
         return NULL;
@@ -1198,10 +1212,10 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
         if(name_len < 0) return NULL;
         if(!negative) {
             isWriteable = 1;
-            fd = open(buf, O_RDWR | O_BINARY);
+            fd = open(buf, O_RDWR | O_BINARY | noatime);
             if(fd < 0 && !writeable && errno == EACCES) {
                 writeable = 0;
-                fd = open(buf, O_RDONLY | O_BINARY);
+                fd = open(buf, O_RDONLY | O_BINARY | noatime);
             }
         }
         if(fd >= 0) {
@@ -1262,7 +1276,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
         if(name_len < 0)
             return NULL;
         isWriteable = 0;
-        fd = open(buf, O_RDONLY | O_BINARY);
+        fd = open(buf, O_RDONLY | O_BINARY | noatime);
         if(fd >= 0) {
             if(validateEntry(object, fd, &body_offset, NULL) < 0) {
                 close(fd);
@@ -1812,6 +1826,11 @@ readDiskObject(char *filename, struct stat *sb)
     int buf_is_chunk, bufsize;
     int body_offset;
     struct stat ss;
+#ifdef O_NOATIME
+    int noatime = diskCacheNoAtime ? O_NOATIME : 0;
+#else
+    const int noatime = 0;
+#endif
 
     fd = -1;
 
@@ -1833,7 +1852,7 @@ readDiskObject(char *filename, struct stat *sb)
     }
 
     if(S_ISREG(sb->st_mode)) {
-        fd = open(filename, O_RDONLY | O_BINARY);
+        fd = open(filename, O_RDONLY | O_BINARY | noatime);
         if(fd < 0)
             goto fail;
     again:
