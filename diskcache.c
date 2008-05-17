@@ -463,11 +463,7 @@ createFile(const char *name, int path_start)
     char buf[1024];
     int n;
     int rc;
-#ifdef O_NOATIME
     int noatime = diskCacheNoAtime ? O_NOATIME : 0;
-#else
-    const int noatime = 0;
-#endif
 
     if(name[path_start] == '/')
         path_start++;
@@ -1152,11 +1148,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
     int rc;
     int local = (object->flags & OBJECT_LOCAL) != 0;
     int dirty = 0;
-#ifdef O_NOATIME
     int noatime = diskCacheNoAtime ? O_NOATIME : 0;
-#else
-    const int noatime = 0;
-#endif
 
     if(local && (writeable || create))
         return NULL;
@@ -1826,11 +1818,7 @@ readDiskObject(char *filename, struct stat *sb)
     int buf_is_chunk, bufsize;
     int body_offset;
     struct stat ss;
-#ifdef O_NOATIME
     int noatime = diskCacheNoAtime ? O_NOATIME : 0;
-#else
-    const int noatime = 0;
-#endif
 
     fd = -1;
 
