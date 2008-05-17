@@ -1610,6 +1610,7 @@ collision occurs, resources are written out to disk.
 @vindex diskCacheFilePermissions
 @vindex diskCacheDirectoryPermissions
 @vindex maxDiskCacheEntrySize
+@vindex diskCacheNoAtime
 
 The on-disk cache consists in a filesystem subtree rooted at
 a location defined by the variable @code{diskCacheRoot}, by default
@@ -1644,6 +1645,11 @@ they default to @samp{0700} and @samp{0600} respectively.
 The variable @code{maxDiskCacheEntrySize} specifies the maximum size,
 in bytes, of an instance that is stored in the on-disk cache.  If set
 to -1 (the default), all objects are stored in the on-disk cache,
+
+If @code{diskCacheNoAtime} is set (which is the default), then Polipo
+will not set the access time of disk cache entries if the underlying
+system supports that.  This may break utilities that use the access time
+to expire on-disk entries, so beware.
 
 @menu
 * Asynchronous writing::        Writing out data when idle.
