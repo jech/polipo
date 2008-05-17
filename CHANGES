@@ -5,6 +5,8 @@ Polipo 1.0.5 (unreleased)
   * Proper va_list handling for AMD64 and other RISC-like
     architectures on non-GNU platforms.
   * Implemented work-around for broken Content-Range headers.
+  * Use 1024 instead of 32 as the length of the listen queue.
+  * Implemented the ability to use O_NOATIME on the disk cache.
 
 8 January 2008: Polipo 1.0.4:
 
