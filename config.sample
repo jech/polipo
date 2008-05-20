@@ -41,6 +41,10 @@
 # socksParentProxy = "localhost:9050"
 # socksProxyType = socks5
 
+# Uncomment this if you want to scrub private information from the log:
+
+# scrubLogs = true
+
 
 ### Memory
 ### ******
