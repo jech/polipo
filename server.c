@@ -1364,10 +1364,8 @@ httpServerReply(HTTPConnectionPtr connection, int immediate)
         return;
     }
 
-    do_log(D_SERVER_CONN, "R: ");
-    do_log_n(D_SERVER_CONN, connection->request->object->key,
-             connection->request->object->key_size);
-    do_log(D_SERVER_CONN, " (%d)\n", connection->request->method);
+    do_log(D_SERVER_CONN, "R: %s (%d)\n",
+           connection->request->object->key, connection->request->method);
 
     if(connection->len == 0)
         httpConnectionDestroyBuf(connection);
