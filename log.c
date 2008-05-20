@@ -30,6 +30,8 @@ static int logLevel = LOGGING_DEFAULT;
 static int logSyslog = 0;
 static AtomPtr logFile = NULL;
 static FILE *logF;
+static int logFilePermissions = 0640;
+
 #ifdef HAVE_SYSLOG
 static AtomPtr logFacility = NULL;
 static int facility;
@@ -57,6 +59,8 @@ preinitLog()
     CONFIG_VARIABLE_SETTABLE(logLevel, CONFIG_HEX, configIntSetter,
                              "Logging level (max = " STR(LOGGING_MAX) ").");
     CONFIG_VARIABLE(logFile, CONFIG_ATOM, "Log file (stderr if empty and logSyslog is unset, /var/log/polipo if empty and daemonise is true).");
+    CONFIG_VARIABLE(logFilePermissions, CONFIG_OCTAL,
+                    "Access rights of the logFile.");
 
 #ifdef HAVE_SYSLOG
     CONFIG_VARIABLE(logSyslog, CONFIG_BOOLEAN, "Log to syslog.");
@@ -72,6 +76,29 @@ loggingToStderr(void) {
     return(logF == stderr);
 }
 
+static FILE *
+openLogFile(void)
+{
+    int fd;
+    FILE *f;
+
+    fd = open(logFile->string, O_WRONLY | O_CREAT | O_APPEND,
+              logFilePermissions);
+    if(fd < 0)
+        return NULL;
+
+    f = fdopen(fd, "a");
+    if(f == NULL) {
+        int saved_errno = errno;
+        close(fd);
+        errno = saved_errno;
+        return NULL;
+    }
+
+    setvbuf(f, NULL, _IOLBF, 0);
+    return f;
+}
+
 void
 initLog(void)
 {
@@ -80,13 +107,12 @@ initLog(void)
 
     if(logFile != NULL && logFile->length > 0) {
         FILE *f;
-        f = fopen(logFile->string, "a");
+        f = openLogFile();
         if(f == NULL) {
             do_log_error(L_ERROR, errno, "Couldn't open log file %s",
                          logFile->string);
             exit(1);
         }
-        setvbuf(f, NULL, _IOLBF, 0);
         logF = f;
     }
 
@@ -340,20 +366,18 @@ reopenLog()
 {
     if(logFile) {
         FILE *f;
-        f = fopen(logFile->string, "a");
+        f = openLogFile();
         if(f == NULL) {
             do_log_error(L_ERROR, errno, "Couldn't reopen log file %s",
                          logFile->string);
             exit(1);
         }
-        setvbuf(f, NULL, _IOLBF, 0);
         fclose(logF);
         logF = f;
     }
 
-    if(logSyslog) {
+    if(logSyslog)
         initSyslog();
-    }
 }
 
 void
