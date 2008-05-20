@@ -7,6 +7,7 @@ Polipo 1.0.5 (unreleased)
   * Implemented work-around for broken Content-Range headers.
   * Use 1024 instead of 32 as the length of the listen queue.
   * Implemented the ability to use O_NOATIME on the disk cache.
+  * Implemented the ability to control the permissions set on the log file.
 
 8 January 2008: Polipo 1.0.4:
 
