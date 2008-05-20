@@ -502,7 +502,7 @@ httpServerConnection(HTTPServerPtr server)
     connection->request_last = NULL;
 
     do_log(D_SERVER_CONN, "C... %s:%d.\n",
-           connection->server->name, connection->server->port);
+           scrub(connection->server->name), connection->server->port);
     httpSetTimeout(connection, serverTimeout);
     if(socksParentProxy) {
         connection->connecting = CONNECTING_SOCKS;
@@ -534,7 +534,7 @@ httpServerConnectionDnsHandler(int status, GethostbynameRequestPtr request)
                               pstrerror(-status));
         do_log(L_ERROR, "Host %s lookup failed: %s (%d).\n", 
                request->name ?
-               request->name->string : "(unknown)",
+               scrub(request->name->string) : "(unknown)",
                request->error_message ?
                request->error_message->string :
                pstrerror(-status), -status);
@@ -618,7 +618,8 @@ httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
                             connection->server->port);
         if(status != -ECLIENTRESET)
             do_log_error(L_ERROR, -status, "Connect to %s:%d failed",
-                         connection->server->name, connection->server->port);
+                         scrub(connection->server->name),
+                         connection->server->port);
         connection->connecting = 0;
         if(connection->server->request)
             httpServerAbortRequest(connection->server->request,
@@ -629,7 +630,7 @@ httpServerConnectionHandlerCommon(int status, HTTPConnectionPtr connection)
     }
 
     do_log(D_SERVER_CONN, "C    %s:%d.\n",
-           connection->server->name, connection->server->port);
+           scrub(connection->server->name), connection->server->port);
 
     connection->connecting = 0;
     /* serverTrigger will take care of inserting any timeouts */
@@ -647,7 +648,7 @@ httpServerIdleHandler(int a, FdEventHandlerPtr event)
     assert(!connection->request);
 
     do_log(D_SERVER_CONN, "Idle connection to %s:%d died.\n", 
-           connection->server->name, connection->server->port);
+           scrub(connection->server->name), connection->server->port);
 
     for(i = 0; i < server->maxslots; i++) {
         if(connection == server->connection[i]) {
@@ -1025,7 +1026,7 @@ httpServerDoSide(HTTPConnectionPtr connection)
         if(request->flags & REQUEST_WAIT_CONTINUE) {
             ConditionHandlerPtr chandler;
             do_log(D_SERVER_CONN, "W... %s:%d.\n",
-                   connection->server->name, connection->server->port);
+                   scrub(connection->server->name), connection->server->port);
             chandler = 
                 conditionWait(&request->object->condition,
                               httpServerContinueConditionHandler,
@@ -1225,7 +1226,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
     }
 
     do_log(D_SERVER_CONN, "Done with server %s:%d connection (%d)\n",
-           connection->server->name, connection->server->port, s);
+           scrub(connection->server->name), connection->server->port, s);
 
     assert(offset <= connection->len);
 
@@ -1236,7 +1237,8 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
                 do_log(L_WARN, 
                        "Closing connection to %s:%d: "
                        "%d stray bytes of data.\n",
-                       server->name, server->port, connection->len - offset);
+                       scrub(server->name), server->port,
+                       connection->len - offset);
                 s = 1;
             } else {
                 memmove(connection->buf, connection->buf + offset,
@@ -1268,7 +1270,7 @@ httpServerFinish(HTTPConnectionPtr connection, int s, int offset)
         if(connection->request) {
             HTTPRequestPtr req;
             do_log(D_SERVER_CONN, "Restarting pipeline to %s:%d.\n",
-                   server->name, server->port);
+                   scrub(server->name), server->port);
             if(server->pipeline == 2)
                 server->pipeline -= 20;
             else
@@ -1359,13 +1361,14 @@ httpServerReply(HTTPConnectionPtr connection, int immediate)
 
     if(connection->request->request == NULL) {
         do_log(L_WARN, "Aborting pipeline on %s:%d.\n",
-               connection->server->name, connection->server->port);
+               scrub(connection->server->name), connection->server->port);
         httpServerFinish(connection, 1, 0);
         return;
     }
 
     do_log(D_SERVER_CONN, "R: %s (%d)\n",
-           connection->request->object->key, connection->request->method);
+           scrub(connection->request->object->key),
+           connection->request->method);
 
     if(connection->len == 0)
         httpConnectionDestroyBuf(connection);
@@ -1400,7 +1403,7 @@ httpServerUnpipeline(HTTPRequestPtr request)
         HTTPRequestPtr req;
         do_log(L_WARN,
                "Restarting pipeline to %s:%d.\n", 
-               connection->server->name, connection->server->port);
+               scrub(connection->server->name), connection->server->port);
         req = request->next;
         while(req) {
             req->connection = NULL;
@@ -1428,7 +1431,7 @@ httpServerRestart(HTTPConnectionPtr connection)
         if(request->next)
             do_log(L_WARN,
                    "Restarting pipeline to %s:%d.\n", 
-                   connection->server->name, connection->server->port);
+                   scrub(connection->server->name), connection->server->port);
         req = request;
         while(req) {
             req->connection = NULL;
@@ -1474,7 +1477,7 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     rc = parseUrl(object->key, object->key_size, &x, &y, &port, &z);
     
     if(rc < 0 || x < 0 || y < 0 || y - x > 131) {
-        do_log(L_ERROR, "Couldn't parse URL %s\n", object->key);
+        do_log(L_ERROR, "Couldn't parse URL %s\n", scrub(object->key));
         abortObject(object, 400, internAtom("Couldn't parse URL"));
         notifyObject(object);
         return 1;
@@ -2023,7 +2026,7 @@ httpServerHandlerHeaders(int eof,
         (cacheIsShared && cache_control.s_maxage == 0) ||
         (expires >= 0 && expires <= object->age))) {
         do_log(L_UNCACHEABLE, "Uncacheable object %s (%d)\n",
-               object->key, cache_control.flags);
+               scrub(object->key), cache_control.flags);
     }
 
     if(request->time0.tv_sec != null_time.tv_sec)
@@ -2056,7 +2059,7 @@ httpServerHandlerHeaders(int eof,
             object->last_modified != last_modified)) {
             do_log(L_ERROR, "Inconsistent \"%s\" reply for %s\n",
                    code == 304 ? "not changed":"precondition failed",
-                   object->key);
+                   scrub(object->key));
             object->flags |= OBJECT_DYNAMIC;
             supersede = 1;
         }
@@ -2123,7 +2126,7 @@ httpServerHandlerHeaders(int eof,
     if(supersede) {
         do_log(L_SUPERSEDED,
                "Superseding object %s (%d %d %d %s -> %d %d %d %s)\n",
-               old_object->key,
+               scrub(old_object->key),
                object->code, object->length, (int)object->last_modified,
                object->etag ? object->etag : "(none)",
                code, full_len, (int)last_modified,

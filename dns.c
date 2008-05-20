@@ -817,7 +817,7 @@ dnsTimeoutHandler(TimeEventHandlerPtr event)
     /* People are reporting that this does happen.  And I have no idea why. */
     if(!queryInFlight(query)) {
         do_log(L_ERROR, "BUG: timing out martian query (%s, flags: 0x%x).\n",
-               query->name->string, (unsigned)object->flags);
+               scrub(query->name->string), (unsigned)object->flags);
         return 1;
     }
 
@@ -1183,7 +1183,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
     } else if(af == 0) {
         if(query->inet4 || query->inet6) {
             do_log(L_WARN, "Host %s has both %s and CNAME -- "
-                   "ignoring CNAME.\n", query->name->string,
+                   "ignoring CNAME.\n", scrub(query->name->string),
                    query->inet4 ? "A" : "AAAA");
             releaseAtom(value);
             value = internAtom("");
@@ -1254,7 +1254,8 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
         object->age = current_time.tv_sec;
         object->flags &= ~(OBJECT_INITIAL | OBJECT_INPROGRESS);
     } else {
-        do_log(L_WARN, "DNS object ex nihilo for %s.\n", query->name->string);
+        do_log(L_WARN, "DNS object ex nihilo for %s.\n",
+               scrub(query->name->string));
     }
     
     removeQuery(query);
@@ -1589,7 +1590,8 @@ do { \
                    (type == 28 && rdlength != 16)) {
                     do_log(L_ERROR, 
                            "DNS: %s: unexpected length %d of %s record.\n",
-                           name->string, rdlength, type == 1 ? "A" : "AAAA");
+                           scrub(name->string),
+                           rdlength, type == 1 ? "A" : "AAAA");
                     error = EDNS_INVALID;
                     if(rdlength <= 0 || rdlength >= 32)
                         goto fail;
@@ -1597,7 +1599,7 @@ do { \
                 }
                 if(af == 0) {
                     do_log(L_WARN, "DNS: %s: host has both A and CNAME -- "
-                           "ignoring CNAME.\n", name->string);
+                           "ignoring CNAME.\n", scrub(name->string));
                     addr_index = 0;
                     af = -1;
                 }
@@ -1658,7 +1660,8 @@ do { \
                        memcmp(addresses + 1, tmp, kk) != 0) {
                         do_log(L_WARN, "DNS: "
                                "%s: host has multiple CNAMEs -- "
-                               "ignoring subsequent.\n", name->string);
+                               "ignoring subsequent.\n",
+                               scrub(name->string));
 
                     }
                     goto cont;

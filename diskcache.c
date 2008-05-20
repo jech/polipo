@@ -952,7 +952,7 @@ validateEntry(ObjectPtr object, int fd,
 
     if(!location || strlen(location) != object->key_size ||
        memcmp(location, object->key, object->key_size) != 0) {
-        do_log(L_ERROR, "Inconsistent cache file for %s.\n", location);
+        do_log(L_ERROR, "Inconsistent cache file for %s.\n", scrub(location));
         goto invalid;
     }
 
@@ -960,7 +960,7 @@ validateEntry(ObjectPtr object, int fd,
         polipo_age = date;
 
     if(polipo_age < 0) {
-        do_log(L_ERROR, "Undated disk entry for %s.\n", location);
+        do_log(L_ERROR, "Undated disk entry for %s.\n", scrub(location));
         goto invalid;
     }
 
@@ -1221,7 +1221,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
                 if(rc < 0 && errno != ENOENT) {
                     do_log_error(L_WARN,  errno,
                                  "Couldn't unlink stale disk entry %s", 
-                                 buf);
+                                 scrub(buf));
                     /* But continue -- it's okay to have stale entries. */
                 }
             }
@@ -1248,7 +1248,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
                     if(rc < 0 && errno != ENOENT)
                         do_log_error(L_ERROR, errno,
                                      "Couldn't unlink truncated entry %s", 
-                                     buf);
+                                     scrub(buf));
                     close(fd);
                     return NULL;
                 }
@@ -1436,7 +1436,7 @@ destroyDiskEntry(ObjectPtr object, int d)
             urc = unlink(entry->filename);
             if(urc < 0)
                 do_log_error(L_WARN, errno, 
-                             "Couldn't unlink %s", entry->filename);
+                             "Couldn't unlink %s", scrub(entry->filename));
         }
     } else {
         if(entry && entry->metadataDirty)
@@ -1825,7 +1825,7 @@ readDiskObject(char *filename, struct stat *sb)
     if(sb == NULL) {
         rc = stat(filename, &ss);
         if(rc < 0) {
-            do_log_error(L_WARN, errno, "Couldn't stat %s", filename);
+            do_log_error(L_WARN, errno, "Couldn't stat %s", scrub(filename));
             return NULL;
         }
         sb = &ss;
@@ -2378,11 +2378,12 @@ expireFile(char *filename, struct stat *sb,
 
     dobject = readDiskObject(filename, sb);
     if(!dobject) {
-        do_log(L_ERROR, "Incorrect disk entry %s -- removing.\n", filename);
+        do_log(L_ERROR, "Incorrect disk entry %s -- removing.\n",
+               scrub(filename));
         rc = unlink(filename);
         if(rc < 0) {
             do_log_error(L_ERROR, errno,
-                         "Couldn't unlink %s", filename);
+                         "Couldn't unlink %s", scrub(filename));
             return ret;
         } else {
             (*unlinked)++;
@@ -2397,12 +2398,13 @@ expireFile(char *filename, struct stat *sb,
     if(t > current_time.tv_sec)
         do_log(L_WARN, 
                "Disk entry %s (%s) has access time in the future.\n",
-               dobject->location, dobject->filename);
+               scrub(dobject->location), scrub(dobject->filename));
     
     if(t < current_time.tv_sec - diskCacheUnlinkTime) {
         rc = unlink(dobject->filename);
         if(rc < 0) {
-            do_log_error(L_ERROR, errno, "Couldn't unlink %s", filename);
+            do_log_error(L_ERROR, errno, "Couldn't unlink %s",
+                         scrub(filename));
         } else {
             (*unlinked)++;
             ret = 0;
@@ -2415,7 +2417,8 @@ expireFile(char *filename, struct stat *sb,
         fd = open(dobject->filename, O_RDONLY | O_BINARY, 0);
         rc = unlink(dobject->filename);
         if(rc < 0) {
-            do_log_error(L_ERROR, errno, "Couldn't unlink %s", filename);
+            do_log_error(L_ERROR, errno, "Couldn't unlink %s",
+                         scrub(filename));
             close(fd);
             fd = -1;
         } else {
@@ -2476,11 +2479,11 @@ expireDiskObjects()
                 else if(errno != ENOTEMPTY && errno != EEXIST)
                     do_log_error(L_ERROR, errno,
                                  "Couldn't remove directory %s",
-                                 fe->fts_accpath);
+                                 scrub(fe->fts_accpath));
                 continue;
             } else if(fe->fts_info == FTS_NS) {
                 do_log_error(L_ERROR, fe->fts_errno, "Couldn't stat file %s",
-                             fe->fts_accpath);
+                             scrub(fe->fts_accpath));
                 continue;
             } else if(fe->fts_info == FTS_ERR) {
                 do_log_error(L_ERROR, fe->fts_errno,
