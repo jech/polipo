@@ -576,6 +576,7 @@ is started, Polipo will refuse to run.
 @vindex logFilePermissions
 @vindex logSyslog
 @vindex logFacility
+@vindex scrubLogs
 
 When it encounters a difficulty, Polipo will print a friendly message.
 The location where these messages go is controlled by the
@@ -599,8 +600,10 @@ The amount of logging is controlled by the variable @code{logLevel}.
 Please see the file @samp{log.h} in the Polipo sources for the
 possible values of @code{logLevel}.
 
-(Note that if you are using a shared cache, or logging to syslog,
-an overly low @code{logLevel} could be a privacy violation.)
+Keeping extensive logs on your users browsing habits is probably
+a serere violation of their privacy.  If the variable @code{scrubLogs}
+is set, then Polipo will scrub most, if not all, private information
+from its logs.
 
 @node Browser configuration, Stopping, Polipo Invocation, Running
 @section Configuring your browser
