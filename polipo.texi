@@ -573,6 +573,7 @@ is started, Polipo will refuse to run.
 @cindex logging
 @vindex logLevel
 @vindex logFile
+@vindex logFilePermissions
 @vindex logSyslog
 @vindex logFacility
 
@@ -586,10 +587,13 @@ is @code{false} and @code{logFile} is empty, messages go to the error
 output of the process (normally the terminal).
 
 The variable @code{logFile} defaults to empty if @code{daemonise} is
-false, and to @samp{/var/log/polipo} otherwise.
+false, and to @samp{/var/log/polipo} otherwise.  The variable
+@code{logSyslog} defaults to @code{false}, and @code{logFacility}
+defaults to @samp{user}.
 
-The variable @code{logSyslog} defaults to @code{false}, and
-@code{logFacility} defaults to @samp{user}.
+If @code{logFile} is set, then the variable @code{logFilePermissions}
+controls the Unix permissions with which the log file will be created if
+it doesn't exist.  It defaults to 0640.
 
 The amount of logging is controlled by the variable @code{logLevel}.
 Please see the file @samp{log.h} in the Polipo sources for the
