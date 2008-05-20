@@ -50,7 +50,7 @@ typedef struct _Object {
     unsigned char type;
     RequestFunction request;
     void *request_closure;
-    void *key;
+    char *key;
     unsigned short key_size;
     unsigned short flags;
     unsigned short code;

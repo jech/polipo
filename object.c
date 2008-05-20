@@ -197,12 +197,15 @@ makeObject(int type, const void *key, int key_size, int public, int fromdisk,
     object->type = type;
     object->request = request;
     object->request_closure = request_closure;
-    object->key = malloc(key_size);
+    object->key = malloc(key_size + 1);
     if(object->key == NULL) {
         free(object);
         return NULL;
     }
     memcpy(object->key, key, key_size);
+    /* In order to make it more convenient to use keys as strings,
+       they are NUL-terminated. */
+    object->key[key_size] = '\0';
     object->key_size = key_size;
     object->flags = (public?OBJECT_PUBLIC:0) | OBJECT_INITIAL;
     if(public) {
