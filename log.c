@@ -31,6 +31,7 @@ static int logSyslog = 0;
 static AtomPtr logFile = NULL;
 static FILE *logF;
 static int logFilePermissions = 0640;
+int scrubLogs = 0;
 
 #ifdef HAVE_SYSLOG
 static AtomPtr logFacility = NULL;
@@ -61,6 +62,8 @@ preinitLog()
     CONFIG_VARIABLE(logFile, CONFIG_ATOM, "Log file (stderr if empty and logSyslog is unset, /var/log/polipo if empty and daemonise is true).");
     CONFIG_VARIABLE(logFilePermissions, CONFIG_OCTAL,
                     "Access rights of the logFile.");
+    CONFIG_VARIABLE_SETTABLE(scrubLogs, CONFIG_BOOLEAN, configIntSetter,
+                             "If true, don't include URLs in logs.");
 
 #ifdef HAVE_SYSLOG
     CONFIG_VARIABLE(logSyslog, CONFIG_BOOLEAN, "Log to syslog.");
@@ -461,4 +464,13 @@ really_do_log_n(int type, const char *s, int n)
             accumulateSyslogN(type, s, n);
 #endif
     }
+}
+
+const char *
+scrub(const char *message)
+{
+    if(scrubLogs)
+        return "(scrubbed)";
+    else
+        return message;
 }

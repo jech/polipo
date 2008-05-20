@@ -46,6 +46,8 @@ THE SOFTWARE.
 #define LOGGING_DEFAULT (L_ERROR | L_WARN | L_INFO)
 #define LOGGING_MAX 0xFF
 
+extern int scrubLogs;
+
 void preinitLog(void);
 void initLog(void);
 void reopenLog(void);
@@ -61,6 +63,8 @@ void really_do_log_error(int type, int e, const char *f, ...)
     ATTRIBUTE ((format (printf, 3, 4)));
 void really_do_log_error_v(int type, int e, const char *f, va_list args)
     ATTRIBUTE ((format (printf, 3, 0)));
+const char *scrub(const char *message);
+
 
 #ifdef __GNUC__
 #define DO_BACKTRACE()                  \
