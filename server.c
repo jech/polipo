@@ -1476,9 +1476,7 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     rc = parseUrl(object->key, object->key_size, &x, &y, &port, &z);
     
     if(rc < 0 || x < 0 || y < 0 || y - x > 131) {
-        do_log(L_ERROR, "Couldn't parse URL: ");
-        do_log_n(L_ERROR, object->key, object->key_size);
-        do_log(L_ERROR, "\n");
+        do_log(L_ERROR, "Couldn't parse URL %s\n", object->key);
         abortObject(object, 400, internAtom("Couldn't parse URL"));
         notifyObject(object);
         return 1;
@@ -2026,9 +2024,8 @@ httpServerHandlerHeaders(int eof,
         cache_control.max_age == 0 ||
         (cacheIsShared && cache_control.s_maxage == 0) ||
         (expires >= 0 && expires <= object->age))) {
-        do_log(L_UNCACHEABLE, "Uncacheable object ");
-        do_log_n(L_UNCACHEABLE, object->key, object->key_size);
-        do_log(L_UNCACHEABLE, " (%d)\n", cache_control.flags);
+        do_log(L_UNCACHEABLE, "Uncacheable object %s (%d)\n",
+               object->key, cache_control.flags);
     }
 
     if(request->time0.tv_sec != null_time.tv_sec)
@@ -2059,10 +2056,9 @@ httpServerHandlerHeaders(int eof,
         if((object->etag && etag && strcmp(object->etag, etag) != 0) ||
            (object->last_modified >= 0 && last_modified >= 0 &&
             object->last_modified != last_modified)) {
-            do_log(L_ERROR, "Inconsistent \"%s\" reply for ",
-                   code == 304 ? "not changed":"precondition failed");
-            do_log_n(L_ERROR, object->key, object->key_size);
-            do_log(L_ERROR, "\n");
+            do_log(L_ERROR, "Inconsistent \"%s\" reply for %s\n",
+                   code == 304 ? "not changed":"precondition failed",
+                   object->key);
             object->flags |= OBJECT_DYNAMIC;
             supersede = 1;
         }
@@ -2127,13 +2123,13 @@ httpServerHandlerHeaders(int eof,
         supersede = 0;
 
     if(supersede) {
-        do_log(L_SUPERSEDED, "Superseding object: ");
-        do_log_n(L_SUPERSEDED, old_object->key, old_object->key_size);
-        do_log(L_SUPERSEDED, " (%d %d %d %s -> %d %d %d %s)\n",
+        do_log(L_SUPERSEDED,
+               "Superseding object %s (%d %d %d %s -> %d %d %d %s)\n",
+               old_object->key,
                object->code, object->length, (int)object->last_modified,
-               object->etag?object->etag: "(none)",
+               object->etag ? object->etag : "(none)",
                code, full_len, (int)last_modified,
-               etag?etag:"(none)");
+               etag ? etag : "(none)");
         privatiseObject(old_object, 0);
         new_object = makeObject(object->type, object->key, 
                                 object->key_size, 1, 0, 
