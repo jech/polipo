@@ -568,8 +568,7 @@ static int
 writeHeaders(int fd, int *body_offset_return,
              ObjectPtr object, char *chunk, int chunk_len)
 {
-    int n;
-    int rc;
+    int n, rc, error = -1;
     int body_offset = *body_offset_return;
     char *buf = NULL;
     int buf_is_chunk = 0;
@@ -635,8 +634,10 @@ writeHeaders(int fd, int *body_offset_return,
 
     if(body_offset < 0)
         body_offset = n;
-    if(n > body_offset)
+    if(n > body_offset) {
+        error = -2;
         goto fail;
+    }
 
     if(n < body_offset)
         memset(buf + n, 0, body_offset - n);
@@ -695,7 +696,7 @@ writeHeaders(int fd, int *body_offset_return,
         dispose_chunk(buf);
     else
         free(buf);
-    return -1;
+    return error;
 }
 
 typedef struct _MimeEntry {
