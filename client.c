@@ -361,7 +361,7 @@ httpClientHandler(int status,
     HTTPConnectionPtr connection = request->data;
     int i, body;
     int bufsize = 
-        (connection->flags & CONN_BIGREQBUF) ? connection->reqlen : CHUNK_SIZE;
+        (connection->flags & CONN_BIGREQBUF) ? bigBufferSize : CHUNK_SIZE;
 
     assert(connection->flags & CONN_READER);
 
