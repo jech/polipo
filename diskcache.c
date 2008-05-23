@@ -1380,15 +1380,20 @@ rewriteEntry(ObjectPtr object)
     while(1) {
         CHECK_ENTRY(entry);
         n = read(fd, buf, bufsize);
+        if(n < 0 && errno == EINTR)
+            continue;
         if(n <= 0)
             goto done;
         rc = entrySeek(entry, entry->body_offset + offset);
         if(rc < 0)
             goto done;
+    write_again:
         rc = write(entry->fd, buf, n);
         if(rc >= 0) {
             entry->offset += rc;
             entry->size += rc;
+        } else if(errno == EINTR) {
+            goto write_again;
         }
         if(rc < n)
             goto done;
