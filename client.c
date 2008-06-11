@@ -963,10 +963,24 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     if(connection->reqte != TE_IDENTITY)
         goto fail;
 
-    if(connection->bodylen < 0)
-        goto fail;
-
-    if(connection->bodylen < connection->reqlen - connection->reqbegin) {
+    if(connection->bodylen < 0) {
+        /* We don't know the body length, either because the request
+           was unparseable, or because it was something that doesn't
+           carry a Content-Length (e.g. CONNECT).  We want to do the
+           right thing in the latter case, but don't care much about
+           the former.  So we simply shut the connection down as soon
+           as we see any data coming after the headers. */
+        /* reqlen = -2 is used by DiscardHandler to signal that we
+           should shut down. */
+        if(connection->bodylen == -2)
+            goto fail;
+        if(connection->reqlen > connection->reqbegin)
+            goto fail;
+        connection->reqbegin = 0;
+        connection->reqlen = 0;
+        httpConnectionDestroyReqbuf(connection);
+        /* httpClientDiscardHander will call us back. */
+    } else if(connection->bodylen + connection->reqbegin < connection->reqlen) {
         connection->reqbegin += connection->bodylen;
         connection->bodylen = 0;
     } else {
@@ -1062,7 +1076,7 @@ httpClientDiscardHandler(int status,
     if(status) {
         if(status < 0 && status != -EPIPE && status != -ECONNRESET)
             do_log_error(L_ERROR, -status, "Couldn't read from client");
-        connection->bodylen = -1;
+        connection->bodylen = -2;
         return httpClientDiscardBody(connection);
     }
 
