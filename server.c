@@ -1745,8 +1745,7 @@ httpServerHandler(int status,
     return 1;
 
  fail:
-    dispose_chunk(connection->reqbuf);
-    connection->reqbuf = NULL;
+    httpConnectionDestroyReqbuf(connection);
     shutdown(connection->fd, 2);
     pokeFdEvent(connection->fd, -EDOSHUTDOWN, POLLIN);
     httpSetTimeout(connection, 60);
