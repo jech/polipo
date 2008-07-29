@@ -114,10 +114,6 @@ THE SOFTWARE.
 #define HAVE_ASPRINTF
 #endif
 
-#ifndef O_NOATIME
-#define O_NOATIME 0
-#endif
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
