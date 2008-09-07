@@ -237,30 +237,47 @@ ffs_name(type i) \
     return n; \
 }
 
-#ifndef LONG_LONG_ARENA_BITMAPS
-#ifndef LONG_ARENA_BITMAPS
+#if defined(DEFAULT_ARENA_BITMAPS) + defined(LONG_ARENA_BITMAPS) + defined(LONG_LONG_ARENA_BITMAPS) > 1
+#error "Multiple sizes of arenas defined"
+#endif
+
+#if defined(DEFAULT_ARENA_BITMAPS) + defined(LONG_ARENA_BITMAPS) + defined(LONG_LONG_ARENA_BITMAPS) == 0
+#ifdef HAVE_FFSL
+/* This gives us 32-bit arena bitmaps on LP32, and 64-bit ones on LP64 */
+#define LONG_ARENA_BITMAPS
+#else
+#define DEFAULT_ARENA_BITMAPS
+#endif
+#endif
+
+#if defined(DEFAULT_ARENA_BITMAPS)
+
 #ifndef HAVE_FFS
 DEFINE_FFS(int, ffs)
 #endif
 typedef unsigned int ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffs(bitmap))
 
-#else
+#elif defined(LONG_ARENA_BITMAPS)
 
 #ifndef HAVE_FFSL
 DEFINE_FFS(long, ffsl)
 #endif
 typedef unsigned long ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffsl(bitmap))
-#endif
 
-#else
+#elif defined(LONG_LONG_ARENA_BITMAPS)
 
 #ifndef HAVE_FFSLL
 DEFINE_FFS(long long, ffsll)
 #endif
 typedef unsigned long long ChunkBitmap;
 #define BITMAP_FFS(bitmap) (ffsll(bitmap))
+
+#else
+
+#error "You lose"
+
 #endif
 
 #define ARENA_CHUNKS ((int)sizeof(ChunkBitmap) * 8)
