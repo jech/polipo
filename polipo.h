@@ -161,7 +161,7 @@ THE SOFTWARE.
 
 #endif
 
-#if defined(i386) || defined(__mc68020__)
+#if defined(i386) || defined(__mc68020__) || defined(__x86_64__)
 #define UNALIGNED_ACCESS
 #endif
 
