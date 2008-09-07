@@ -441,7 +441,7 @@ mktime_gmt(struct tm *tm)
     char *tz;
 
     tz = getenv("TZ");
-    setenv("TZ", "", 1);
+    setenv("TZ", "GMT", 1);
     tzset();
     t = mktime(tm);
     if(tz)
@@ -460,7 +460,7 @@ mktime_gmt(struct tm *tm)
     static char *old_tz = NULL;
 
     tz = getenv("TZ");
-    putenv("TZ=");
+    putenv("TZ=GMT");
     tzset();
     t = mktime(tm);
     if(old_tz)
