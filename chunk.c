@@ -383,7 +383,7 @@ maybe_get_chunk()
             return NULL;
         currentArena = arena;
     }
-    i = ffs(arena->bitmap) - 1;
+    i = BITMAP_FFS(arena->bitmap) - 1;
     arena->bitmap &= ~BITMAP_BIT(i);
     used_chunks++;
     return arena->chunks + CHUNK_SIZE * i;
