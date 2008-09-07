@@ -41,7 +41,7 @@ preinitChunks()
 static void
 initChunksCommon()
 {
-#define ROUND_CHUNKS(a) a = (((a) + CHUNK_SIZE - 1) / CHUNK_SIZE) * CHUNK_SIZE;
+#define ROUND_CHUNKS(a) a = (((unsigned long)(a) + CHUNK_SIZE - 1) / CHUNK_SIZE) * CHUNK_SIZE;
     int q;
 
     if(CHUNK_SIZE != 1 << log2_ceil(CHUNK_SIZE)) {
@@ -280,7 +280,7 @@ typedef unsigned long long ChunkBitmap;
 
 #endif
 
-#define ARENA_CHUNKS ((int)sizeof(ChunkBitmap) * 8)
+#define ARENA_CHUNKS ((unsigned)sizeof(ChunkBitmap) * 8)
 #define EMPTY_BITMAP (~(ChunkBitmap)0)
 #define BITMAP_BIT(i) (((ChunkBitmap)1) << (i))
 

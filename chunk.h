@@ -37,7 +37,7 @@ THE SOFTWARE.
 #endif
 #endif
 
-#define CHUNKS(bytes) ((bytes) / CHUNK_SIZE)
+#define CHUNKS(bytes) ((unsigned long)(bytes) / CHUNK_SIZE)
 
 extern int chunkLowMark, chunkHighMark, chunkCriticalMark;
 extern int used_chunks;
