@@ -1830,9 +1830,9 @@ debugging.
 
 There is one assumption made about @code{CHUNK_SIZE}:
 @code{CHUNK_SIZE} multiplied by the number of bits in an
-@code{unsigned int} (actually in a @code{ChunkBitmap} --- see
+@code{unsigned long} (actually in a @code{ChunkBitmap} --- see
 @file{chunk.c}) must be a multiple of the page size, which is 4096 on
-most systems (8192 on Alpha, 65536 on Windows --- go figure).
+most systems (8192 on Alpha, and apparently 65536 on Windows).
 
 As all network I/O will be performed in units of one to two chunks,
 @code{CHUNK_SIZE} should be at least equal to your network interface's
