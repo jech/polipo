@@ -292,13 +292,13 @@ typedef struct _ChunkArena {
 
 static ChunkArenaPtr chunkArenas, currentArena;
 static int numArenas;
-#define CHUNK_IN_ARENA(chunk, arena) \
-  ((arena)->chunks && \
-   (char*)(chunk) >= (arena)->chunks && \
-   (char*)(chunk) < (arena)->chunks + (ARENA_CHUNKS * CHUNK_SIZE))
+#define CHUNK_IN_ARENA(chunk, arena)                                    \
+    ((arena)->chunks &&                                                 \
+     (char*)(chunk) >= (arena)->chunks &&                               \
+     (char*)(chunk) < (arena)->chunks + (ARENA_CHUNKS * CHUNK_SIZE))
 
-#define CHUNK_ARENA_INDEX(chunk, arena) \
-  (((char*)(chunk) - (arena)->chunks) / CHUNK_SIZE)
+#define CHUNK_ARENA_INDEX(chunk, arena)                                 \
+    ((unsigned long)(((char*)(chunk) - (arena)->chunks)) / CHUNK_SIZE)
 
 void
 initChunks(void)
