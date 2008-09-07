@@ -224,17 +224,17 @@ free_arena(void *addr, size_t size)
    which gives very fast dispose/get sequences. */
 
 #define DEFINE_FFS(type, ffs_name) \
-int \
-ffs_name(type i) \
-{ \
-    int n; \
-    if(i == 0) return 0; \
-    n = 1; \
-    while((i & 1) == 0) { \
-        i >>= 1; \
-        n++; \
-    } \
-    return n; \
+int                           \
+ffs_name(type i)              \
+{                             \
+    int n;                    \
+    if(i == 0) return 0;      \
+    n = 1;                    \
+    while((i & 1) == 0) {     \
+        i >>= 1;              \
+        n++;                  \
+    }                         \
+    return n;                 \
 }
 
 #if defined(DEFAULT_ARENA_BITMAPS) + defined(LONG_ARENA_BITMAPS) + defined(LONG_LONG_ARENA_BITMAPS) > 1
