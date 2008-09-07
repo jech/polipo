@@ -32,7 +32,6 @@ THE SOFTWARE.
 #define CHUNK_SIZE (4 * 1024)
 #endif
 #else
-#warn "ULONG_MAX not defined -- using 4kB chunks"
 #define CHUNK_SIZE (4 * 1024)
 #endif
 #endif
