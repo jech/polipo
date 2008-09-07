@@ -8,6 +8,8 @@ Polipo 1.0.5 (unreleased)
   * Use 1024 instead of 32 as the length of the listen queue.
   * Implemented the ability to control the permissions set on the log file.
   * Implemented the ability to scrub private information from logs.
+  * Tweaked the portable version of mktime_gmt.  This will hopefully
+    fix the time issues on Windows.  Thanks to MaxWell and Greg.
 
 8 January 2008: Polipo 1.0.4:
 
