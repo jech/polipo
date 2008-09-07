@@ -298,7 +298,8 @@ static int numArenas;
      (char*)(chunk) < (arena)->chunks + (ARENA_CHUNKS * CHUNK_SIZE))
 
 #define CHUNK_ARENA_INDEX(chunk, arena)                                 \
-    ((unsigned long)(((char*)(chunk) - (arena)->chunks)) / CHUNK_SIZE)
+    ((unsigned)((unsigned long)(((char*)(chunk) - (arena)->chunks)) /   \
+                CHUNK_SIZE))
 
 void
 initChunks(void)
@@ -360,7 +361,7 @@ findArena()
 void *
 get_chunk()
 {
-    int i;
+    unsigned i;
     ChunkArenaPtr arena = NULL;
 
     if(currentArena && currentArena->bitmap != 0) {
@@ -386,7 +387,7 @@ get_chunk()
 void *
 maybe_get_chunk()
 {
-    int i;
+    unsigned i;
     ChunkArenaPtr arena = NULL;
 
     if(currentArena && currentArena->bitmap != 0) {
@@ -410,7 +411,7 @@ void
 dispose_chunk(void *chunk)
 {
     ChunkArenaPtr arena = NULL;
-    int i;
+    unsigned i;
 
     assert(chunk != NULL);
 
