@@ -11,6 +11,10 @@ Polipo 1.0.5 (unreleased)
   * Tweaked the portable version of mktime_gmt.  This will hopefully
     fix the time issues on Windows.  Thanks to MaxWell and Greg.
   * Changed chunk allocator to use larger arenas on 64-bit arches.
+  * Fixed a bug that could prevent saving objects on disk.  Thanks to
+    Ming Fu.
+  * Fixed an issue that could cause crash messages to go into the disk
+    cache.
 
 8 January 2008: Polipo 1.0.4:
 
