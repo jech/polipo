@@ -816,16 +816,16 @@ physicalMemory()
 int
 physicalMemory()
 {
-    int membytes;
+    unsigned long membytes;
     size_t len;
     int res;
 
     len = sizeof(membytes);
     res = sysctlbyname("hw.physmem", &membytes, &len, NULL, 0);
-    if (res)
+    if (res || membytes > INT_MAX)
         return -1;
 
-    return membytes;
+    return (int)membytes;
 }
 
 #else
