@@ -1703,7 +1703,8 @@ httpServeObject(HTTPConnectionPtr connection)
                       "HTTP/1.1 %d %s",
                       object->code, atomString(object->message));
     } else {
-        if(request->from > request->to) {
+        if((object->length >= 0 && request->from >= object->length) ||
+           request->from >= request->to) {
             unlockChunk(object, i);
             return httpClientRawError(connection, 416,
                                       internAtom("Requested range "
