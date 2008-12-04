@@ -1682,7 +1682,7 @@ httpServeObject(HTTPConnectionPtr connection)
     }
 
     if(object->length >= 0 && request->to >= object->length)
-        request->to = -1;
+        request->to = object->length;
 
     if(request->from > 0 || request->to >= 0) {
         if(request->method == METHOD_HEAD) {
@@ -1704,7 +1704,7 @@ httpServeObject(HTTPConnectionPtr connection)
                       object->code, atomString(object->message));
     } else {
         if((object->length >= 0 && request->from >= object->length) ||
-           request->from >= request->to) {
+           (request->to >= 0 && request->from > request->to)) {
             unlockChunk(object, i);
             return httpClientRawError(connection, 416,
                                       internAtom("Requested range "
