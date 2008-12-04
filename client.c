@@ -1148,6 +1148,13 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
     objectFillFromDisk(object, request->from,
                        request->method == METHOD_HEAD ? 0 : 1);
 
+    /* The spec doesn't strictly forbid 206 for non-200 instances, but doing
+       that breaks some client software. */
+    if(object->code && object->code != 200) {
+        request->from = 0;
+        request->to = -1;
+    }
+
     if(request->condition && request->condition->ifrange) {
         if(!object->etag || 
            strcmp(object->etag, request->condition->ifrange) != 0) {
