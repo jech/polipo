@@ -1058,12 +1058,12 @@ static int
 httpServerDelayedDoSide(HTTPConnectionPtr connection)
 {
     TimeEventHandlerPtr handler;
-    handler = scheduleTimeEvent(1, httpClientDelayedDoSideHandler,
+    handler = scheduleTimeEvent(0, httpClientDelayedDoSideHandler,
                                 sizeof(connection), &connection);
     if(!handler) {
         do_log(L_ERROR, "Couldn't schedule DoSide -- freeing memory.\n");
         free_chunk_arenas();
-        handler = scheduleTimeEvent(1, httpClientDelayedDoSideHandler,
+        handler = scheduleTimeEvent(0, httpClientDelayedDoSideHandler,
                                     sizeof(connection), &connection);
         do_log(L_ERROR, "Couldn't schedule DoSide.\n");
         /* Somebody will hopefully end up timing out. */
