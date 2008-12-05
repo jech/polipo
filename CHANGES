@@ -19,6 +19,8 @@ Polipo 1.0.5 (unreleased)
     on FreeBSD machines.  Thanks to Frank Behrens.
   * Fixed a number of bugs in the validation of Range requests.  Thanks to
     Ken Brazier.
+  * Inhibited range requests for non-200 instances, as this breaks some
+    client software.  Thanks to Ken Brazier.
 
 8 January 2008: Polipo 1.0.4:
 
