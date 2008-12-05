@@ -15,6 +15,10 @@ Polipo 1.0.5 (unreleased)
     Ming Fu.
   * Fixed an issue that could cause crash messages to go into the disk
     cache.
+  * Fixed a bug that could cause the default chunk memory to be incorrect
+    on FreeBSD machines.  Thanks to Frank Behrens.
+  * Fixed a number of bugs in the validation of Range requests.  Thanks to
+    Ken Brazier.
 
 8 January 2008: Polipo 1.0.4:
 
