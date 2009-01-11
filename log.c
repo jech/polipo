@@ -367,7 +367,7 @@ void flushLog()
 void
 reopenLog()
 {
-    if(logFile) {
+    if(logFile && logFile->length > 0) {
         FILE *f;
         f = openLogFile();
         if(f == NULL) {
