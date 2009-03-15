@@ -2620,7 +2620,9 @@ httpServerDirectHandlerCommon(int kind, int status,
     /* The amount of data actually read into the object */
     end1 = MIN(end, i * CHUNK_SIZE + MIN(kind * CHUNK_SIZE, srequest->offset));
 
-    assert(end >= 0 && end1 >= i * CHUNK_SIZE && end1 <= (i + 2) * CHUNK_SIZE);
+    assert(end >= 0);
+    assert(end1 >= i * CHUNK_SIZE);
+    assert(end1 - 2 * CHUNK_SIZE <= i * CHUNK_SIZE);
 
     object->chunks[i].size = 
         MAX(object->chunks[i].size, MIN(end1 - i * CHUNK_SIZE, CHUNK_SIZE));
