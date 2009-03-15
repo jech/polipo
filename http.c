@@ -978,7 +978,7 @@ urlDecode(char *buf, int n)
                 goto fail;
             mybuf[j++] = (char)((a << 4) | b);
             i += 3;
-            if(j > 500) goto fail;
+            if(j >= 500) goto fail;
         } else if(buf[i] == '&') {
             atom = internAtomN(mybuf, j);
             if(atom == NULL)
@@ -988,7 +988,7 @@ urlDecode(char *buf, int n)
             i++;
         } else {
             mybuf[j++] = buf[i++];
-            if(j > 500) goto fail;
+            if(j >= 500) goto fail;
         }
     }
 
