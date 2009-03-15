@@ -121,6 +121,11 @@ initSocks()
     AtomPtr host = NULL, port_atom;
     int rc;
 
+    if(socksParentProxy != NULL && socksParentProxy->length == 0) {
+        releaseAtom(socksParentProxy);
+        socksParentProxy = NULL;
+    }
+
     if(socksParentProxy) {
         rc = atomSplit(socksParentProxy, ':', &host, &port_atom);
         if(rc <= 0) {
