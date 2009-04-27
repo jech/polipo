@@ -246,11 +246,14 @@ tunnelHandlerParent(int fd, TunnelPtr tunnel)
         goto fail;
     }
 
-    n = snnprintf(tunnel->buf1.buf, tunnel->buf1.tail,
-                  CHUNK_SIZE - tunnel->buf1.tail,
-                  "CONNECT %s:%d HTTP/1.1"
-                  "\r\n\r\n",
+    n = snnprintf(tunnel->buf1.buf, tunnel->buf1.tail, CHUNK_SIZE,
+                  "CONNECT %s:%d HTTP/1.1",
                   tunnel->hostname->string, tunnel->port);
+    if (parentAuthCredentials)
+        n = buildServerAuthHeaders(tunnel->buf1.buf, n, CHUNK_SIZE,
+                                   parentAuthCredentials);
+    n = snnprintf(tunnel->buf1.buf, n, CHUNK_SIZE, "\r\n\r\n");
+
     if(n < 0) {
         message = "Buffer overflow";
         goto fail;
