@@ -260,7 +260,7 @@ getNextETag(const char * restrict buf, int i,
 
     x = i;
     while(buf[i] != '"') {
-        if(buf[i] == '\r' && buf[i] == '\n')
+        if(buf[i] == '\r' || buf[i] == '\n')
             return -1;
         i++;
     }
