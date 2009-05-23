@@ -39,6 +39,7 @@ int dontCacheRedirects = 0;
 int maxSideBuffering = 1500;
 int maxConnectionAge = 1260;
 int maxConnectionRequests = 400;
+int alwaysAddNoTransform = 0;
 
 static HTTPServerPtr servers = 0;
 
@@ -92,6 +93,8 @@ preinitServer(void)
     CONFIG_VARIABLE_SETTABLE(maxConnectionRequests,
                              CONFIG_INT, configIntSetter,
                              "Maximum number of requests on a server-side connection.");
+    CONFIG_VARIABLE(alwaysAddNoTransform, CONFIG_BOOLEAN,
+                    "If true, add a no-transform directive to all requests.");
 }
 
 static int
@@ -1669,7 +1672,8 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
     }
 
     n = httpPrintCacheControl(connection->reqbuf, n, bufsize,
-                              0, &request->cache_control);
+                              alwaysAddNoTransform ? CACHE_NO_TRANSFORM : 0,
+			      &request->cache_control);
     if(n < 0)
         goto fail;
 

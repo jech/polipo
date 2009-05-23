@@ -897,6 +897,7 @@ connections; @pxref{Tunnelling connections}).
 @menu
 * Tuning the HTTP parser::      Tuning parsing of HTTP headers.
 * Censoring headers::           Censoring HTTP headers.
+* Intermediate proxies::        Adjusting intermediate proxy behaviour.
 @end menu
 
 @node Tuning the HTTP parser, Censoring headers, HTTP tuning, HTTP tuning
@@ -917,7 +918,7 @@ the headers.  The size of big buffers, and therefore the maximum
 amount of headers Polipo can parse, is specified by the variable
 @code{bigBufferSize} (32@dmn{kB} by default).
 
-@node Censoring headers,  , Tuning the HTTP parser, HTTP tuning
+@node Censoring headers, Intermediate proxies, Tuning the HTTP parser, HTTP tuning
 @subsection Censoring headers
 @cindex privacy
 @cindex anonymity
@@ -1000,6 +1001,22 @@ example, will prefer an English-language original to a French
 (mis-)translation, while still wanting to see French language texts
 when they are original.  Such a situation cannot be described by the
 simple-minded @samp{Accept-Language} header.
+
+@node Intermediate proxies,  , Censoring headers, HTTP tuning
+@subsection Adjusting intermediate proxy behaviour
+@vindex alwaysAddNoTransform
+@cindex intermediate proxies
+
+Implementors of intermediate caches (proxies) have found it useful to
+convert the media type of certain entity bodies. A non-transparent
+proxy might, for example, convert between image formats in order to
+save cache space or to reduce the amount of traffic on a slow link.
+
+If @code{alwaysAddNoTransform} is true (it is false by default),
+Polipo will add a 'no-transform' cache control directive to all
+outgoing requests. This directive forbids (compliant) intermediate
+caches from responding with an object that was compressed or
+transformed in any way.
 
 @node Offline browsing, Server statistics, HTTP tuning, Network
 @section Offline browsing

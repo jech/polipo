@@ -154,3 +154,8 @@
 # Vary header (this is not a good idea):
 
 # mindlesslyCacheVary = true
+
+# Uncomment this if you want to add a no-transform directive to all
+# outgoing requests.
+
+# alwaysAddNoTransform = true
