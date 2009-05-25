@@ -304,15 +304,22 @@ maybeFlushSyslog(int type)
     }
 }
 
+#ifndef va_copy
+#define va_copy(a, b) do { a = b; } while(0)
+#endif
+
 static void
 accumulateSyslogV(int type, const char *f, va_list args)
 {
     int rc;
+    va_list args_copy;
 
  again:
+    va_copy(args_copy, args);
     rc = vsnprintf(syslogBuf + syslogBufLength,
                    syslogBufSize - syslogBufLength,
-                   f, args);
+                   f, args_copy);
+    va_end(args_copy);
 
     if(rc < 0 || rc >= syslogBufSize - syslogBufLength) {
         rc = expandSyslog(rc);
@@ -399,7 +406,12 @@ really_do_log_v(int type, const char *f, va_list args)
 {
     if(type & LOGGING_MAX & logLevel) {
         if(logF)
-            vfprintf(logF, f, args);
+        {
+            va_list args_copy;
+            va_copy(args_copy, args);
+            vfprintf(logF, f, args_copy);
+            va_end(args_copy);
+        }
 #ifdef HAVE_SYSLOG
         if(logSyslog)
             accumulateSyslogV(type, f, args);
@@ -426,8 +438,11 @@ really_do_log_error_v(int type, int e, const char *f, va_list args)
             es = "Unknown error";
 
         if(logF) {
-            vfprintf(logF, f, args);
+            va_list args_copy;
+            va_copy(args_copy, args);
+            vfprintf(logF, f, args_copy);
             fprintf(logF, ": %s\n", es);
+            va_end(args_copy);
         }
 #ifdef HAVE_SYSLOG
         if(logSyslog) {
