@@ -898,8 +898,9 @@ httpParseHeaders(int client, AtomPtr url,
                 do_log(L_WARN, ".\n");
                 len = -1;
             } else {
+                errno = 0;
                 len = strtol(buf + value_start, &endptr, 10);
-                if(endptr <= buf + value_start) {
+                if(errno == ERANGE || endptr <= buf + value_start) {
                     do_log(L_WARN, "Couldn't parse Content-Length: \n");
                     do_log_n(L_WARN, buf + value_start, 
                              value_end - value_start);
@@ -975,8 +976,9 @@ httpParseHeaders(int client, AtomPtr url,
             if(j < 0) {
                 age = -1;
             } else {
+                errno = 0;
                 age = strtol(buf + value_start, &endptr, 10);
-                if(endptr <= buf + value_start)
+                if(errno == ERANGE || endptr <= buf + value_start)
                     age = -1;
             }
             if(age < 0) {
@@ -990,8 +992,9 @@ httpParseHeaders(int client, AtomPtr url,
                 do_log(L_ERROR, "Couldn't parse body offset.\n");
                 goto fail;
             } else {
+                errno = 0;
                 polipo_body_offset = strtol(buf + value_start, &endptr, 10);
-                if(endptr <= buf + value_start) {
+                if(errno == ERANGE || endptr <= buf + value_start) {
                     do_log(L_ERROR, "Couldn't parse body offset.\n");
                     goto fail;
                 }
