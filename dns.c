@@ -1181,6 +1181,15 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
         } else
             releaseAtom(value);
     } else if(af == 0) {
+        /* Ignore errors in this case. */
+        if(query->inet4 && query->inet4->length == 0) {
+            releaseAtom(query->inet4);
+            query->inet4 = NULL;
+        }
+        if(query->inet6 && query->inet6->length == 0) {
+            releaseAtom(query->inet6);
+            query->inet6 = NULL;
+        }
         if(query->inet4 || query->inet6) {
             do_log(L_WARN, "Host %s has both %s and CNAME -- "
                    "ignoring CNAME.\n", scrub(query->name->string),
