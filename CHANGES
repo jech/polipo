@@ -21,6 +21,7 @@ Polipo 1.0.5 (unreleased)
     Ken Brazier.
   * Inhibited range requests for non-200 instances, as this breaks some
     client software.  Thanks to Ken Brazier.
+  * Fix a integer overflow in processing client requests.
 
 8 January 2008: Polipo 1.0.4:
 
