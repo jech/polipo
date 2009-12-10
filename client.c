@@ -998,7 +998,8 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         return 1;
     }
 
-    if(connection->reqlen > connection->reqbegin) {
+    if(connection->reqlen > connection->reqbegin &&
+       (connection->reqlen - connection->reqbegin) > 0) {
         memmove(connection->reqbuf, connection->reqbuf + connection->reqbegin,
                 connection->reqlen - connection->reqbegin);
         connection->reqlen -= connection->reqbegin;
