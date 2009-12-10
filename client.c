@@ -978,7 +978,7 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
     if(connection->bodylen < 0)
         goto fail;
 
-    if(connection->bodylen + connection->reqbegin < connection->reqlen) {
+    if(connection->bodylen < connection->reqlen - connection->reqbegin) {
         connection->reqbegin += connection->bodylen;
         connection->bodylen = 0;
     } else {
