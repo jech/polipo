@@ -17,6 +17,15 @@ CDEBUGFLAGS = -Os -g -Wall
 # CDEBUGFLAGS = -Os -Wall
 # CDEBUGFLAGS = -g -Wall
 
+# Add options to harden the build with specific gcc magic dust to help
+# protect against buffer overflow exploits. SSP is available on gcc 4.1.2
+# and above. See: http://www.trl.ibm.com/projects/security/ssp/
+#
+# _FORTIFY_SOURCE tells the C library to perform additional safety checks.
+#
+# CDEBUGFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector-all \
+#                -Wstack-protector -fwrapv
+
 # To compile on a pure POSIX system:
 
 # CC = c89
