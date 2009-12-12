@@ -2186,7 +2186,6 @@ indexDiskObjects(FILE *out, const char *root, int recursive)
         dobjects = insertRoot(dobjects, root);
         dobjects = insertDirs(dobjects);
         dobjects = filterDiskObjects(dobjects, root, recursive);
-        dobject = dobjects;
         buf[0] = '\0';
         alternatingHttpStyle(out, "diskcachelist");
         fprintf(out, "<table id=diskcachelist>\n");
