@@ -229,7 +229,7 @@ do_scheduled_stream(int status, FdEventHandlerPtr event)
     StreamRequestPtr request = (StreamRequestPtr)&event->data;
     int rc, done, i;
     struct iovec iov[6];
-    int chunk_header_len, chunk_trailer_len;
+    int chunk_header_len;
     char chunk_header[10];
     int len12 = request->len + request->len2;
     int len123 = 
@@ -248,10 +248,8 @@ do_scheduled_stream(int status, FdEventHandlerPtr event)
                IO_WRITE);
         if(request->operation & IO_CHUNKED) {
             chunk_header_len = chunkHeaderLen(len123);
-            chunk_trailer_len = 2;
         } else {
             chunk_header_len = 0;
-            chunk_trailer_len = 0;
         }
 
         if(request->offset < -chunk_header_len) {
