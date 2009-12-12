@@ -354,10 +354,8 @@ do_gethostbyname(char *origname,
         request.object = object;
         chandler = conditionWait(&object->condition, dnsHandler,
                                  sizeof(request), &request);
-        if(chandler == NULL) {
-            rc = ENOMEM;
+        if(chandler == NULL)
             goto fail;
-        }
         return 1;
     }
 #endif
