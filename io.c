@@ -1000,7 +1000,7 @@ parseNetAddress(AtomListPtr list)
             goto fail;
         }
 
-        rc = 0; rc6 = 0;
+        rc6 = 0;
         rc = inet_aton(buf, &ina);
 #ifdef HAVE_IPv6
         if(rc == 0) {
