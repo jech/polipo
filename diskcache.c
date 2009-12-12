@@ -1201,7 +1201,7 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
             isWriteable = 1;
             fd = open(buf, O_RDWR | O_BINARY);
             if(fd < 0 && !writeable && errno == EACCES) {
-                writeable = 0;
+                isWriteable = 0;
                 fd = open(buf, O_RDONLY | O_BINARY);
             }
         }
