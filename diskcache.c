@@ -1896,6 +1896,7 @@ readDiskObject(char *filename, struct stat *sb)
         atime = -1;
         date = -1;
         last_modified = -1;
+        expires = -1;
     } else {
         goto fail;
     }
