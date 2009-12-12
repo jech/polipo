@@ -375,7 +375,7 @@ static int
 cachePrintSeparator(char *buf, int offset, int len,
                     int subsequent)
 {
-    int n = offset;
+    int n;
     if(subsequent)
         n = snnprintf(buf, offset, len, ", ");
     else
