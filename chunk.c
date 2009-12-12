@@ -320,7 +320,7 @@ initChunks(void)
     chunkArenas = malloc(numArenas * sizeof(ChunkArenaRec));
     if(chunkArenas == NULL) {
         do_log(L_ERROR, "Couldn't allocate chunk arenas.\n");
-        polipoExit();
+        exit (1);
     }
     for(i = 0; i < numArenas; i++) {
         chunkArenas[i].bitmap = EMPTY_BITMAP;
