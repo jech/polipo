@@ -1283,7 +1283,6 @@ makeDiskEntry(ObjectPtr object, int writeable, int create)
     if(name == NULL) {
         do_log(L_ERROR, "Couldn't allocate name.\n");
         close(fd);
-        fd = -1;
         return NULL;
     }
 
