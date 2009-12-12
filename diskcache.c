@@ -2417,17 +2417,15 @@ expireFile(char *filename, struct stat *sb,
         if(rc < 0) {
             do_log_error(L_ERROR, errno, "Couldn't unlink %s",
                          scrub(filename));
-            close(fd);
-            fd = -1;
         } else {
             (*unlinked)++;
             copyFile(fd, dobject->filename,
                      dobject->body_offset + diskCacheTruncateSize);
-            close(fd);
             (*unlinked)--;
             (*truncated)++;
             ret = sb->st_size - dobject->body_offset + diskCacheTruncateSize;
         }
+        close(fd);
     }
     free(dobject->location);
     free(dobject->filename);
