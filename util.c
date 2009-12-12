@@ -374,6 +374,7 @@ pstrerror(int e)
     case ESOCKS_REJECT_FAIL: s = "SOCKS request rejected or failed"; break;
     case ESOCKS_REJECT_IDENTD: s = "SOCKS request rejected: "
                                    "server couldn't connect to identd";
+        break;
     case ESOCKS_REJECT_UID_MISMATCH: s = "SOCKS request rejected: "
                                          "uid mismatch";
         break;
