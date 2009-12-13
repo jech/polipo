@@ -25,6 +25,8 @@ Polipo 1.0.5 (unreleased)
     (http://secunia.com/advisories/37607/). Discovered by Jeremy Brown.
   * Added GCC stack smashing protection compiler flags to the Makefile.
     Thanks to Jake Appelbaum.  
+  * Added numerous code fixes by Fabian Keil resulting from his use of
+    the Clang static analyzer.
 
 8 January 2008: Polipo 1.0.4:
 
