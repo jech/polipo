@@ -27,6 +27,8 @@ Polipo 1.0.5 (unreleased)
     Thanks to Jake Appelbaum.  
   * Added numerous code fixes by Fabian Keil resulting from his use of
     the Clang static analyzer.
+  * Fixed a crash that occurs when a server sends a malformed
+    Content-Control: header (CVE-2009-3305). Patch from Stefan Fritsch.
 
 8 January 2008: Polipo 1.0.4:
 
