@@ -2037,6 +2037,8 @@ static int
 httpServeChunkDelayed(TimeEventHandlerPtr event)
 {
     HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
+    unlockChunk(connection->request->object,
+                connection->offset / CHUNK_SIZE);
     httpServeChunk(connection);
     return 1;
 }
@@ -2057,8 +2059,6 @@ httpServeObjectHandler(int status, ConditionHandlerPtr chandler)
     HTTPConnectionPtr connection = *(HTTPConnectionPtr*)chandler->data;
     HTTPRequestPtr request = connection->request;
     int rc;
-
-    unlockChunk(request->object, connection->offset / CHUNK_SIZE);
 
     if((request->object->flags & OBJECT_ABORTED) || status < 0) {
         shutdown(connection->fd, 1);
