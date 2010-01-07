@@ -350,7 +350,9 @@ httpServerAbort(HTTPConnectionPtr connection, int fail,
         }
         if(fail) {
             request->object->flags |= OBJECT_FAILED;
-            if(request->object->flags & OBJECT_INITIAL)
+            /* Abort dynamic objects because we won't be able to fill in
+               missing data with a range request later. */
+            if(request->object->flags & (OBJECT_INITIAL | OBJECT_DYNAMIC))
                 abortObject(request->object, code, retainAtom(message));
             notifyObject(request->object);
         }
