@@ -1169,7 +1169,9 @@ httpClientNoticeRequest(HTTPRequestPtr request, int novalidate)
         request->to = -1;
     }
 
-    if(request->method == METHOD_HEAD)
+    if(request->method == METHOD_HEAD ||
+       request->object->code == 204 ||
+       request->object->code < 200)
         haveData = !(request->object->flags & OBJECT_INITIAL);
     else
         haveData = 
@@ -2131,7 +2133,9 @@ httpServeObjectStreamHandlerCommon(int kind, int status,
         return 1;
     }
 
-    if(connection->request->method == METHOD_HEAD ||
+    if(request->method == METHOD_HEAD ||
+       request->object->code == 204 ||
+       request->object->code < 200 ||
        condition_result == CONDITION_NOT_MODIFIED) {
         httpClientFinish(connection, 0);
         return 1;
