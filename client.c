@@ -1365,11 +1365,10 @@ httpClientGetHandler(int status, ConditionHandlerPtr chandler)
     }
 
     if(request->flags & REQUEST_WAIT_CONTINUE) {
-        if(request->request && 
-           !(request->request->flags & REQUEST_WAIT_CONTINUE)) {
-            request->flags &= ~REQUEST_WAIT_CONTINUE;
+        request->flags &= ~REQUEST_WAIT_CONTINUE;
+        if(object->code == 100 && request->request &&
+           !(request->request->flags & REQUEST_WAIT_CONTINUE))
             delayedHttpClientContinue(connection);
-        }
         return 0;
     }
 

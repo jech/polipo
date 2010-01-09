@@ -42,7 +42,6 @@ int maxConnectionRequests = 400;
 
 static HTTPServerPtr servers = 0;
 
-static int httpServerContinueConditionHandler(int, ConditionHandlerPtr);
 static int initParentProxy(void);
 static int parentProxySetter(ConfigVariablePtr var, void *value);
 static void httpServerDelayedFinish(HTTPConnectionPtr);
@@ -1023,18 +1022,9 @@ httpServerDoSide(HTTPConnectionPtr connection)
             connection->reqlen = 0;
         }
         if(request->flags & REQUEST_WAIT_CONTINUE) {
-            ConditionHandlerPtr chandler;
             do_log(D_SERVER_CONN, "W... %s:%d.\n",
                    connection->server->name, connection->server->port);
-            chandler = 
-                conditionWait(&request->object->condition,
-                              httpServerContinueConditionHandler,
-                              sizeof(connection), &connection);
-            if(chandler)
-                return 1;
-            else
-                do_log(L_ERROR, "Couldn't register condition handler.\n");
-            /* Fall through -- the client side will clean up. */
+            return 1;
         }
         client->flags |= CONN_SIDE_READER;
         do_stream(IO_READ | (done ? IO_IMMEDIATE : 0 ) | IO_NOTNOW,
@@ -1135,17 +1125,6 @@ httpServerSideHandler2(int status,
                        StreamRequestPtr srequest)
 {
     return httpServerSideHandlerCommon(2, status, event, srequest);
-}
-
-static int
-httpServerContinueConditionHandler(int status, ConditionHandlerPtr chandler)
-{
-    HTTPConnectionPtr connection = *(HTTPConnectionPtr*)chandler->data;
-
-    if(connection->request->flags & REQUEST_WAIT_CONTINUE)
-        return 0;
-    httpServerDelayedDoSide(connection);
-    return 1;
 }
 
 /* s is 0 to keep the connection alive, 1 to shutdown the connection */
@@ -1878,6 +1857,7 @@ httpServerHandlerHeaders(int eof,
     AtomPtr message = NULL;
     int suspectDynamic;
     AtomPtr url = NULL;
+    int waiting = 0;
 
     assert(request->object->flags & OBJECT_INPROGRESS);
     assert(eof >= 0);
@@ -1885,6 +1865,7 @@ httpServerHandlerHeaders(int eof,
     httpSetTimeout(connection, -1);
 
     if(request->flags & REQUEST_WAIT_CONTINUE) {
+        waiting = 1;
         do_log(D_SERVER_CONN, "W   %s:%d.\n",
                connection->server->name, connection->server->port);
         request->flags &= ~REQUEST_WAIT_CONTINUE;
@@ -1934,17 +1915,33 @@ httpServerHandlerHeaders(int eof,
     if(date < 0)
         date = current_time.tv_sec;
 
+    object->code = code;
     if(code == 100) {
+        if(!REQUEST_SIDE(request)) {
+            httpServerAbort(connection, 1, 502,
+                            internAtom("Unexpected continue status"));
+            goto fail;
+        }
         releaseAtom(url);
         releaseAtom(message);
         /* We've already reset wait_continue above, but we must still
-           ensure that the writer notices. */
-        notifyObject(request->object);
+           ensure that the writer notices if it is waiting. The server
+           may send continue status for POST or PUT requests, even when
+           we don't expect it. */
+        if(waiting) {
+            httpServerDelayedDoSide(connection);
+            notifyObject(object);
+        }
         connection->len -= rc;
         if(connection->len > 0)
             memmove(connection->buf, connection->buf + rc, connection->len);
         httpServerReply(connection, 1);
         return 1;
+    } else if(waiting) {
+        /* The server responded with something other than 100 Continue,
+           but the client side is still has its flag set. Tell it to clear
+           it now. */
+        notifyObject(object);
     }
 
     if(code == 101) {
