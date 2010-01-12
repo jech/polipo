@@ -209,7 +209,7 @@ httpClientFinish(HTTPConnectionPtr connection, int s)
         assert(connection->fd > 0);
         connection->serviced++;
         httpSetTimeout(connection, clientTimeout);
-        if(!connection->flags & CONN_READER) {
+        if(!(connection->flags & CONN_READER)) {
             if(connection->reqlen == 0)
                 httpConnectionDestroyReqbuf(connection);
             else if((connection->flags & CONN_BIGREQBUF) &&
