@@ -987,7 +987,6 @@ httpClientDiscardBody(HTTPConnectionPtr connection)
         connection->reqlen = 0;
         httpConnectionDestroyReqbuf(connection);
     }
-    connection->reqte = TE_UNKNOWN;
 
     if(connection->bodylen > 0) {
         httpSetTimeout(connection, clientTimeout);
