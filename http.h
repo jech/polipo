@@ -140,6 +140,7 @@ extern int expectContinue;
 extern AtomPtr atom100Continue;
 extern int disableVia;
 extern int dontTrustVaryETag;
+extern int proxyPrivacy;
 
 void preinitHttp(void);
 void initHttp(void);
