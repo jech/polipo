@@ -1889,8 +1889,11 @@ httpServeChunk(HTTPConnectionPtr connection)
     int to, len, len2, end;
     int rc;
 
+    /* This must be called with chunk i locked. */
+    assert(object->chunks[i].locked > 0);
+
     if(object->flags & OBJECT_ABORTED)
-        goto fail_no_unlock;
+        goto fail;
 
     if(object->length >= 0 && request->to >= 0)
         to = MIN(request->to, object->length);
@@ -1901,7 +1904,6 @@ httpServeChunk(HTTPConnectionPtr connection)
     else
         to = -1;
 
-    lockChunk(object, i);
     len = 0;
     if(i < object->numchunks)
         len = object->chunks[i].size - j;
@@ -2026,7 +2028,6 @@ httpServeChunk(HTTPConnectionPtr connection)
 
  fail:
     unlockChunk(object, i);
- fail_no_unlock:
     if(request->chandler)
         unregisterConditionHandler(request->chandler);
     request->chandler = NULL;
@@ -2038,8 +2039,6 @@ static int
 httpServeChunkDelayed(TimeEventHandlerPtr event)
 {
     HTTPConnectionPtr connection = *(HTTPConnectionPtr*)event->data;
-    unlockChunk(connection->request->object,
-                connection->offset / CHUNK_SIZE);
     httpServeChunk(connection);
     return 1;
 }
@@ -2140,6 +2139,8 @@ httpServeObjectStreamHandlerCommon(int kind, int status,
         httpClientFinish(connection, 0);
     else {
         httpConnectionDestroyBuf(connection);
+        lockChunk(connection->request->object,
+                  connection->offset / CHUNK_SIZE);
         httpServeChunk(connection);
     }
     return 1;
