@@ -162,20 +162,53 @@ strcasecmp_n(const char *string, const char *buf, int n)
 }
 
 int
-atoi_n(const char *restrict string, int n, int len, int *value_return)
+parseIntN(const char *restrict str, int m, int n, int min, int max,
+          int base, int *value_return)
 {
-    int i = n;
-    int val = 0;
+    char buf[64]; 
+    char *endp;
+    long val;
+    size_t len;
 
-    if(i >= len || !digit(string[i]))
+    while (m < n && (str[m] == ' ' || str[m] == '\t'))
+        m++;
+
+    if (m >= n)
         return -1;
 
-    while(i < len && digit(string[i])) {
-        val = val * 10 + (string[i] - '0');
-        i++;
-    }
+    /* We hope here that 63 bytes is more than enough to hold
+       a number that won't overflow. */
+    len = MIN(n - m, sizeof(buf) - 1);
+    memcpy(buf, str + m, len);
+    buf[len] = '\0';
+
+    errno = 0;
+    val = strtol(buf, &endp, base);
+    if (errno != 0 || endp == buf || val < min || val > max)
+        return -1;
+
+    m += endp - buf;
+
     *value_return = val;
-    return i;
+    return m;
+}
+
+int
+parseInt(const char *restrict str, int m, int min, int max,
+         int base, int *value_return)
+{
+    char *endp;
+    long val;
+
+    errno = 0;
+    val = strtol(str + m, &endp, base);
+    if (errno != 0 || endp == str + m || val < min || val > max)
+        return -1;
+
+    m = endp - str;
+
+    *value_return = val;
+    return m;
 }
 
 int 

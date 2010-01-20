@@ -462,20 +462,6 @@ skipWhitespace(char *buf, int i)
     return i;
 }
 
-static int
-parseInt(char *buf, int offset, int *value_return)
-{
-    char *p;
-    int value;
-
-    value = strtol(buf + offset, &p, 0);
-    if(p <= buf + offset)
-        return -1;
-
-    *value_return = value;
-    return p - buf;
-}
-
 static struct config_state { char *name; int value; }
 states[] = 
     { { "false", 0 }, 
@@ -668,7 +654,7 @@ parseConfigLine(char *line, char *filename, int lineno, int set)
     i = skipWhitespace(line, i);
     switch(var->type) {
     case CONFIG_INT: case CONFIG_OCTAL: case CONFIG_HEX:
-        i = parseInt(line, i, &iv);
+        i = parseInt(line, i, INT_MIN, INT_MAX, 0, &iv);
         if(i < 0) goto syntax;
         if(set)
             var->setter(var, &iv);
@@ -737,13 +723,13 @@ parseConfigLine(char *line, char *filename, int lineno, int set)
             return -1;
         }
         while(1) {
-            i = parseInt(line, i, &from);
+            i = parseInt(line, i, INT_MIN, INT_MAX, 0, &from);
             if(i < 0) goto syntax;
             to = from;
             i = skipWhitespace(line, i);
             if(line[i] == '-') {
                 i = skipWhitespace(line, i + 1);
-                i = parseInt(line, i, &to);
+                i = parseInt(line, i, INT_MIN, INT_MAX, 0, &to);
                 if(i < 0) {
                     destroyIntList(ilv);
                     goto syntax;
