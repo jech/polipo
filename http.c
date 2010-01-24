@@ -60,7 +60,7 @@ int proxyOffline = 0;
 int relaxTransparency = 0;
 AtomPtr proxyAddress = NULL;
 
-int proxyPrivacy = 0;
+int dontIdentifyToClients = 0;
 
 static int timeoutSetter(ConfigVariablePtr var, void *value);
 
@@ -107,9 +107,9 @@ preinitHttp()
                              "Don't use Via headers.");
     CONFIG_VARIABLE(dontTrustVaryETag, CONFIG_TRISTATE,
                     "Whether to trust the ETag when there's Vary.");
-    CONFIG_VARIABLE(proxyPrivacy, CONFIG_BOOLEAN,
-                    "Set to avoid transmitting hostname, port, timezone, "
-                    "etc.");
+    CONFIG_VARIABLE(dontIdentifyToClients, CONFIG_BOOLEAN,
+                    "Avoid sending machine-identifiable information "
+                    "to clients.");
     preinitHttpParser();
 }
 
@@ -180,10 +180,6 @@ initHttp()
 
     if(proxyName)
         return;
-    else if(proxyPrivacy) {
-        proxyName = internAtom("polipo");
-        return;
-    }
 
     buf = get_chunk();
     if(buf == NULL) {
@@ -895,7 +891,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       ":<br><br>"
                       "\n<strong>%3d %s</strong></p>",
                       code, htmlMessage);
-        if (!proxyPrivacy) {
+        if (!dontIdentifyToClients) {
             char timeStr[100];
             /* On BSD systems, tv_sec is a long. */
             const time_t ct = current_time.tv_sec;
@@ -1087,4 +1083,13 @@ httpHeaderMatch(AtomPtr header, AtomPtr headers1, AtomPtr headers2)
         return 0;
 
     return 1;
+}
+
+const char *
+getScrubbedProxyName(void)
+{
+    if(dontIdentifyToClients)
+        return "polipo";
+
+    return proxyName->string;
 }

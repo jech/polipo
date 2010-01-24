@@ -140,7 +140,7 @@ extern int expectContinue;
 extern AtomPtr atom100Continue;
 extern int disableVia;
 extern int dontTrustVaryETag;
-extern int proxyPrivacy;
+extern int dontIdentifyToClients;
 
 void preinitHttp(void);
 void initHttp(void);
@@ -174,3 +174,4 @@ int httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
 AtomListPtr urlDecode(char*, int);
 void httpTweakCachability(ObjectPtr);
 int httpHeaderMatch(AtomPtr header, AtomPtr headers1, AtomPtr headers2);
+const char *getScrubbedProxyName(void);

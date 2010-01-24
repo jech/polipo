@@ -1756,7 +1756,7 @@ httpServeObject(HTTPConnectionPtr connection)
         if((object->flags & OBJECT_FAILED) && !proxyOffline) {
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 111 %s Revalidation failed",
-                          proxyName->string);
+                          getScrubbedProxyName());
             if(request->error_code)
                 n = snnprintf(connection->buf, n, bufsize,
                               " (%d %s)",
@@ -1767,16 +1767,16 @@ httpServeObject(HTTPConnectionPtr connection)
                   objectMustRevalidate(object, &request->cache_control)) {
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 112 %s Disconnected operation",
-                          proxyName->string);
+                          getScrubbedProxyName());
         } else if(objectIsStale(object, &request->cache_control)) {
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 110 %s Object is stale",
-                          proxyName->string);
+                          getScrubbedProxyName());
         } else if(object->expires < 0 && object->max_age < 0 &&
                   object->age < current_time.tv_sec - 24 * 3600) {
             n = snnprintf(connection->buf, n, bufsize,
                           "\r\nWarning: 113 %s Heuristic expiration",
-                          proxyName->string);
+                          getScrubbedProxyName());
         }
     }
 
