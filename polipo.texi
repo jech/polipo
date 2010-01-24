@@ -778,14 +778,16 @@ The variable @code{proxyName}, which defaults to the host name of the
 machine on which Polipo is running, defines the @dfn{name} of the
 proxy.  This can be an arbitrary string that should be unique among
 all instances of Polipo that you are running.  Polipo uses it in error
-messages and optionally for detecting proxy loops (by using the
-@samp{Via} HTTP header, @pxref{Censoring headers}).
+messages (Tor users, @pxref{Preventing information leaks}) and optionally
+for detecting proxy loops (by using the @samp{Via} HTTP header,
+@pxref{Censoring headers}).
 
 @menu
-* Access control::              Deciding who can connect.
+* Access control::                 Deciding who can connect.
+* Preventing information leaks::   Notes for Tor users who run scripts.
 @end menu
 
-@node Access control,  , Client connections, Client connections
+@node Access control, Preventing information leaks, Client connections, Client connections
 @subsection Access control
 @vindex proxyAddress
 @vindex authCredentials
@@ -841,6 +843,38 @@ correctly, it appears to provide secure authentication; on the other
 hand, and unlike ssh or SSL, it doesn't make any attempt at ensuring
 privacy, and its optional integrity guarantees are impossible to
 implement without significantly impairing latency.}.
+
+@node Preventing information leaks,  , Access control, Client connections
+@subsection Preventing information leaks
+@vindex dontIdentifyToClients
+@vindex proxyAddress
+@vindex proxyPort
+@vindex proxyName
+@cindex address
+@cindex port
+@cindex proxy name
+@cindex security
+@cindex privacy
+
+When Polipo is used with @uref{http://tor.eff.org,,Tor}, it is desirable to
+prevent client-side scripts from accessing sensitive information, because
+scripts may interact with remote sites. Even when
+@uref{https://www.torproject.org/torbutton/,,Torbutton} is used, scripts
+may still glean details about a user from Polipo's error messages and headers.
+
+By default, Polipo sends the contents of @code{proxyName} and @code{proxyPort},
+as well as the local timezone, in a trailer beneath its error messages. In
+addition, Polipo sends @code{proxyName} in Warning headers (see RFC@tie{}2616,
+14.46).
+
+The variable @code{dontIdentifyToClients} can be set to @code{true} to avoid
+sending the trailer in error messages and send @code{polipo} as the pseudonym
+in Warning headers.
+
+It makes sense set @code{disableLocalInterface} (@pxref{Web interface})
+along with @code{dontIdentifyToClients}. 
+
+To prevent information leaks to servers, @pxref{Censoring headers}.
 
 @node Contacting servers, HTTP tuning, Client connections, Network
 @section Contacting servers
