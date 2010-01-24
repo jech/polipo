@@ -838,7 +838,6 @@ discardObjects(int all, int force)
                     dispose_chunk(object->chunks[j].data);
                     object->chunks[j].data = NULL;
                     object->chunks[j].size = 0;
-                    i++;
                 }
             }
             object = object->previous;
