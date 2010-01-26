@@ -496,20 +496,6 @@ httpParseServerFirstLine(const char *restrict buf,
     return i;
 }
 
-static int
-parseInt(const char *restrict buf, int start, int *val_return)
-{
-    int i = start, val = 0;
-    if(!digit(buf[i]))
-        return -1;
-    while(digit(buf[i])) {
-        val = val * 10 + (buf[i] - '0');
-        i++;
-    }
-    *val_return = val;
-    return i;
-}
-
 /* Returned *name_start_return is -1 at end of headers, -2 if the line
    couldn't be parsed. */
 static int
@@ -616,11 +602,11 @@ parseContentRange(const char *restrict buf, int i,
         to = -1;
         i++;
     } else {
-        i = parseInt(buf, i, &from);
+        i = parseInt(buf, i, 0, INT_MAX, 10, &from);
         if(i < 0) return -1;
         if(buf[i] != '-') return -1;
         i++;
-        i = parseInt(buf, i, &to);
+        i = parseInt(buf, i, 0, INT_MAX, 10, &to);
         if(i < 0) return -1;
         to = to + 1;
     }
@@ -630,7 +616,7 @@ parseContentRange(const char *restrict buf, int i,
     if(buf[i] == '*')
         full_len = -1;
     else {
-        i = parseInt(buf, i, &full_len);
+        i = parseInt(buf, i, 0, INT_MAX, 10, &full_len);
         if(i < 0) return -1;
     }
     j = skipEol(buf, i);
@@ -660,13 +646,13 @@ parseRange(const char *restrict buf, int i,
     if(buf[i] == '-') {
         from = 0;
     } else {
-        i = parseInt(buf, i, &from);
+        i = parseInt(buf, i, 0, INT_MAX, 10, &from);
         if(i < 0) return -1;
     }
     if(buf[i] != '-')
         return -1;
     i++;
-    j = parseInt(buf, i, &to);
+    j = parseInt(buf, i, 0, INT_MAX, 10, &to);
     if(j < 0) 
         to = -1;
     else {
@@ -685,14 +671,18 @@ parseCacheControl(const char *restrict buf,
                   int token_start, int token_end,
                   int v_start, int v_end, int *age_return)
 {
-    if(v_start <= 0 || !digit(buf[v_start])) {
+    int ret = -1;
+
+    if(v_start > 0)
+        ret = parseInt(buf, v_start, 0, INT_MAX, 10, age_return);
+
+    if(ret < 0) {
         do_log(L_WARN, "Couldn't parse Cache-Control: ");
         do_log_n(L_WARN, buf + token_start,
                  (v_end >= 0 ? v_end : token_end) -
                  token_start);
         do_log(L_WARN, "\n");
-    } else
-        *age_return = atoi(buf + v_start);
+    } 
 }
 
 static int
@@ -766,10 +756,9 @@ httpParseHeaders(int client, AtomPtr url,
         token_start, token_end, end;
     AtomPtr name = NULL;
     time_t date = -1, last_modified = -1, expires = -1, polipo_age = -1,
-        polipo_access = -1, polipo_body_offset = -1;
-    int len = -1;
+        polipo_access = -1;
+    int len = -1, polipo_body_offset = -1;
     CacheControlRec cache_control;
-    char *endptr;
     int te = TE_IDENTITY;
     int age = -1;
     char *etag = NULL, *ifrange = NULL;
@@ -913,9 +902,7 @@ httpParseHeaders(int client, AtomPtr url,
                 do_log(L_WARN, ".\n");
                 len = -1;
             } else {
-                errno = 0;
-                len = strtol(buf + value_start, &endptr, 10);
-                if(errno == ERANGE || endptr <= buf + value_start) {
+                if(parseInt(buf, value_start, 0, INT_MAX, 10, &len) < 0) {
                     do_log(L_WARN, "Couldn't parse Content-Length: \n");
                     do_log_n(L_WARN, buf + value_start, 
                              value_end - value_start);
@@ -991,9 +978,7 @@ httpParseHeaders(int client, AtomPtr url,
             if(j < 0) {
                 age = -1;
             } else {
-                errno = 0;
-                age = strtol(buf + value_start, &endptr, 10);
-                if(errno == ERANGE || endptr <= buf + value_start)
+                if(parseInt(buf, value_start, 0, INT_MAX, 10, &age) < 0)
                     age = -1;
             }
             if(age < 0) {
@@ -1007,9 +992,8 @@ httpParseHeaders(int client, AtomPtr url,
                 do_log(L_ERROR, "Couldn't parse body offset.\n");
                 goto fail;
             } else {
-                errno = 0;
-                polipo_body_offset = strtol(buf + value_start, &endptr, 10);
-                if(errno == ERANGE || endptr <= buf + value_start) {
+                if(parseInt(buf, value_start, 0, INT_MAX, 10,
+                   &polipo_body_offset) < 0) {
                     do_log(L_ERROR, "Couldn't parse body offset.\n");
                     goto fail;
                 }
@@ -1429,7 +1413,7 @@ parseUrl(const char *url, int len,
 
         if(i < len && url[i] == ':') {
             int j;
-            j = atoi_n(url, i + 1, len, &port);
+            j = parseIntN(url, i + 1, len, 0, 65535, 10, &port);
             if(j < 0) {
                 port = 80;
             } else {
@@ -1468,20 +1452,11 @@ int
 parseChunkSize(const char *restrict buf, int i, int end,
                int *chunk_size_return)
 {
-    int v, d;
-    v = h2i(buf[i]);
-    if(v < 0)
+    int v;
+
+    i = parseIntN(buf, i, end, 0, INT_MAX, 16, &v);
+    if(i < 0)
         return -1;
-
-    i++;
-
-    while(i < end) {
-        d = h2i(buf[i]);
-        if(d < 0)
-            break;
-        v = v * 16 + d;
-        i++;
-    }
 
     while(i < end) {
         if(buf[i] == ' ' || buf[i] == '\t')
