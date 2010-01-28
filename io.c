@@ -800,7 +800,7 @@ int
 setNonblocking(int fd, int nonblocking)
 {
 #ifdef WIN32 /*MINGW*/
-    return mingw_setnonblocking(fd, nonblocking);
+    return win32_setnonblocking(fd, nonblocking);
 #else
     int rc;
     rc = fcntl(fd, F_GETFL, 0);

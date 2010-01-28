@@ -53,7 +53,7 @@ static int dummy ATTRIBUTE((unused));
  * (with trivial modifications) from the OpenBSD project.
  */
 int
-mingw_inet_aton(const char *cp, struct in_addr *addr)
+win32_inet_aton(const char *cp, struct in_addr *addr)
 {
     register unsigned int val;
     register int base, n;
@@ -148,14 +148,14 @@ mingw_inet_aton(const char *cp, struct in_addr *addr)
 }
 
 unsigned int
-mingw_sleep(unsigned int seconds)
+win32_sleep(unsigned int seconds)
 {
     Sleep(seconds * 1000);
     return 0;
 }
 
 int
-mingw_gettimeofday(struct timeval *tv, char *tz)
+win32_gettimeofday(struct timeval *tv, char *tz)
 {
     const long long EPOCHFILETIME = (116444736000000000LL);
     FILETIME        ft;
@@ -183,7 +183,7 @@ mingw_gettimeofday(struct timeval *tv, char *tz)
     return 0;
 }
 
-int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
+int win32_poll(struct pollfd *fds, unsigned int nfds, int timo)
 {
     struct timeval timeout, *toptr;
     fd_set ifds, ofds, efds, *ip, *op;
@@ -248,7 +248,7 @@ int mingw_poll(struct pollfd *fds, unsigned int nfds, int timo)
     return rc;
 }
 
-int mingw_close_socket(SOCKET fd) {
+int win32_close_socket(SOCKET fd) {
     int rc;
 
     rc = closesocket(fd);
@@ -268,7 +268,7 @@ set_errno(int winsock_err)
     }
 }
 
-int mingw_write_socket(SOCKET fd, void *buf, int n)
+int win32_write_socket(SOCKET fd, void *buf, int n)
 {
     int rc = send(fd, buf, n, 0);
     if(rc == SOCKET_ERROR) {
@@ -277,7 +277,7 @@ int mingw_write_socket(SOCKET fd, void *buf, int n)
     return rc;
 }
 
-int mingw_read_socket(SOCKET fd, void *buf, int n)
+int win32_read_socket(SOCKET fd, void *buf, int n)
 {
     int rc = recv(fd, buf, n, 0);
     if(rc == SOCKET_ERROR) {
@@ -294,7 +294,7 @@ int mingw_read_socket(SOCKET fd, void *buf, int n)
  * is successful, other -1.
  */
 int
-mingw_setnonblocking(SOCKET fd, int nonblocking)
+win32_setnonblocking(SOCKET fd, int nonblocking)
 {
     int rc;
 
@@ -312,7 +312,7 @@ mingw_setnonblocking(SOCKET fd, int nonblocking)
  * even if we are using winsock.
  */
 SOCKET
-mingw_socket(int domain, int type, int protocol)
+win32_socket(int domain, int type, int protocol)
 {
     SOCKET fd = socket(domain, type, protocol);
     if(fd == INVALID_SOCKET) {
@@ -342,7 +342,7 @@ set_connect_errno(int winsock_err)
  * even if we are using winsock.
  */
 int
-mingw_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
+win32_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
 {
     int rc = connect(fd, addr, addr_len);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -358,7 +358,7 @@ mingw_connect(SOCKET fd, struct sockaddr *addr, socklen_t addr_len)
  * even if we are using winsock.
  */
 SOCKET
-mingw_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
+win32_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
 {
     SOCKET newfd = accept(fd, addr, addr_len);
     if(newfd == INVALID_SOCKET) {
@@ -374,7 +374,7 @@ mingw_accept(SOCKET fd, struct sockaddr *addr, socklen_t *addr_len)
  * even if we are using winsock.
  */
 int
-mingw_shutdown(SOCKET fd, int mode)
+win32_shutdown(SOCKET fd, int mode)
 {
     int rc = shutdown(fd, mode);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -390,7 +390,7 @@ mingw_shutdown(SOCKET fd, int mode)
  * even if we are using winsock.
  */
 int
-mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
+win32_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
 {
     int rc = getpeername(fd, name, namelen);
     assert(rc == 0 || rc == SOCKET_ERROR);
@@ -403,7 +403,7 @@ mingw_getpeername(SOCKET fd, struct sockaddr *name, socklen_t *namelen)
 /* Stat doesn't work on directories if the name ends in a slash. */
 
 int
-mingw_stat(const char *filename, struct stat *ss)
+win32_stat(const char *filename, struct stat *ss)
 {
     int len, rc, saved_errno;
     char *noslash;
@@ -425,7 +425,7 @@ mingw_stat(const char *filename, struct stat *ss)
     errno = saved_errno;
     return rc;
 }
-#endif /* #ifdef MINGW */
+#endif /* #ifdef WIN32 MINGW */
 
 #ifndef HAVE_READV_WRITEV
 
