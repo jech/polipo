@@ -24,7 +24,9 @@ THE SOFTWARE.
 #define _GNU_SOURCE
 #endif
 
+#ifndef WIN32
 #include <sys/param.h>
+#endif
 
 #ifdef __MINGW32_VERSION
 #define MINGW
@@ -43,7 +45,7 @@ THE SOFTWARE.
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#ifndef MINGW
+#ifndef WIN32 /*MINGW*/
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -165,7 +167,7 @@ THE SOFTWARE.
 #define UNALIGNED_ACCESS
 #endif
 
-#ifndef MINGW
+#ifndef WIN32 /*MINGW*/
 #define HAVE_FORK
 #ifndef NO_SYSLOG
 #define HAVE_SYSLOG
