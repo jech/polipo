@@ -184,7 +184,7 @@ totalChunkArenaSize()
 }
 #else
 
-#ifdef MINGW
+#ifdef WIN32 /*MINGW*/
 #define MAP_FAILED NULL
 #define getpagesize() (64 * 1024)
 static void *

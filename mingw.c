@@ -23,7 +23,7 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
-#ifndef MINGW
+#ifndef WIN32 /*MINGW*/
 
 static int dummy ATTRIBUTE((unused));
 

@@ -32,7 +32,7 @@ THE SOFTWARE.
  * symbol. For Unix or Unix-like systems, leave it undefined.
  */
 
-#ifdef MINGW
+#ifdef WIN32 /*MINGW*/
 
 /* Unfortunately, there's no hiding it. */
 #define HAVE_WINSOCK 1

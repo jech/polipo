@@ -127,7 +127,7 @@ dirfd(DIR *dir)
 /*
  * Make the directory identified by the argument the current directory.
  */
-#ifdef MINGW
+#ifdef WIN32 /*MINGW*/
 int
 change_to_dir(DIR *dir)
 {
