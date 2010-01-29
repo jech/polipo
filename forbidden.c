@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003-2006 by Juliusz Chroboczek
+Copyright (c) 2003-2010 by Juliusz Chroboczek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ THE SOFTWARE.
 #ifndef NO_FORBIDDEN
 
 #include <regex.h>
+#include <assert.h>
 
 typedef struct _Domain {
     int length;
@@ -337,6 +338,9 @@ initForbidden(void)
 int
 urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
 {
+    /* This requires url to be NUL-terminated. */
+    assert(url[length] == '\0');
+
     if(length < 8)
         return 0;
 
@@ -363,29 +367,9 @@ urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
         }
     }
 
-    if(regex) {
-        /* url is not necessarily 0-terminated */
-        char smallcopy[50];
-        char *urlcopy;
-        int rc;
+    if(regex)
+        return !regexec(regex, url, 0, NULL, 0);
 
-        if(length < 50) {
-            urlcopy = smallcopy;
-        } else {
-            urlcopy = malloc(length + 1);
-            if(urlcopy == NULL)
-                return 0;
-        }
-        memcpy(urlcopy, url, length);
-        urlcopy[length] = '\0';
-
-        rc = regexec(regex, urlcopy, 0, NULL, 0);
-
-        if(urlcopy != smallcopy)
-            free(urlcopy);
-
-        return !rc;
-    }
     return 0;
 }
 
