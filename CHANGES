@@ -33,6 +33,7 @@ Polipo 1.0.5 (unreleased)
     due to running untrusted scripts on the client side.
   * Made locking more paranoid, this might solve the issue of Polipo being
     unable to serve large objects when running without a disk cache.
+  * Changed the default value of diskCacheWriteoutOnClose to 64kB.
 
 8 January 2008: Polipo 1.0.4:
 
