@@ -1,3 +1,13 @@
+Polipo 1.0.4.1 (unreleased):
+  Cherry-picked fixes from 1.0.5
+  * Fixed an integer overflow that may lead to a crash
+    (http://secunia.com/advisories/37607/). Discovered by Jeremy Brown.
+    (CVE-2009-4413)
+  * Fixed a crash that occurs when a server sends a malformed
+    Cache-Control: header (CVE-2009-3305). Patch from Stefan Fritsch.
+  * Prevent an infinite loop when a bodyless 204 or 1xx response is encountered.
+  * Don't crash when we get an error while waiting for 100 continue status.
+
 8 January 2008: Polipo 1.0.4:
 
   * Fixed the handling of tunnels with a parent proxy (thanks to
