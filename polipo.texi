@@ -1654,7 +1654,7 @@ larger than the number of resources that you expect to be live at
 a single time; defining the right notion of liveness is left as an
 exercise for the interested reader.
 
-The value @code{diskCacheWriteoutOnClose} (32@dmn{kB} by default) is
+The value @code{diskCacheWriteoutOnClose} (64@dmn{kB} by default) is
 the amount of data that Polipo will write out when closing a disk
 file.  Writing out data when closing a file can avoid subsequently
 reopening it, but causes unnecessary work if the instance is later
