@@ -38,7 +38,7 @@ DiskCacheEntryPtr diskEntries = NULL, diskEntriesLast = NULL;
 int numDiskEntries = 0;
 int diskCacheDirectoryPermissions = 0700;
 int diskCacheFilePermissions = 0600;
-int diskCacheWriteoutOnClose = (32 * 1024);
+int diskCacheWriteoutOnClose = (64 * 1024);
 
 int maxDiskCacheEntrySize = -1;
 
