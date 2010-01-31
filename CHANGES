@@ -1,4 +1,4 @@
-Polipo 1.0.4.1 (unreleased):
+31 January 2010: Polipo 1.0.4.1:
   Cherry-picked fixes from 1.0.5
   * Fixed an integer overflow that may lead to a crash
     (http://secunia.com/advisories/37607/). Discovered by Jeremy Brown.
