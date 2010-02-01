@@ -11,7 +11,7 @@
 @end direntry
 
 @copying
-Copyright @copyright{} 2003 -- 2006 by Juliusz Chroboczek.
+Copyright @copyright{} 2003 -- 2010 by Juliusz Chroboczek.
 @end copying
 
 @titlepage
@@ -2016,7 +2016,8 @@ me if anything goes wrong.
 More formally, Polipo is distributed under the following terms:
 
 @quotation
-Copyright @copyright{} 2003--2006 by Juliusz Chroboczek
+Copyright @copyright{} 2003--2010 by Juliusz Chroboczek@*
+Copyright @copyright{} 2009--2010 by Christopher Davis
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
