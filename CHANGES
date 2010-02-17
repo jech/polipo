@@ -19,17 +19,24 @@ Polipo 1.0.5 (unreleased)
     on FreeBSD machines.  Thanks to Frank Behrens.
   * Fixed a number of bugs in the validation of Range requests.  Thanks to
     Ken Brazier.
+  * Fixed an integer overflow that may lead to a crash
+    (http://secunia.com/advisories/37607/). Discovered by Jeremy Brown.
+    (CVE-2009-4413)
   * Inhibited range requests for non-200 instances, as this breaks some
     client software.  Thanks to Ken Brazier.
   * Added GCC stack smashing protection compiler flags to the Makefile.
     Thanks to Jake Appelbaum.  
   * Added numerous code fixes by Fabian Keil resulting from his use of
     the Clang static analyzer.
+  * Fixed a crash that occurs when a server sends a malformed
+    Cache-Control: header (CVE-2009-3305). Patch from Stefan Fritsch.
   * added dontIdentifyToClients, which attempts to mitigate privacy issues
     due to running untrusted scripts on the client side.
   * Made locking more paranoid, this might solve the issue of Polipo being
     unable to serve large objects when running without a disk cache.
   * Changed the default value of diskCacheWriteoutOnClose to 64kB.
+  * Prevent an infinite loop when a bodyless 204 or 1xx response is encountered.
+  * Don't crash when we get an error while waiting for 100 continue status.
 
 31 January 2010: Polipo 1.0.4.1:
 
