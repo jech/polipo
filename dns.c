@@ -1144,7 +1144,7 @@ dnsReplyHandler(int abort, FdEventHandlerPtr event)
                 dnsGethostbynameFallback(id, message);
                 return 0;
             } else {
-                message = internAtomError(-rc, NULL);
+                message = internAtom(pstrerror(-rc));
             }
         } else {
             assert(name != NULL && id >= 0 && af >= 0);
