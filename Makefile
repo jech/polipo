@@ -13,7 +13,7 @@ DISK_CACHE_ROOT = /var/cache/polipo
 
 # CC = gcc
 # CDEBUGFLAGS = -Os -g -Wall -std=gnu99
-CDEBUGFLAGS = -Os -g -Wall
+CDEBUGFLAGS = -Os -g -Wall -fno-strict-aliasing
 # CDEBUGFLAGS = -Os -Wall
 # CDEBUGFLAGS = -g -Wall
 
