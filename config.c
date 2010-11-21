@@ -571,7 +571,7 @@ parseAtom(char *buf, int offset, AtomPtr *value_return, int insensitive)
 
     if(escape) {
         s = malloc(i - y0);
-        if(buf == NULL) return -1;
+        if(s == NULL) return -1;
         k = 0;
         j = y0;
         while(j < i) {
