@@ -22,6 +22,10 @@ Polipo 1.0.5 (unreleased)
   * Inhibited range requests for non-200 instances, as this breaks some
     client software.  Thanks to Ken Brazier.
   * Fix a integer overflow in processing client requests.
+  * Fixed a crash that occurs when a server sends a malformed
+    Cache-Control: header (CVE-2009-3305). Thanks to Stefan Fritsch.
+  * Changed the default value of diskCacheWriteoutOnClose to 64kB.
+  * Cleaned up naming of Windows support functions. Thanks to Honglei Jiang.
 
 31 January 2010: Polipo 1.0.4.1:
 
