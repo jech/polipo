@@ -132,6 +132,14 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
         return;
     }
 
+    if(proxyOffline)
+    {
+      do_log(L_INFO, "Connect is not available when offline.\n");
+      releaseAtom(url);
+      tunnelError(tunnel, 502, internAtom("Disconnected, not able to CONNECT"));
+      return;
+    }
+
     p = memrchr(url->string, ':', url->length);
     q = NULL;
     if(p)
