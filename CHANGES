@@ -26,6 +26,7 @@ Polipo 1.0.5 (unreleased)
     Cache-Control: header (CVE-2009-3305). Thanks to Stefan Fritsch.
   * Changed the default value of diskCacheWriteoutOnClose to 64kB.
   * Cleaned up naming of Windows support functions. Thanks to Honglei Jiang.
+  * Added support for forbidden tunnels (thanks to Richard Zidlicky).
 
 31 January 2010: Polipo 1.0.4.1:
 
