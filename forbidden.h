@@ -46,3 +46,5 @@ int redirectorStreamHandler2(int status,
 void redirectorTrigger(void);
 int 
 runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return);
+
+int tunnelIsMatched(char *url, int lurl, char *hostname, int lhost);

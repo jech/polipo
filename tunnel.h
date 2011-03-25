@@ -47,4 +47,4 @@ typedef struct _Tunnel {
 
 void do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url);
 
-
+void listTunnels(FILE *out);

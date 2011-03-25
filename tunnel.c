@@ -75,6 +75,13 @@ circularBufferEmpty(CircularBufferPtr buf)
      return buf->head == buf->tail;
 }
 
+static void
+logTunnel(TunnelPtr tunnel, int blocked)
+{
+    do_log(L_TUNNEL,"tunnel %s:%d %s\n", tunnel->hostname->string, tunnel->port,
+	   blocked ? "blocked" : "allowed");
+}
+
 static TunnelPtr
 makeTunnel(int fd, char *buf, int offset, int len)
 {
@@ -163,6 +170,16 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
         return;
     }
     tunnel->port = port;
+    
+    if (tunnelIsMatched(url->string, url->length, 
+			tunnel->hostname->string, tunnel->hostname->length)) {
+        releaseAtom(url);
+        tunnelError(tunnel, 404, internAtom("Forbidden tunnel"));
+	logTunnel(tunnel,1);
+        return;
+    }
+    
+    logTunnel(tunnel,0);
     
     releaseAtom(url);
 

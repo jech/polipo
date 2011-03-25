@@ -46,6 +46,11 @@ AtomPtr uncachableFile = NULL;
 DomainPtr *uncachableDomains = NULL;
 regex_t *uncachableRegex = NULL;
 
+AtomPtr forbiddenTunnelsFile = NULL;
+DomainPtr *forbiddenTunnelsDomains = NULL;
+regex_t *forbiddenTunnelsRegex = NULL;
+
+
 /* these three are only used internally by {parse,read}DomainFile */
 /* to avoid having to pass it all as parameters */
 static DomainPtr *domains;
@@ -83,6 +88,9 @@ preinitForbidden(void)
 #endif
     CONFIG_VARIABLE_SETTABLE(uncachableFile, CONFIG_ATOM, atomSetterForbidden,
                              "File specifying uncachable URLs.");
+
+    CONFIG_VARIABLE_SETTABLE(forbiddenTunnelsFile, CONFIG_ATOM, atomSetterForbidden,
+                             "File specifying forbidden tunnels.");
 }
 
 static int
@@ -332,7 +340,51 @@ initForbidden(void)
 
     parseDomainFile(uncachableFile, &uncachableDomains, &uncachableRegex);
 
+    if(forbiddenTunnelsFile)
+        forbiddenTunnelsFile = expandTilde(forbiddenTunnelsFile);
+    
+    if(forbiddenTunnelsFile == NULL) {
+        forbiddenTunnelsFile = expandTilde(internAtom("~/.polipo-forbiddenTunnels"));
+        if(forbiddenTunnelsFile) {
+            if(access(forbiddenTunnelsFile->string, F_OK) < 0) {
+                releaseAtom(forbiddenTunnelsFile);
+                forbiddenTunnelsFile = NULL;
+            }
+        }
+    }
+    
+    if(forbiddenTunnelsFile == NULL) {
+        if(access("/etc/polipo/forbiddenTunnels", F_OK) >= 0)
+            forbiddenTunnelsFile = internAtom("/etc/polipo/forbiddenTunnels");
+    }
+    
+    parseDomainFile(forbiddenTunnelsFile, &forbiddenTunnelsDomains, &forbiddenTunnelsRegex);
+    //
+    
     return;
+}
+
+int
+tunnelIsMatched(char *url, int lurl, char *hostname, int lhost)
+{
+    DomainPtr *domain, *domains;
+    
+    domains=forbiddenTunnelsDomains;
+    if (domains) {
+	domain = domains;
+	while(*domain) {
+	    if (lhost == (*domain)->length && 
+		memcmp(hostname, (*domain)->domain, lhost)==0)
+		return 1;
+	    domain++;
+	}
+    }
+
+    if(forbiddenTunnelsRegex) {
+	if(!regexec(forbiddenTunnelsRegex, url, 0, NULL, 0))
+	    return 1;
+    }
+    return 0;
 }
 
 int

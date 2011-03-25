@@ -253,6 +253,7 @@ translatePriority(int type)
                                   { L_UNCACHEABLE, LOG_DEBUG },
                                   { L_SUPERSEDED, LOG_DEBUG },
                                   { L_VARY, LOG_DEBUG },
+                                  { L_TUNNEL, LOG_NOTICE },
                                   { 0, 0 }};
     PrioritiesRec *current;
 

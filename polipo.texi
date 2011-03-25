@@ -1169,9 +1169,17 @@ Polipo can be configured to prevent certain URLs from reaching the
 browser, either by returning a @emph{forbidden} error message to the
 user, or by @emph{redirecting} such URLs to some other URL.
 
+Some content providers attempt to subvert content filtering as well as 
+malware scans by tunnelling their questionable content as https or other 
+encrypted protocols. Other content providers are so clueless as to inject 
+content from external providers into supposedly safe webpages.
+Polipo has therefore the ability to selectively block tunneled connections 
+based on hostname and port information. 
+
 @menu
 * Internal forbidden list::     Specifying forbidden URLs.
 * External redirectors::        Using an external redirector.
+* Forbidden Tunnels::           
 @end menu
 
 @node Internal forbidden list, External redirectors, Forbidden, Forbidden
@@ -1203,7 +1211,7 @@ is specified by @code{forbiddenRedirectCode}; if this is 302 (the
 default) the redirection will be marked as temporary, if 301 it will
 be a permanent one.
 
-@node External redirectors,  , Internal forbidden list, Forbidden
+@node External redirectors, Forbidden Tunnels, Internal forbidden list, Forbidden
 @subsection External redirectors
 @cindex forbidden
 @cindex redirect
@@ -1223,6 +1231,67 @@ by @code{redirectorRedirectCode}, which should be 302 (the default) or
 For example, to use Adzapper to redirect ads to an innocuous image, just set
 @example
 redirector = /usr/bin/adzapper
+@end example
+
+@node Forbidden Tunnels,  , External redirectors, Forbidden
+@subsection Forbidden Tunnels
+
+Polipo does by default allow tunnelled connections 
+(@pxref{ Tunnelling connections}), however sometimes it is desirable to 
+block connections selectively. 
+
+Because polipo does only pass through tunnelled connections filtering is 
+possible based on hostname and port information only. Filtering based on 
+protocol specific types of information like pathname is not possible.
+
+Obviously the web browser (and other software) must be configured to use 
+polipo as tunneling proxy for this to work. The tunnelled traffic is neither
+touched nor inspected in any way by polipo, thus encryption, certification 
+and all other security and integrity guarantees implemented in the browser
+are not in any way affected.
+
+The file pointed at by the variable @code{forbiddenTunnelsFile} (defaults to
+@file{~/.polipo-forbiddenTunnels} or @file{/etc/polipo/forbiddenTunnels}, 
+whichever exists) specifies the set of tunnel specifications that should
+be blocked.
+
+Every line in a file listing forbidden Tunnels can either be a domain
+name --- a string that doesn't contain any of @samp{/}, @samp{*} or
+@samp{\} ---, or a POSIX extended regular expression.  Blank lines are
+ignored, as are those that start with a hash sign @samp{#}.
+
+Entries in the form of regular expressions will be matched against
+tunnel reqeusts of the form @code{hostname:portnumber}.
+
+Tunnelled and blocked connections will be logged if the configuration variable
+@code{logLevel} is set to a value such that @code{((logLevel & 0x80) !=0)} 
+
+Example @code{forbiddenTunnelsFile} :
+@example
+# simple case, exact match of hostnames
+www.massfuel.com
+
+# match hostname against regexp
+\.hitbox\.
+
+# match hostname and port against regexp
+# this will block tunnels to example.com but also  www.example.com
+# for ports in the range 600-999
+# Also watch for effects of 'tunnelAllowedPorts'
+example.com\:[6-9][0-9][0-9]
+
+# random examples
+\.liveperson\.
+\.atdmt\.com
+.*doubleclick\.net
+.*webtrekk\.de
+^count\..*
+.*\.offerstrategy\.com
+.*\.ivwbox\.de
+.*adwords.*
+.*\.sitestat\.com
+\.xiti\.com
+webtrekk\..*
 @end example
 
 @node DNS, Parent proxies, Forbidden, Network
@@ -1460,6 +1529,9 @@ using OpenSSH, rsync, Jabber, IRC, etc.
 The variable @code{tunnelAllowedPorts} specifies the set of ports that
 Polipo will accept to tunnel traffic to.  It defaults to allowing ssh,
 HTTP, https, rsync, IMAP, imaps, POP, pops, Jabber, CVS and Git traffic.
+
+It is possible to selectively block tunneled connections, 
+@pxref{Forbidden Tunnels}
 
 @node Caching, Memory usage, Network, Top
 @chapter Caching

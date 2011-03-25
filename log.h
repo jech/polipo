@@ -27,6 +27,7 @@ THE SOFTWARE.
 #define L_UNCACHEABLE 0x10
 #define L_SUPERSEDED 0x20
 #define L_VARY 0x40
+#define L_TUNNEL 0x80
 
 #define D_SERVER_CONN 0x100
 #define D_SERVER_REQ 0x200
