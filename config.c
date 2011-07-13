@@ -822,8 +822,8 @@ parseConfigFile(AtomPtr filename)
         return 0;
     f = fopen(filename->string, "r");
     if(f == NULL) {
-        do_log(L_ERROR, "Couldn't open config file %s: %d.\n",
-               filename->string, errno);
+        do_log_error(L_ERROR, errno, "Couldn't open config file %s",
+                     filename->string);
         return -1;
     }
 
