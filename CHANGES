@@ -27,6 +27,8 @@ Polipo 1.0.5 (unreleased)
   * Changed the default value of diskCacheWriteoutOnClose to 64kB.
   * Cleaned up naming of Windows support functions. Thanks to Honglei Jiang.
   * Added support for forbidden tunnels (thanks to Richard Zidlicky).
+  * Fixed a bug that prevented parsing of extremely long literal IPv6
+    addresses (thanks to Jan Braun).
 
 31 January 2010: Polipo 1.0.4.1:
 
