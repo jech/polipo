@@ -279,7 +279,9 @@ parseDomainFile(AtomPtr file,
         regex = malloc(sizeof(regex_t));
         rc = regcomp(regex, regexbuf, REG_EXTENDED | REG_NOSUB);
         if(rc != 0) {
-            do_log(L_ERROR, "Couldn't compile regex: %d.\n", rc);
+            char errbuf[100];
+            regerror(rc, regex, errbuf, 100);
+            do_log(L_ERROR, "Couldn't compile regex: %s.\n", errbuf);
             free(regex);
             regex = NULL;
         }
