@@ -57,23 +57,28 @@ do_socks_connect(char *name, int port,
 
 #else
 
+int authed = -1;
 AtomPtr socksParentProxy = NULL;
 AtomPtr socksProxyHost = NULL;
 int socksProxyPort = -1;
 AtomPtr socksProxyAddress = NULL;
 int socksProxyAddressIndex = -1;
 AtomPtr socksUserName = NULL;
+AtomPtr socksPassWord = NULL;
+AtomPtr socksAuthMethod = NULL;
 AtomPtr socksProxyType = NULL;
-AtomPtr aSocks4a, aSocks5;
+AtomPtr aSocks4a, aSocks5, bNoAuth, bUserPass;
 
 static int socksParentProxySetter(ConfigVariablePtr, void*);
 static int socksProxyTypeSetter(ConfigVariablePtr, void*);
+static int socksAuthMethodSetter(ConfigVariablePtr var, void *value);
 static int do_socks_connect_common(SocksRequestPtr);
 static int socksDnsHandler(int, GethostbynameRequestPtr);
 static int socksConnectHandler(int, FdEventHandlerPtr, ConnectRequestPtr);
 static int socksWriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socksReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5ReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socks5UPReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5WriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5ReadHandler2(int, FdEventHandlerPtr, StreamRequestPtr);
 
@@ -82,17 +87,27 @@ preinitSocks()
 {
     aSocks4a = internAtom("socks4a");
     aSocks5 = internAtom("socks5");
+    bNoAuth = internAtom("no");
+    bUserPass = internAtom("userpass");
     socksProxyType = retainAtom(aSocks5);
+    socksAuthMethod = retainAtom(bNoAuth);
     socksUserName = internAtom("");
+    socksPassWord = internAtom("");
     CONFIG_VARIABLE_SETTABLE(socksParentProxy, CONFIG_ATOM_LOWER,
                              socksParentProxySetter,
                              "SOCKS parent proxy (host:port)");
     CONFIG_VARIABLE_SETTABLE(socksUserName, CONFIG_ATOM,
                              configAtomSetter,
-                             "SOCKS4a user name");
+                             "SOCKS4a (or SOCKS5) user name");
+    CONFIG_VARIABLE_SETTABLE(socksPassWord, CONFIG_PASSWORD,
+                             configAtomSetter,
+                             "SOCKS5 password");
     CONFIG_VARIABLE_SETTABLE(socksProxyType, CONFIG_ATOM_LOWER,
                              socksProxyTypeSetter,
                              "One of socks4a or socks5");
+    CONFIG_VARIABLE_SETTABLE(socksAuthMethod, CONFIG_ATOM_LOWER,
+                             socksAuthMethodSetter,
+                             "no or userpass");
 }
 
 static int
@@ -101,6 +116,17 @@ socksParentProxySetter(ConfigVariablePtr var, void *value)
     configAtomSetter(var, value);
     initSocks();
     return 1;
+}
+
+static int
+socksAuthMethodSetter(ConfigVariablePtr var, void *value)
+{
+    if(*var->value.a != bNoAuth && *var->value.a != bUserPass) {
+        do_log(L_ERROR, "Unknown socksAuthMethod %s\n", (*var->value.a)->string);
+        return -1;
+    }
+
+    return configAtomSetter(var, value);
 }
 
 static int
@@ -306,10 +332,13 @@ socksConnectHandler(int status,
             destroySocksRequest(request);
             return 1;
         }
-
         request->buf[0] = 5;             /* ver */
         request->buf[1] = 1;             /* nmethods */
-        request->buf[2] = 0;             /* no authentication required */
+    if (socksAuthMethod == bNoAuth) {
+            request->buf[2] = 0;             /* no authentication required */
+	} else if (socksAuthMethod == bUserPass) {
+            request->buf[2] = 2;             /* username/password */
+	}
         do_stream(IO_WRITE, request->fd, 0, request->buf, 3,
                   socksWriteHandler, request);
     } else {
@@ -338,7 +367,8 @@ socksWriteHandler(int status,
 
     do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 8,
               socksProxyType == aSocks5 ?
-              socks5ReadHandler : socksReadHandler,
+              (socksAuthMethod == bUserPass ? socks5UPReadHandler : socks5ReadHandler) 
+		: socksReadHandler,
               request);
     return 1;
 
@@ -389,6 +419,56 @@ socksReadHandler(int status,
 }
 
 static int
+socks5UPReadHandler(int status,
+                  FdEventHandlerPtr event,
+                  StreamRequestPtr srequest)
+{
+    SocksRequestPtr request = srequest->data;
+
+    if(status < 0)
+        goto error;
+
+    if(srequest->offset < 2) {
+        if(status) {
+            status = -ESOCKS_PROTOCOL;
+            goto error;
+        }
+        return 0;
+    }
+
+    if(request->buf[0] != 5 || request->buf[1] != 2) {
+        status = -ESOCKS_PROTOCOL;
+        goto error;
+    }
+
+    free(request->buf);
+    request->buf = malloc(5 + socksUserName->length + socksPassWord->length);
+    if(request->buf == NULL) {
+        status = -ENOMEM;
+        goto error;
+    }
+
+    request->buf[0] = 1;	/* ver */
+    request->buf[1] = socksUserName->length;	/* username length */
+    memcpy(request->buf + 2, socksUserName->string, socksUserName->length);
+    request->buf[2 + socksUserName->length] = socksPassWord->length;	/* password length */
+    memcpy(request->buf + 3 + socksUserName->length, socksPassWord->string, socksPassWord->length);
+
+    do_stream(IO_WRITE, request->fd, 0,
+              request->buf, 3 + socksUserName->length + socksPassWord->length,
+              socks5WriteHandler, request);
+    return 1;
+
+ error:
+    CLOSE(request->fd);
+    request->fd = -1;
+    request->handler(status, request);
+    destroySocksRequest(request);
+    return 1;
+}
+
+
+static int
 socks5ReadHandler(int status,
                   FdEventHandlerPtr event,
                   StreamRequestPtr srequest)
@@ -406,11 +486,12 @@ socks5ReadHandler(int status,
         return 0;
     }
 
-    if(request->buf[0] != 5 || request->buf[1] != 0) {
+    if((socksAuthMethod == bUserPass ? (request->buf[0] != 1) : (request->buf[0] != 5)) || request->buf[1] != 0) {
+
         status = -ESOCKS_PROTOCOL;
         goto error;
     }
-
+    authed = 1;
     free(request->buf);
     request->buf = malloc(5 + request->name->length + 2);
     if(request->buf == NULL) {
@@ -459,7 +540,7 @@ socks5WriteHandler(int status,
     }
 
     do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 10,
-              socks5ReadHandler2, request);
+              ((socksAuthMethod == bUserPass) && (authed == -1) ? socks5ReadHandler : socks5ReadHandler2), request);
     return 1;
 
  error:
@@ -474,7 +555,7 @@ socks5ReadHandler2(int status,
                    StreamRequestPtr srequest)
 {
     SocksRequestPtr request = srequest->data;
-
+    authed = -1;
     if(status < 0)
         goto error;
 
