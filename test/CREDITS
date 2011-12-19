@@ -1,0 +1,16 @@
+expect_cache/kim_jong_il
+    Retrieved from wikipedia 2011-12-19:
+    http://en.wikipedia.org/wiki/File:Kim_Jong-il_on_August_24,_2011.jpg
+    Licence: Creative Commons Attribution 3.0 Unported
+    Original Source: www.kremlin.ru
+
+expect_uncached/egbert
+    Retreived from wikipedia 2011-12-19:
+    http://en.wikipedia.org/wiki/Egbert_of_Wessex
+    Licence: Creative Commons Attribution-ShareAlike License
+
+expect_cached/water_image
+    Retrieved on 2011-12-19
+    Contents removed due to licencing, headers preserved but with modified
+        Content-Length.  Notably Content-Type says image/jpeg which has been
+        intentionally unchanged from the original.

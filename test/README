@@ -1,0 +1,47 @@
+Running the tests
+*****************
+
+In the polipo directory execute:
+
+    $ make check
+
+Creating new tests
+******************
+
+Test cases consist of pairs of .header and .payload files.  These are generated
+by capturing HTTP sessions with curl[1].  If the data should be cached the
+files are placed in the expect_cache directory.  If they shouldn't be cached
+they are placed in the expect_uncached directory.
+
+To generate a test case from an HTTP session use:
+
+    $ curl -o test_name.payload --dump-header test_name.header
+
+[1] http://curl.haxx.se/
+
+How it works
+************
+
+http-test-webserver is a small webserver that listens on a socket and for each
+connection it will send the contents of a file once the client has finished
+sending http headers (signified by \r\n\r\n).  When it terminates it prints
+REQUESTS_SERVED=XXX where XXX is the number of HTTP requests that were made to
+it.  If this is anything other than 1 we know that polipo has not been caching
+the served files.
+
+We use the (systemd) support for providing a listening socket to polipo and
+http-test-webserver so we can have them listen on a different random unused
+port each time so the tests will not interfere with each other and are less
+dependent on the environment within which they are started.  sd-launch creates
+a socket and spins off a process listening on that socket before printing the
+PID of the spun off process and the port of the listening socket.  This is used
+by the run-test.sh script to know what port to pass to curl/set as http_proxy
+and to know how to kill the started processes.
+
+Future directions
+*****************
+
+It would be good to add many more tests, possibly generating headers
+programmatically.  It would also be good to amend http-test-webserver to
+validate that the requests that polipo makes are valid and as expected.
+

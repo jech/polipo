@@ -1,0 +1,15 @@
+HTTP/1.0 200 OK
+Content-Length: 15816
+Accept-Ranges: bytes
+Server: Sun-Java-System-Web-Server/7.0
+Date: Thu, 15 Dec 2011 14:35:22 GMT
+Content-Type: image/jpeg
+Last-Modified: Wed, 24 Aug 2011 17:55:10 GMT
+ETag: "3dc8-4e553afe"
+X-Cache: HIT from amssq57.esams.wikimedia.org
+X-Cache-Lookup: HIT from amssq57.esams.wikimedia.org:3128
+Age: 364162
+X-Cache: HIT from amssq56.esams.wikimedia.org
+X-Cache-Lookup: HIT from amssq56.esams.wikimedia.org:80
+Connection: close
+

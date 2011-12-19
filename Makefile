@@ -138,10 +138,20 @@ TAGS: $(SRCS)
 .PHONY: clean
 
 clean:
-	-rm -f polipo$(EXE) *.o *~ core TAGS gmon.out
+	-rm -f polipo$(EXE) *.o *~ core TAGS gmon.out test/http-test-webserver$(EXE) test/sd-launch$(EXE)
 	-rm -f polipo.cp polipo.fn polipo.log polipo.vr
 	-rm -f polipo.cps polipo.info* polipo.pg polipo.toc polipo.vrs
 	-rm -f polipo.aux polipo.dvi polipo.ky polipo.ps polipo.tp
 	-rm -f polipo.dvi polipo.ps polipo.ps.gz polipo.pdf polipo.html
 	-rm -rf ./html/
 	-rm -f polipo.man.html
+
+check: polipo$(EXE) test/http-test-webserver$(EXE) test/sd-launch$(EXE)
+	test/run-test.sh
+
+test/http-test-webserver$(EXE): test/http-test-webserver.c sd.c
+	$(CC) $(CFLAGS) $(LDFLAGS) test/http-test-webserver.c sd.c -o test/http-test-webserver$(EXE) $(MD5LIBS) $(LDLIBS)
+
+test/sd-launch$(EXE): test/sd-launch.c
+	$(CC) $(CFLAGS) $(LDFLAGS) test/sd-launch.c -o test/sd-launch$(EXE) $(MD5LIBS) $(LDLIBS)
+
