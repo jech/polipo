@@ -585,13 +585,13 @@ objectHoleSize(ObjectPtr object, int offset)
 }
 
 
-/* Returns 2 if the data is wholly in memory, 1 if it's available on disk */
+/* Returns 2 if the data is wholly in memory, 1 if it's available on disk.
+   If the client request was a Range request, from & to specify the requested
+   range; otherwise 'from' is 0 and 'to' is -1. */
 int
 objectHasData(ObjectPtr object, int from, int to)
 {
-    int first = from / CHUNK_SIZE;
-    int last = to / CHUNK_SIZE;
-    int i, upto;
+    int first, last, i, upto;
 
     if(to < 0) {
         if(object->length >= 0)
@@ -599,6 +599,9 @@ objectHasData(ObjectPtr object, int from, int to)
         else
             return 0;
     }
+
+    first = from / CHUNK_SIZE;
+    last = to / CHUNK_SIZE;
 
     if(from >= to)
         return 2;
