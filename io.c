@@ -791,7 +791,17 @@ create_listener(char *address, int port,
                 void *data)
 {
     int done;
-    int fd = open_listening_socket(address, port);
+    int fd;
+
+    /* If the environment variables LISTEN_FDS=1 and LISTEN_PID=getpid() then
+       the socket file descriptor 3 will be used to listen for incoming
+       connections.  If any of this fails we fall back to creating our own
+       socket to listen on.  This is consistant with systemd's socket passing
+       convention. */
+    fd = get_sd_socket();
+    if (fd < 0) {
+        fd = open_listening_socket(address, port);
+    }
     if (fd < 0) {
         done = (*handler)(-errno, NULL, NULL);
         assert(done);
