@@ -22,6 +22,21 @@ THE SOFTWARE.
 
 #include "polipo.h"
 
+/* Atoms are interned, read-only reference-counted strings.
+
+   Interned means that equality of atoms is equivalent to structural
+   equality -- you don't need to strcmp, you just compare the AtomPtrs.
+   This property is used throughout Polipo, e.g. to speed up the HTTP
+   parser.
+
+   Polipo's atoms may contain NUL bytes -- you can use internAtomN to
+   store any random binary data within an atom.  However, Polipo always
+   terminates your data, so if you store textual data in an atom, you
+   may use the result of atomString as though it were a (read-only)
+   C string.
+
+*/
+
 static AtomPtr *atomHashTable;
 int used_atoms;
 
