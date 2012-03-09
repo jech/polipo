@@ -393,21 +393,6 @@ httpClientHandler(int status,
         return 1;
     }
 
-    if(status) {
-        if(connection->reqlen > 0) {
-            if(connection->serviced <= 0)
-                do_log(L_ERROR, "Client dropped connection.\n");
-            else
-                do_log(D_CLIENT_CONN, "Client dropped idle connection.\n");
-        }
-        connection->flags &= ~CONN_READER;
-        if(!connection->request)
-            httpClientFinish(connection, 2);
-        else
-            pokeFdEvent(connection->fd, -EDOGRACEFUL, POLLOUT);
-        return 1;
-    }
-
     if(connection->reqlen >= bufsize) {
         int rc = 0;
         if(!(connection->flags & CONN_BIGREQBUF))
