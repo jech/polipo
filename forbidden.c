@@ -812,6 +812,12 @@ initForbidden()
 }
 
 int
+tunnelIsMatched(char *url, int lurl, char *hostname, int lhost)
+{
+    return 0;
+}
+
+int
 urlIsUncachable(char *url, int length)
 {
     return 0;
