@@ -43,6 +43,20 @@ static int dummy ATTRIBUTE((unused));
 /* Windows needs this header file for the implementation of inet_aton() */
 #include <ctype.h>
 
+/* _snprintf and friends have broken NULL termination semantics */
+int win32_snprintf(char* dest, size_t count, const char* format, ...)
+{
+    int r;
+    va_list args;
+    va_start(args, format);
+    r = _vsnprintf(dest, count, format, args);
+    va_end(args);
+    if (count > 0) {
+        dest[count-1] = '\0';
+    }
+    return r;
+}
+
 /* 
  * Check whether "cp" is a valid ascii representation of an Internet address
  * and convert to a binary address.  Returns 1 if the address is valid, 0 if

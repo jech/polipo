@@ -66,7 +66,6 @@ void really_do_log_error_v(int type, int e, const char *f, va_list args)
     ATTRIBUTE ((format (printf, 3, 0)));
 const char *scrub(const char *message);
 
-
 #ifdef __GNUC__
 #define DO_BACKTRACE()                  \
   do {                                  \

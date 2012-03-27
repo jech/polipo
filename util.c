@@ -278,12 +278,6 @@ vsprintf_a(const char *f, va_list args)
 
 #else
 
-/* This is not going to work if va_list is interesting.  But then, if you
-   have a non-trivial implementation of va_list, you should have va_copy. */
-#ifndef va_copy
-#define va_copy(a, b) do { a = b; } while(0)
-#endif
-
 char*
 vsprintf_a(const char *f, va_list args)
 {
@@ -416,6 +410,12 @@ time_t
 mktime_gmt(struct tm *tm)
 {
     return timegm(tm);
+}
+#elif defined(HAVE_MKGMTIME)
+time_t
+mktime_gmt(struct tm *tm)
+{
+    return _mkgmtime(tm);
 }
 #elif defined(HAVE_TM_GMTOFF)
 time_t

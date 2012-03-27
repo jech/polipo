@@ -55,7 +55,7 @@ struct _FTS {
     DIR *dir[FTS_MAX_DEPTH];
     char *cwd0, *cwd;
     struct _FTSENT ftsent;
-    struct stat stat;
+    struct stat ftstat;
     char *dname;
 };
 
