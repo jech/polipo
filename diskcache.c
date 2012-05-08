@@ -1940,7 +1940,7 @@ processObject(DiskObjectPtr dobjects, char *filename, struct stat *sb)
 
     dobject = readDiskObject((char*)filename, sb);
     if(dobject == NULL)
-        return 0;
+        return dobjects;
 
     if(!dobjects ||
        (c = strcmp(dobject->location, dobjects->location)) <= 0) {
