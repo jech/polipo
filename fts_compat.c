@@ -25,9 +25,13 @@ THE SOFTWARE.
 
 #include <stdlib.h>
 #include <errno.h>
-#include <unistd.h>
 #include <sys/types.h>
+#ifndef _WIN32
+#include <unistd.h>
 #include <dirent.h>
+#else
+#include "dirent_compat.h"
+#endif
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
@@ -281,13 +285,13 @@ fts_read(FTS *fts)
     name = dirent->d_name;
 
  again2:
-    rc = stat(name, &fts->stat);
+    rc = stat(name, &fts->ftstat);
     if(rc < 0) {
         fts->ftsent.fts_info = FTS_NS;
         goto error2;
     }
 
-    if(S_ISDIR(fts->stat.st_mode)) {
+    if(S_ISDIR(fts->ftstat.st_mode)) {
         char *newcwd;
         DIR *dir;
 
@@ -318,11 +322,11 @@ fts_read(FTS *fts)
         fts->depth++;
         fts->dir[fts->depth] = dir;
         goto done;
-    } else if(S_ISREG(fts->stat.st_mode)) {
+    } else if(S_ISREG(fts->ftstat.st_mode)) {
         fts->ftsent.fts_info = FTS_F;
         goto done;
 #ifdef S_ISLNK
-    } else if(S_ISLNK(fts->stat.st_mode)) {
+    } else if(S_ISLNK(fts->ftstat.st_mode)) {
         int rc;
         rc = readlink(name, buf, 1024);
         if(rc < 0)
@@ -350,7 +354,7 @@ fts_read(FTS *fts)
     fts->ftsent.fts_path = mkfilename(fts->cwd, name);
     if(fts->ftsent.fts_path == NULL) goto error;
     fts->ftsent.fts_accpath = name;
-    fts->ftsent.fts_statp = &fts->stat;
+    fts->ftsent.fts_statp = &fts->ftstat;
     return &fts->ftsent;
 
  error:
