@@ -32,7 +32,7 @@ int serverIdleTimeout = 45;
 
 int bigBufferSize = (32 * 1024);
 
-AtomPtr serverName = NULL;
+AtomPtr displayName = NULL;
 
 AtomPtr authRealm = NULL;
 AtomPtr authCredentials = NULL;
@@ -89,8 +89,8 @@ preinitHttp()
                              timeoutSetter, "Server-side idle timeout.");
     CONFIG_VARIABLE(authRealm, CONFIG_ATOM,
                     "Authentication realm.");
-    CONFIG_VARIABLE(serverName, CONFIG_ATOM,
-                    "Server name.");
+    CONFIG_VARIABLE(displayName, CONFIG_ATOM,
+                    "Server name displayed on error pages.");
     CONFIG_VARIABLE(authCredentials, CONFIG_PASSWORD,
                     "username:password.");
     CONFIG_VARIABLE(parentAuthCredentials, CONFIG_PASSWORD,
@@ -139,8 +139,8 @@ initHttp()
                clientTimeout);
     }
 
-    if(serverName == NULL)
-        serverName = internAtom("Polipo");
+    if(displayName == NULL)
+        displayName = internAtom("Polipo");
 
     if(authCredentials != NULL && authRealm == NULL)
         authRealm = internAtom("Polipo");
@@ -904,7 +904,7 @@ httpWriteErrorHeaders(char *buf, int size, int offset, int do_body,
                       "\n<hr>Generated %s by %s on <em>%s:%d</em>."
                       "\n</body></html>\r\n",
                       code, htmlMessage,
-                      timeStr, serverName->string, proxyName->string, proxyPort);
+                      timeStr, displayName->string, proxyName->string, proxyPort);
         if(m <= 0 || m >= CHUNK_SIZE) {
             do_log(L_ERROR, "Couldn't write error body.\n");
             dispose_chunk(body);
