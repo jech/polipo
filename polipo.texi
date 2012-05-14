@@ -746,6 +746,7 @@ listing known servers by setting the variables
 @vindex proxyAddress
 @vindex proxyPort
 @vindex proxyName
+@vindex displayName
 @cindex address
 @cindex port
 @cindex IPv6
@@ -779,7 +780,9 @@ machine on which Polipo is running, defines the @dfn{name} of the
 proxy.  This can be an arbitrary string that should be unique among
 all instances of Polipo that you are running.  Polipo uses it in error
 messages and optionally for detecting proxy loops (by using the
-@samp{Via} HTTP header, @pxref{Censoring headers}).
+@samp{Via} HTTP header, @pxref{Censoring headers}). Finally, the
+@code{displayName} variable specifies the name used in user-visible
+error messages (default ``Polipo'').
 
 @menu
 * Access control::              Deciding who can connect.
