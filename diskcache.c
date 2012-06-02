@@ -1449,8 +1449,12 @@ destroyDiskEntry(ObjectPtr object, int d)
         entry = object->disk_entry;
         if(entry == NULL || entry == &negativeEntry)
             return 0;
-        if(diskCacheWriteoutOnClose > 0)
+        if(diskCacheWriteoutOnClose > 0) {
             reallyWriteoutToDisk(object, -1, diskCacheWriteoutOnClose);
+            entry = object->disk_entry;
+            if(entry == NULL || entry == &negativeEntry)
+                return 0;
+        }
     }
  again:
     rc = close(entry->fd);
