@@ -370,7 +370,11 @@ urlDirname(char *buf, int n, const char *url, int len)
         return -1;
 
     if(diskCacheRoot == NULL ||
-       diskCacheRoot->length <= 0 || diskCacheRoot->string[0] != '/')
+       diskCacheRoot->length <= 0
+#ifndef WIN32
+       || diskCacheRoot->string[0] != '/'
+#endif
+       )
         return -1;
 
     if(n <= diskCacheRoot->length)
@@ -2437,7 +2441,11 @@ expireDiskObjects()
     long left = 0, total = 0;
 
     if(diskCacheRoot == NULL || 
-       diskCacheRoot->length <= 0 || diskCacheRoot->string[0] != '/')
+       diskCacheRoot->length <= 0
+#ifndef WIN32
+       || diskCacheRoot->string[0] != '/'
+#endif
+       )
         return;
 
     fts_argv[0] = diskCacheRoot->string;
