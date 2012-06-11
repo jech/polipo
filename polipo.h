@@ -210,6 +210,7 @@ THE SOFTWARE.
 #include "log.h"
 #include "auth.h"
 #include "tunnel.h"
+#include "sd.h"
 
 extern AtomPtr configFile;
 extern int daemonise;

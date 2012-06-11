@@ -682,14 +682,16 @@ do_scheduled_accept(int status, FdEventHandlerPtr event)
     return done;
 }
 
-FdEventHandlerPtr
-create_listener(char *address, int port,
-                int (*handler)(int, FdEventHandlerPtr, AcceptRequestPtr),
-                void *data)
+/**
+ * Opens a listening socket
+ *
+ * Returns the file descriptor on success, -1 on failure and will set errno.
+ */
+int
+open_listening_socket(char *address, int port)
 {
     int fd, rc;
     int one = 1;
-    int done;
     struct sockaddr_in addr;
 #ifdef HAVE_IPv6
     int inet6 = 1;
@@ -719,9 +721,7 @@ create_listener(char *address, int port,
     }
 
     if(fd < 0) {
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto fail;
     }
 
     rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
@@ -738,9 +738,8 @@ create_listener(char *address, int port,
         memset(&addr6, 0, sizeof(addr6));
         rc = inet_pton(AF_INET6, address, &addr6.sin6_addr);
         if(rc != 1) {
-            done = (*handler)(rc == 0 ? -ESYNTAX : -errno, NULL, NULL);
-            assert(done);
-            return NULL;
+            errno = (rc == 0) ? ESYNTAX : errno;
+            goto fail;
         }
         addr6.sin6_family = AF_INET6;
         addr6.sin6_port = htons(port);
@@ -753,9 +752,8 @@ create_listener(char *address, int port,
         memset(&addr, 0, sizeof(addr));
         rc = inet_aton(address, &addr.sin_addr);
         if(rc != 1) {
-            done = (*handler)(rc == 0 ? -ESYNTAX : -errno, NULL, NULL);
-            assert(done);
-            return NULL;
+            errno = (rc == 0) ? ESYNTAX : errno;
+            goto fail;
         }
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -764,33 +762,54 @@ create_listener(char *address, int port,
 
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't bind");
-        CLOSE(fd);
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto failwithfd;
     }
 
     rc = setNonblocking(fd, 1);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't set non blocking mode");
-        CLOSE(fd);
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto failwithfd;
     }
         
     rc = listen(fd, 32);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't listen");
-        CLOSE(fd);
+        goto failwithfd;
+    }
+
+    do_log(L_INFO, "Established listening socket on port %d.\n", port);
+    return fd;
+failwithfd:
+    CLOSE(fd);
+fail:
+    return -1;
+}
+
+FdEventHandlerPtr
+create_listener(char *address, int port,
+                int (*handler)(int, FdEventHandlerPtr, AcceptRequestPtr),
+                void *data)
+{
+    int done;
+    int fd;
+
+    /* If the environment variables LISTEN_FDS=1 and LISTEN_PID=getpid() then
+       the socket file descriptor 3 will be used to listen for incoming
+       connections.  If any of this fails we fall back to creating our own
+       socket to listen on.  This is consistant with systemd's socket passing
+       convention. */
+    fd = get_sd_socket();
+    if (fd < 0) {
+        fd = open_listening_socket(address, port);
+    }
+    if (fd < 0) {
         done = (*handler)(-errno, NULL, NULL);
         assert(done);
         return NULL;
     }
-
-    do_log(L_INFO, "Established listening socket on port %d.\n", port);
-
-    return schedule_accept(fd, handler, data);
+    else {
+        return schedule_accept(fd, handler, data);
+    }
 }
 
 #ifndef SOL_TCP

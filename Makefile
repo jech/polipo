@@ -68,12 +68,14 @@ CFLAGS = $(MD5INCLUDES) $(CDEBUGFLAGS) $(DEFINES) $(EXTRA_DEFINES)
 SRCS = util.c event.c io.c chunk.c atom.c object.c log.c diskcache.c main.c \
        config.c local.c http.c client.c server.c auth.c tunnel.c \
        http_parse.c parse_time.c dns.c forbidden.c \
-       md5import.c md5.c ftsimport.c fts_compat.c socks.c mingw.c
+       md5import.c md5.c ftsimport.c fts_compat.c socks.c mingw.c \
+       sd.c
 
 OBJS = util.o event.o io.o chunk.o atom.o object.o log.o diskcache.o main.o \
        config.o local.o http.o client.o server.o auth.o tunnel.o \
        http_parse.o parse_time.o dns.o forbidden.o \
-       md5import.o ftsimport.o socks.o mingw.o
+       md5import.o ftsimport.o socks.o mingw.o \
+       sd.c
 
 polipo$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o polipo$(EXE) $(OBJS) $(MD5LIBS) $(LDLIBS)
@@ -136,10 +138,20 @@ TAGS: $(SRCS)
 .PHONY: clean
 
 clean:
-	-rm -f polipo$(EXE) *.o *~ core TAGS gmon.out
+	-rm -f polipo$(EXE) *.o *~ core TAGS gmon.out test/http-test-webserver$(EXE) test/sd-launch$(EXE)
 	-rm -f polipo.cp polipo.fn polipo.log polipo.vr
 	-rm -f polipo.cps polipo.info* polipo.pg polipo.toc polipo.vrs
 	-rm -f polipo.aux polipo.dvi polipo.ky polipo.ps polipo.tp
 	-rm -f polipo.dvi polipo.ps polipo.ps.gz polipo.pdf polipo.html
 	-rm -rf ./html/
 	-rm -f polipo.man.html
+
+check: polipo$(EXE) test/http-test-webserver$(EXE) test/sd-launch$(EXE)
+	test/run-test.sh
+
+test/http-test-webserver$(EXE): test/http-test-webserver.c sd.c
+	$(CC) $(CFLAGS) $(LDFLAGS) test/http-test-webserver.c sd.c -o test/http-test-webserver$(EXE) $(MD5LIBS) $(LDLIBS)
+
+test/sd-launch$(EXE): test/sd-launch.c
+	$(CC) $(CFLAGS) $(LDFLAGS) test/sd-launch.c -o test/sd-launch$(EXE) $(MD5LIBS) $(LDLIBS)
+

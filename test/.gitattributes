@@ -1,0 +1,6 @@
+# These files must be reproduced verbatim.  HTTP headers use CRLF as a line
+# ending and the length of the payload can be encoded in the header no neither
+# files should be touched by an automatic tool.
+*.header -text
+*.payload -text
+

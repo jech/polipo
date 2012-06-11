@@ -1,0 +1,19 @@
+HTTP/1.0 200 OK
+Date: Mon, 19 Dec 2011 19:07:59 GMT
+Server: Apache
+X-Content-Type-Options: nosniff
+Cache-Control: private, s-maxage=0, max-age=0, must-revalidate
+Content-Language: en
+Vary: Accept-Encoding,Cookie
+Last-Modified: Mon, 19 Dec 2011 19:07:43 GMT
+Content-Length: 124699
+Content-Type: text/html; charset=UTF-8
+X-Cache: HIT from sq75.wikimedia.org
+X-Cache-Lookup: HIT from sq75.wikimedia.org:3128
+Age: 2073
+X-Cache: HIT from amssq41.esams.wikimedia.org
+X-Cache-Lookup: HIT from amssq41.esams.wikimedia.org:3128
+X-Cache: MISS from amssq39.esams.wikimedia.org
+X-Cache-Lookup: MISS from amssq39.esams.wikimedia.org:80
+Connection: close
+
