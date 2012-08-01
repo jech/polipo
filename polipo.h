@@ -165,6 +165,13 @@ THE SOFTWARE.
 #endif
 #endif
 
+#ifdef __APPLE__
+#define HAVE_ASPRINTF
+#define HAVE_IPv6
+#define HAVE_TIMEGM
+#define HAVE_FFSL
+#endif
+
 #endif
 
 #if defined(i386) || defined(__mc68020__) || defined(__x86_64__)
