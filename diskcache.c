@@ -366,7 +366,7 @@ urlDirname(char *buf, int n, const char *url, int len)
     int i, j;
     if(len < 8)
         return -1;
-    if(memcmp(url, "http://", 7) != 0)
+    if(lwrcmp(url, "http://", 7) != 0)
         return -1;
 
     if(diskCacheRoot == NULL ||

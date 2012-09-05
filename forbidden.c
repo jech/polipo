@@ -398,7 +398,7 @@ urlIsMatched(char *url, int length, DomainPtr *domains, regex_t *regex)
     if(length < 8)
         return 0;
 
-    if(memcmp(url, "http://", 7) != 0)
+    if(lwrcmp(url, "http://", 7) != 0)
         return 0;
 
     if(domains) {
