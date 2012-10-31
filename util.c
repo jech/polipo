@@ -197,9 +197,9 @@ memrchr(const void *s, int c, size_t n)
     const unsigned char *ss = s;
     unsigned char cc = c;
     size_t i;
-    for(i = n - 1; i >= 0; i--)
-        if(ss[i] == cc)
-            return (void*)(ss + i);
+    for(i = 1; i <= n; i++)
+        if(ss[n - i] == cc)
+            return (void*)(ss + n - i);
     return NULL;
 }
 #endif
