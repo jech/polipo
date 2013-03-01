@@ -293,6 +293,13 @@ httpWriteObjectHeaders(char *buf, int offset, int len,
                        ObjectPtr object, int from, int to)
 {
     int n = offset;
+    CacheControlRec cache_control;
+
+    cache_control.flags = object->flags;
+    cache_control.max_age = object->max_age;
+    cache_control.s_maxage = object->s_maxage;
+    cache_control.max_stale = -1;
+    cache_control.min_fresh = -1;
 
     if(from <= 0 && to < 0) {
         if(object->length >= 0) {
@@ -358,7 +365,7 @@ httpWriteObjectHeaders(char *buf, int offset, int len,
     }
 
     n = httpPrintCacheControl(buf, n, len,
-                              object->cache_control, NULL);
+                              object->cache_control, &cache_control);
     if(n < 0)
         goto fail;
 

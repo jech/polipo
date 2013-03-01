@@ -1048,6 +1048,8 @@ validateEntry(ObjectPtr object, int fd,
         dirty = 1;
 
     object->cache_control |= cache_control.flags;
+    object->max_age = cache_control.max_age;
+    object->s_maxage = cache_control.s_maxage;
 
     if(object->age < 0) object->age = object->date;
     if(object->age < 0) object->age = 0; /* a long time ago */
