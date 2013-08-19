@@ -110,6 +110,7 @@ initLog(void)
 
     if(logFile != NULL && logFile->length > 0) {
         FILE *f;
+        logFile = expandTilde(logFile);
         f = openLogFile();
         if(f == NULL) {
             do_log_error(L_ERROR, errno, "Couldn't open log file %s",
