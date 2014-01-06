@@ -295,7 +295,7 @@ httpWriteObjectHeaders(char *buf, int offset, int len,
     int n = offset;
     CacheControlRec cache_control;
 
-    cache_control.flags = object->flags;
+    cache_control.flags = object->cache_control;
     cache_control.max_age = object->max_age;
     cache_control.s_maxage = object->s_maxage;
     cache_control.max_stale = -1;
