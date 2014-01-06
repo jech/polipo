@@ -60,6 +60,8 @@ typedef struct _HTTPRequest {
 #define REQUEST_FORCE_ERROR 8
 /* This server-side request was pipelined. */
 #define REQUEST_PIPELINED 16
+/* This client-side request has already switched objects once. */
+#define REQUEST_SUPERSEDED 32
 
 typedef struct _HTTPConnection {
     int flags;
