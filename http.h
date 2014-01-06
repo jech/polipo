@@ -50,10 +50,15 @@ typedef struct _HTTPRequest {
 } HTTPRequestRec, *HTTPRequestPtr;
 
 /* request->flags */
+/* If not present, drop the connection after this request. */
 #define REQUEST_PERSISTENT 1
+/* This client-side request has already been requested on the server-side. */
 #define REQUEST_REQUESTED 2
+/* This request is waiting for continue from the server. */
 #define REQUEST_WAIT_CONTINUE 4
+/* Force an error unconditionally -- used for client auth failures. */
 #define REQUEST_FORCE_ERROR 8
+/* This server-side request was pipelined. */
 #define REQUEST_PIPELINED 16
 
 typedef struct _HTTPConnection {
