@@ -1,4 +1,4 @@
-Polipo 1.0.5 (unreleased)
+Polipo 1.1.0 (unreleased)
 
   * Fixed a bug that could cause incorrect logging to syslog (thanks
     to Sami Farin).
@@ -13,6 +13,8 @@ Polipo 1.0.5 (unreleased)
   * Changed chunk allocator to use larger arenas on 64-bit arches.
   * Fixed a bug that could prevent saving objects on disk.  Thanks to
     Ming Fu.
+  * Fixed a bug that could prevent parsing large headers.  Thanks to
+    Ming Fu.
   * Fixed an issue that could cause crash messages to go into the disk
     cache.
   * Fixed a bug that could cause the default chunk memory to be incorrect
@@ -22,13 +24,32 @@ Polipo 1.0.5 (unreleased)
   * Inhibited range requests for non-200 instances, as this breaks some
     client software.  Thanks to Ken Brazier.
   * Fix a integer overflow in processing client requests.
+  * Implement authentication on tunnelled connections.  Thanks to
+    Stephen Dolan.
+  * Implement ability to include Cache-Control: no-transform in all
+    requests.  Thanks to Nick Osborn.
+  * Fix a bug in the DNS code that would cause us to ignore CNAMES
+    after a DNS timeout.
   * Fixed a crash that occurs when a server sends a malformed
     Cache-Control: header (CVE-2009-3305). Thanks to Stefan Fritsch.
+  * Removed support for read-only caches.  Nobody ever used it.
   * Changed the default value of diskCacheWriteoutOnClose to 64kB.
   * Cleaned up naming of Windows support functions. Thanks to Honglei Jiang.
   * Added support for forbidden tunnels (thanks to Richard Zidlicky).
   * Fixed a bug that prevented parsing of extremely long literal IPv6
     addresses (thanks to Jan Braun).
+  * Added support for DOS-style absolute pathnames.  Thanks to Gisle Vanem.
+  * Fix a bug that could cause infinite revalidation loops.  Thanks to
+    David Rothlisberger.
+  * Fix a bug that could provide incorrect caching information to clients.
+    Thanks to William Manley.
+  * Support MSVC 2010.  Thanks to Greg Hazel.
+  * Work-around buggy clients that send HTTP:// in uppercase.  Thanks
+    to David Rothlisberger.
+  * Save Cache-Control values to the disk cache.  Thanks to Ruben Alleres.
+  * Allow ~ in logFile.  Thanks to P.J. Hades.
+  * Fix a bug that could cause infinite revalidation loops with servers
+    that perform sloppy packetisation (IIS, I'm looking at you).
 
 31 January 2010: Polipo 1.0.4.1:
 
