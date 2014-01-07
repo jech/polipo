@@ -1713,17 +1713,16 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
 }
 
 int
-httpServerHandler(int status, 
+httpServerHandler(int status,
                   FdEventHandlerPtr event,
                   StreamRequestPtr srequest)
 {
     HTTPConnectionPtr connection = srequest->data;
-    AtomPtr message;
-    
+
     assert(connection->request->object->flags & OBJECT_INPROGRESS);
 
     if(connection->reqlen == 0) {
-        do_log(D_SERVER_REQ, "Writing aborted on 0x%lx\n", 
+        do_log(D_SERVER_REQ, "Writing aborted on 0x%lx\n",
                (unsigned long)connection);
         goto fail;
     }
@@ -1732,7 +1731,7 @@ httpServerHandler(int status,
         httpSetTimeout(connection, serverTimeout);
         return 0;
     }
-    
+
     httpConnectionDestroyReqbuf(connection);
 
     if(status) {
@@ -1740,19 +1739,12 @@ httpServerHandler(int status,
             httpServerRestart(connection);
             return 1;
         }
-        if(status >= 0 || status == ECONNRESET) {
-            message = internAtom("Couldn't send request to server: "
-                                 "short write");
-        } else {
-            if(status != -EPIPE)
-                do_log_error(L_ERROR, -status,
-                             "Couldn't send request to server");
-            message = 
-                internAtomError(-status, "Couldn't send request to server");
-        }
+        if(status < 0 && status != -ECONNRESET && status != -EPIPE)
+            do_log_error(L_ERROR, -status,
+                         "Couldn't send request to server");
         goto fail;
     }
-    
+
     return 1;
 
  fail:
