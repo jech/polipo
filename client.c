@@ -1057,7 +1057,7 @@ httpClientDiscardHandler(int status,
 
     assert(connection->flags & CONN_READER);
     if(status) {
-        if(status < 0 && status != -EPIPE)
+        if(status < 0 && status != -EPIPE && status != -ECONNRESET)
             do_log_error(L_ERROR, -status, "Couldn't read from client");
         connection->bodylen = -1;
         return httpClientDiscardBody(connection);
