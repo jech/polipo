@@ -462,7 +462,7 @@ tunnelRead1Handler(int status,
 {
     TunnelPtr tunnel = request->data;
     if(status) {
-        if(status < 0)
+        if(status < 0 && status != -EPIPE && status != -ECONNRESET)
             do_log_error(L_ERROR, -status, "Couldn't read from client");
         tunnel->flags |= TUNNEL_EOF1;
         goto done;
@@ -482,7 +482,7 @@ tunnelRead2Handler(int status,
                    FdEventHandlerPtr event, StreamRequestPtr request)
 {
     TunnelPtr tunnel = request->data;
-    if(status) {
+    if(status && status != -EPIPE && status != -ECONNRESET) {
         if(status < 0)
             do_log_error(L_ERROR, -status, "Couldn't read from server");
         tunnel->flags |= TUNNEL_EOF2;
