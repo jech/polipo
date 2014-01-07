@@ -67,7 +67,6 @@ This manual was written by
 * Network traffic::             Be nice to the net.
 * Partial instances::           Don't discard data.
 * POST and PUT::                Other requests
-* Other HTTP proxies::          Why did I write Polipo from scratch?
 @end menu
 
 @node The web, Proxies and caches, Background, Background
@@ -110,19 +109,20 @@ can improve performance by generating better network traffic than the
 client applications would do.
 
 Proxies are also useful in ways unrelated to raw performance.  A proxy
-can be used to contact a server that are not visible to the browser,
-for example because there is a firewall in the way (@pxref{Parent
-proxies}), or because the client and the server use different lower
-layer protocols (for example IPv4 and IPv6).  Another common
-application of proxies is to modify the data sent to servers and
-returned to clients, for example by censoring headers that expose too
-much about the client's identity (@pxref{Censoring headers}) or
+can be used to contact a server that is not directly accessible to the
+client, for example because there is a firewall in the way
+(@pxref{Parent proxies}), or because the client and the server use
+different lower layer protocols (for example IPv4 and IPv6).  Another
+common application of proxies is to modify the data sent to servers
+and returned to clients, for example by censoring headers that expose
+too much about the client's identity (@pxref{Censoring headers}) or
 removing advertisements from the data returned by the server
 (@pxref{Forbidden}).
 
 Polipo is a caching HTTP proxy that was originally designed as
 a @dfn{personal} proxy, i.e.@: a proxy that is used by a single user
-or a small group of users.
+or a small group of users.  However, it has successfully been used by
+larger groups.
 
 @node Latency and throughput, Network traffic, Proxies and caches, Background
 @section Latency and throughput
@@ -211,7 +211,7 @@ Polipo carefully probes for pipelining support in a server and uses
 pipelining if it believes that it is reliable.  Polipo also deeply
 enjoys being pipelined at by a client@footnote{Other client-side
 implementations of HTTP that make use of pipelining include
-@uref{http://www.opera.com/,,Opera}, recent versions of
+@uref{http://www.opera.com/,,Opera},
 @uref{http://www.mozilla.org,,Mozilla}, APT (the package downloader
 used by @uref{http://www.debian.org,,Debian} GNU/Linux) and LFTP.}.
 
@@ -279,7 +279,7 @@ beginning up to its first hole) in its on-disk cache, though.  In
 either case, it will attempt to use range requests to fetch the
 missing data.
 
-@node POST and PUT, Other HTTP proxies, Partial instances, Background
+@node POST and PUT, , Partial instances, Background
 @section Other requests
 @cindex GET request
 @cindex HEAD request
@@ -317,141 +317,6 @@ Finally, HTTP/1.1 includes a convenient backdoor with the
 
 Polipo does not currently handle the more exotic methods such as
 @samp{OPTIONS} and @samp{PROPFIND}.
-
-@node Other HTTP proxies,  , POST and PUT, Background
-@section Other HTTP proxies
-@cindex proxy
-
-I started writing Polipo because the weather was bad.  But also
-because I wanted to implement some features that other web proxies
-don't have.
-
-@menu
-* Harvest and Squid::           Historic proxies.
-* Apache::                      The web server has a proxy.
-* WWWOFFLE::                    A personal proxy.
-* Junkbuster::                  Get rid of ads.
-* Privoxy::                     Junkbuster on speed.
-* Oops::                        A multithreaded cache.
-@end menu
-
-@node Harvest and Squid, Apache, Other HTTP proxies, Other HTTP proxies
-@subsection Harvest and Squid
-@cindex Harvest
-@cindex Squid
-
-Harvest, the grandfather of all web caches, has since evolved into
-@uref{http://www.squid-cache.org/,,Squid}.
-
-Squid sports an elegant single-threaded non-blocking architecture and
-multiplexes multiple clients in a single process.  It also features
-almost complete support for HTTP/1.1, although for some reason it
-doesn't currently advertise it.
-
-Squid is designed as a large-scale shared proxy running on a dedicated
-machine, and therefore carries certain design decisions which make it
-difficult to use as a personal proxy.  Because Squid keeps all
-resource meta-data in memory, it requires a fair amount of RAM in
-order to manipulate a reasonably sized cache.
-
-Squid doesn't cache partial instances, and has trouble with instances
-larger than available memory@footnote{Recent versions of Squid support
-instances larger than available memory by using a hack that the
-authors call a ``sliding window algorithm''.}.  If a client connection
-is interrupted, Squid has to decide whether to continue fetching the
-resource (and possibly waste bandwidth) or discard what it already has
-(and possibly waste bandwidth).
-
-Some versions of squid would, under some circumstances, pipeline up to
-two outgoing requests on a single connection.  At the time of writing,
-this feature appears to have been disabled in the latest version.
-
-Squid's developers have decided to re-write it in C++.
-
-@node Apache, WWWOFFLE, Harvest and Squid, Other HTTP proxies
-@subsection The Apache proxy
-@cindex Apache
-
-The @uref{http://www.apache.org/,,Apache web server} includes a
-complete HTTP/1.1 proxy.
-
-The Apache web server was designed to maximise ease of programming ---
-a decision which makes Apache immensely popular for deploying
-web-based applications.  Of course, this ease of programming comes at
-a cost, and Apache is not the most lightweight proxy available.
-
-As cheaper caching proxies are available, Apache is not useful as a
-standalone proxy.  The main application of Apache's proxy is to join
-multiple web servers' trees into a single hierarchy.
-
-The Apache proxy doesn't cache partial instances and doesn't pipeline
-multiple outgoing requests.
-
-@node WWWOFFLE, Junkbuster, Apache, Other HTTP proxies
-@subsection WWWOFFLE
-@cindex WWWOFFLE
-
-@uref{http://www.gedanken.demon.co.uk/wwwoffle/,,WWWOFFLE}, an elegant
-personal proxy, is the primary model for Polipo.
-
-WWWOFFLE has more features than can be described here.  It will censor
-banner ads, clean your HTML, decorate it with random colours, schedule
-fetches for off-peak hours.
-
-Unfortunately, the HTTP traffic that WWWOFFLE generates is disgusting.
-It will open a connection for every fetch, and forces the client to do
-the same.
-
-WWWOFFLE only caches complete instances.
-
-I used WWWOFFLE for many years, and frustration with WWWOFFLE's
-limitations is the main reason why I started Polipo in the first
-place.
-
-@node Junkbuster, Privoxy, WWWOFFLE, Other HTTP proxies
-@subsection Junkbuster
-@cindex Junkbuster
-
-@uref{http://internet.junkbuster.com/,,Junkbuster} is a simple
-non-caching web proxy designed to remove banner ads and cookies.  It
-was the main model for WWWOFFLE's (and therefore Polipo's) header and
-ad-removing features.
-
-Junkbuster's HTTP support is very simple (some would say broken): it
-doesn't do persistent connections, and it breaks horribly if the
-client tries pipelining.  Junkbuster is no longer being maintained,
-and has evolved into Privoxy.
-
-@node Privoxy, Oops, Junkbuster, Other HTTP proxies
-@subsection Privoxy
-@cindex Privoxy
-
-@uref{http://www.privoxy.org/,,Privoxy} is the current incarnation of
-Junkbuster.  Privoxy has the ability to randomly modify web pages
-before sending them to the browser --- for example, remove
-@samp{<blink>} or @samp{<img>} tags.
-
-Just like its parent, Privoxy cannot do persistent connections.  Under
-some circumstances, it will also buffer whole pages before sending
-them to the client, which significantly adds to its latency.  However,
-this is difficult to avoid given the kinds of rewriting it attempts to
-perform.
-
-@node Oops,  , Privoxy, Other HTTP proxies
-@subsection Oops
-@cindex Oops
-
-@uref{http://zipper.paco.net/~igor/oops.eng/,,Oops} is a caching web
-proxy that uses one thread (lightweight process) for every connection.
-This technique does cost additional memory, but allows good
-concurrency of requests while avoiding the need for complex
-non-blocking programming.  Oops was apparently designed as a
-wide-scale shared proxy.
-
-Although Oops' programming model makes it easy to implement persistent
-connections, Oops insists on opening a separate connection to the
-server for every single resource fetch, which disqualifies it from
-production usage.
 
 @node Running, Network, Background, Top
 @chapter Running Polipo
@@ -1182,7 +1047,7 @@ based on hostname and port information.
 @menu
 * Internal forbidden list::     Specifying forbidden URLs.
 * External redirectors::        Using an external redirector.
-* Forbidden Tunnels::           
+* Forbidden Tunnels::           Specifying hosts forbidden for tunnelling.
 @end menu
 
 @node Internal forbidden list, External redirectors, Forbidden, Forbidden
@@ -1240,7 +1105,7 @@ redirector = /usr/bin/adzapper
 @subsection Forbidden Tunnels
 
 Polipo does by default allow tunnelled connections 
-(@pxref{ Tunnelling connections}), however sometimes it is desirable to 
+(@pxref{Tunnelling connections}), however sometimes it is desirable to 
 block connections selectively. 
 
 Because polipo does only pass through tunnelled connections filtering is 
@@ -1748,7 +1613,7 @@ to -1 (the default), all objects are stored in the on-disk cache,
 * Asynchronous writing::        Writing out data when idle.
 * Purging::                     Purging the on-disk cache.
 * Disk format::                 Format of the on-disk cache.
-* Modifying the on-disk cache::  
+* Modifying the on-disk cache::
 @end menu
 
 @node Asynchronous writing, Purging, Disk cache, Disk cache
