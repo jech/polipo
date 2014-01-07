@@ -815,7 +815,7 @@ int
 parseConfigFile(AtomPtr filename)
 {
     char buf[512];
-    int rc, lineno;
+    int lineno;
     FILE *f;
 
     if(!filename || filename->length == 0)
@@ -835,7 +835,7 @@ parseConfigFile(AtomPtr filename)
             fclose(f);
             return 1;
         }
-        rc = parseConfigLine(buf, filename->string, lineno, 0);
+        parseConfigLine(buf, filename->string, lineno, 0);
         lineno++;
     }
 }
