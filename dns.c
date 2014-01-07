@@ -1396,7 +1396,7 @@ static int
 labelsToString(char *buf, int offset, int n, char *d, int m, int *j_return)
 {
     int i = offset, j, k;
-    int ll;
+    int ll, rc;
 
     j = 0;
     while(1) {
@@ -1411,7 +1411,9 @@ labelsToString(char *buf, int offset, int n, char *d, int m, int *j_return)
             if(i >= n) return -1;
             o = (ll & ~(3 << 6)) << 8 | *(unsigned char*)&buf[i];
             i++;
-            labelsToString(buf, o, n, &d[j], m - j, &k);
+            rc = labelsToString(buf, o, n, &d[j], m - j, &k);
+            if(rc < 0)
+                return -1;
             j += k;
             break;
         } else if((ll & (3 << 6)) == 0) {
