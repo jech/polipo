@@ -54,7 +54,7 @@ THE SOFTWARE.
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/uio.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <signal.h>
