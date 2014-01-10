@@ -306,10 +306,6 @@ maybeFlushSyslog(int type)
     }
 }
 
-#ifndef va_copy
-#define va_copy(a, b) do { a = b; } while(0)
-#endif
-
 static void
 accumulateSyslogV(int type, const char *f, va_list args)
 {
