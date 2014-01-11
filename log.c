@@ -402,17 +402,21 @@ really_do_log(int type, const char *f, ...)
 void
 really_do_log_v(int type, const char *f, va_list args)
 {
+    va_list args_copy;
+
     if(type & LOGGING_MAX & logLevel) {
         if(logF)
         {
-            va_list args_copy;
             va_copy(args_copy, args);
             vfprintf(logF, f, args_copy);
             va_end(args_copy);
         }
 #ifdef HAVE_SYSLOG
-        if(logSyslog)
-            accumulateSyslogV(type, f, args);
+        if(logSyslog) {
+            va_copy(args_copy, args);
+            accumulateSyslogV(type, f, args_copy);
+            va_end(args_copy);
+        }
 #endif
     }
 }
@@ -430,13 +434,14 @@ really_do_log_error(int type, int e, const char *f, ...)
 void
 really_do_log_error_v(int type, int e, const char *f, va_list args)
 {
+    va_list args_copy;
+
     if((type & LOGGING_MAX & logLevel) != 0) {
         char *es = pstrerror(e);
         if(es == NULL)
             es = "Unknown error";
 
         if(logF) {
-            va_list args_copy;
             va_copy(args_copy, args);
             vfprintf(logF, f, args_copy);
             fprintf(logF, ": %s\n", es);
@@ -447,7 +452,9 @@ really_do_log_error_v(int type, int e, const char *f, va_list args)
             char msg[256];
             int n = 0;
 
-            n = snnvprintf(msg, n, 256, f, args);
+            va_copy(args_copy, args);
+            n = snnvprintf(msg, n, 256, f, args_copy);
+            va_end(args_copy);
             n = snnprintf(msg, n, 256, ": ");
             n = snnprint_n(msg, n, 256, es, strlen (es));
             n = snnprintf(msg, n, 256, "\n");

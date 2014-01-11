@@ -644,7 +644,9 @@ really_do_gethostbyname(AtomPtr name, ObjectPtr object)
     if(host == NULL) {
         switch(h_errno) {
         case HOST_NOT_FOUND: error = EDNS_HOST_NOT_FOUND; break;
+#ifdef NO_ADDRESS
         case NO_ADDRESS: error = EDNS_NO_ADDRESS; break;
+#endif
         case NO_RECOVERY: error = EDNS_NO_RECOVERY; break;
         case TRY_AGAIN: error = EDNS_TRY_AGAIN; break;
         default: error = EUNKNOWN; break;

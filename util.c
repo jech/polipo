@@ -50,9 +50,14 @@ int
 snnvprintf(char *restrict buf, int n, int len, const char *format, va_list args)
 {
     int rc = -1;
+    va_list args_copy;
+
     if(n < 0) return -2;
-    if(n < len)
-        rc = vsnprintf(buf + n, len - n, format, args);
+    if(n < len) {
+        va_copy(args_copy, args);
+        rc = vsnprintf(buf + n, len - n, format, args_copy);
+        va_end(args_copy);
+    }
     if(rc >= 0 && n + rc <= len)
         return n + rc;
     else
@@ -268,8 +273,11 @@ vsprintf_a(const char *f, va_list args)
 {
     char *r;
     int rc;
+    va_list args_copy;
 
-    rc = vasprintf(&r, f, args);
+    va_copy(args_copy, args);
+    rc = vasprintf(&r, f, args_copy);
+    va_end(args_copy);
     if(rc < 0)
         return NULL;
     return r;
@@ -288,6 +296,7 @@ vsprintf_a(const char *f, va_list args)
 
     va_copy(args_copy, args);
     n = vsnprintf(buf, 64, f, args_copy);
+    va_end(args_copy);
     if(n >= 0 && n < 64) {
         return strdup_n(buf, n);
     }
@@ -302,9 +311,10 @@ vsprintf_a(const char *f, va_list args)
             return NULL;
         va_copy(args_copy, args);
         n = vsnprintf(string, size, f, args_copy);
-        if(n >= 0 && n < size)
+        va_end(args_copy);
+        if(n >= 0 && n < size) {
             return string;
-        else if(n >= size)
+        } else if(n >= size)
             size = n + 1;
         else
             size = size * 3 / 2;
