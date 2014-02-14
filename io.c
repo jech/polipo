@@ -647,7 +647,7 @@ schedule_accept(int fd,
     request.fd = fd;
     request.handler = handler;
     request.data = data;
-    event = registerFdEvent(fd, POLLOUT|POLLIN, 
+    event = registerFdEvent(fd, POLLIN, 
                             do_scheduled_accept, sizeof(request), &request);
     if(!event) {
         done = (*handler)(-ENOMEM, NULL, NULL);
