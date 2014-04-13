@@ -309,6 +309,12 @@ httpSpecialSideRequest(ObjectPtr object, int method, int from, int to,
         return 1;
     }
 
+    if(requestor->flags & REQUEST_WAIT_CONTINUE) {
+        httpClientError(requestor, 417, internAtom("Expectation failed"));
+        requestor->connection->flags &= ~CONN_READER;
+        return 1;
+    }
+
     return httpSpecialDoSide(requestor);
 }
 
