@@ -1,3 +1,6 @@
 polipo
 core
 *.o
+polipo.html
+polipo.info
+html/
