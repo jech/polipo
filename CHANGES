@@ -1,13 +1,13 @@
-Polipo 1.1.0 (unreleased)
+14 April 2014: Polipo 1.1.0:
 
-  * Fixed a bug that could cause incorrect logging to syslog (thanks
-    to Sami Farin).
-  * Proper va_list handling for AMD64 and other RISC-like
-    architectures on non-GNU platforms.
+  * Proper va_list handling for AMD64 and other RISC-like architectures
+    (Juliusz Chroboczek and Aleksandar Kuktin).
   * Implemented work-around for broken Content-Range headers.
   * Use 1024 instead of 32 as the length of the listen queue.
   * Implemented the ability to control the permissions set on the log file.
   * Implemented the ability to scrub private information from logs.
+  * Fixed a bug that could cause incorrect logging to syslog (thanks
+    to Sami Farin).
   * Tweaked the portable version of mktime_gmt.  This will hopefully
     fix the time issues on Windows.  Thanks to MaxWell and Greg.
   * Changed chunk allocator to use larger arenas on 64-bit arches.
@@ -39,17 +39,20 @@ Polipo 1.1.0 (unreleased)
   * Fixed a bug that prevented parsing of extremely long literal IPv6
     addresses (thanks to Jan Braun).
   * Added support for DOS-style absolute pathnames.  Thanks to Gisle Vanem.
-  * Fix a bug that could cause infinite revalidation loops.  Thanks to
+  * Fixed a bug that could cause infinite revalidation loops.  Thanks to
     David Rothlisberger.
-  * Fix a bug that could provide incorrect caching information to clients.
+  * Fixed a bug that could provide incorrect caching information to clients.
     Thanks to William Manley.
   * Support MSVC 2010.  Thanks to Greg Hazel.
   * Work-around buggy clients that send HTTP:// in uppercase.  Thanks
     to David Rothlisberger.
   * Save Cache-Control values to the disk cache.  Thanks to Ruben Alleres.
   * Allow ~ in logFile.  Thanks to P.J. Hades.
-  * Fix a bug that could cause infinite revalidation loops with servers
+  * Fixed a bug that could cause infinite revalidation loops with servers
     that perform sloppy packetisation (IIS, I'm looking at you).
+  * Fail expectations on the local interface.  This might or might not be
+    what CVE-2011-3596 is about, difficult to say since nobody is speaking
+    to me.
 
 31 January 2010: Polipo 1.0.4.1:
 
