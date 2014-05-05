@@ -233,7 +233,7 @@ socksDnsHandler(int status, GethostbynameRequestPtr grequest)
             return 1;
         }
         do_gethostbyname(grequest->addr->string + 1, grequest->count + 1,
-                         httpServerConnectionDnsHandler, request);
+                         socksDnsHandler, request);
         return 1;
     }
 
