@@ -1,3 +1,9 @@
+Polipo 1.1.1 (unreleased):
+
+  * Fix a typo that would cause a crash when connecting to a SOCKS
+    server that has multiple addresses and the first address fails.
+    Thanks to soflare.
+
 14 April 2014: Polipo 1.1.0:
 
   * Proper va_list handling for AMD64 and other RISC-like architectures
