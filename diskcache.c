@@ -1133,12 +1133,6 @@ revalidateDiskEntry(ObjectPtr object)
     return 1;
 }
 
-static inline int
-objectHasDiskEntry(ObjectPtr object)
-{
-    return object->disk_entry && object->disk_entry != &negativeEntry;
-}
-
 static DiskCacheEntryPtr
 makeDiskEntry(ObjectPtr object, int create)
 {
