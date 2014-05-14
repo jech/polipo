@@ -1,4 +1,4 @@
-Polipo 1.1.1 (unreleased):
+14 May 2014: Polipo 1.1.1:
 
   * Fix a typo that would cause a crash when connecting to a SOCKS
     server identified by a DNS CNAME.  Thanks to soflare.
