@@ -722,8 +722,11 @@ create_listener(char *address, int port,
         return NULL;
     }
 
+#ifndef WIN32
+    /* on WIN32 SO_REUSEADDR allows two sockets bind to the same port */
     rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
     if(rc < 0) do_log_error(L_WARN, errno, "Couldn't set SO_REUSEADDR");
+#endif
 
     if(inet6) {
 #ifdef HAVE_IPv6
