@@ -298,8 +298,7 @@ localFilename(char *buf, int n, char *key, int len)
 
     if(urlIsSpecial(key, len)) return -1;
 
-    if(localDocumentRoot == NULL ||
-       localDocumentRoot->length <= 0 || localDocumentRoot->string[0] != '/')
+    if(checkRoot(localDocumentRoot) <= 0)
         return -1;
 
     if(n <= localDocumentRoot->length)
@@ -369,12 +368,7 @@ urlDirname(char *buf, int n, const char *url, int len)
     if(lwrcmp(url, "http://", 7) != 0)
         return -1;
 
-    if(diskCacheRoot == NULL ||
-       diskCacheRoot->length <= 0
-#ifndef WIN32
-       || diskCacheRoot->string[0] != '/'
-#endif
-       )
+    if(checkRoot(localDocumentRoot) <= 0)
         return -1;
 
     if(n <= diskCacheRoot->length)
