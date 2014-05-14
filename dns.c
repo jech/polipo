@@ -199,7 +199,9 @@ preinitDns()
 #endif
 
 #ifndef NO_FANCY_RESOLVER
+#ifndef WIN32
     parseResolvConf("/etc/resolv.conf");
+#endif
     if(dnsNameServer == NULL || dnsNameServer->string[0] == '\0')
         dnsNameServer = internAtom("127.0.0.1");
     CONFIG_VARIABLE(dnsMaxTimeout, CONFIG_TIME,
