@@ -1,4 +1,5 @@
 polipo
+polipo\.exe
 core
 *.o
 polipo.html
