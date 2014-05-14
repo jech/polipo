@@ -55,7 +55,7 @@ preinitLocal()
 
 static void fillSpecialObject(ObjectPtr, void (*)(FILE*, char*), void*);
 
-int 
+int
 httpLocalRequest(ObjectPtr object, int method, int from, int to,
                  HTTPRequestPtr requestor, void *closure)
 {
@@ -67,14 +67,10 @@ httpLocalRequest(ObjectPtr object, int method, int from, int to,
                                   requestor, closure);
 
     if(method >= METHOD_POST) {
-        httpClientError(requestor, 405, internAtom("Method not allowed"));
-        requestor->connection->flags &= ~CONN_READER;
-        return 1;
-    }
-
-    /* objectFillFromDisk already did the real work but we have to
-       make sure we don't get into an infinite loop. */
-    if(object->flags & OBJECT_INITIAL) {
+        abortObject(object, 405, internAtom("Method not allowed"));
+    } else if(object->flags & OBJECT_INITIAL) {
+        /* objectFillFromDisk already did the real work but we have to
+           make sure we don't get into an infinite loop. */
         abortObject(object, 404, internAtom("Not found"));
     }
     object->age = current_time.tv_sec;
