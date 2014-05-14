@@ -574,6 +574,15 @@ do_daemonise(int noclose)
     }
 }
 
+#elif defined(WIN32)
+
+void
+do_daemonise(int noclose)
+{
+	do_log(L_INFO, "Detaching console");
+	FreeConsole();
+}
+
 #else
 
 void
