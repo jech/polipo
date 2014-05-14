@@ -4,6 +4,7 @@ Polipo 1.1.1 (unreleased):
     server identified by a DNS CNAME.  Thanks to soflare.
   * Fix a typo that could cause an infinite loop when tunnelling.
     Thanks to xnoreq for the extensive debugging session.
+  * Various improvements to the Windows port.  Thanks to xnoreq.
 
 14 April 2014: Polipo 1.1.0:
 
