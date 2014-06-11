@@ -60,7 +60,7 @@ THE SOFTWARE.
 #include <signal.h>
 #endif
 
-#ifdef __MINGW32_VERSION
+#ifdef __MINGW32__
 #define MINGW
 #endif
 
