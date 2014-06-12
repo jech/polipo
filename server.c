@@ -1075,7 +1075,8 @@ httpServerDelayedDoSide(HTTPConnectionPtr connection)
         free_chunk_arenas();
         handler = scheduleTimeEvent(0, httpClientDelayedDoSideHandler,
                                     sizeof(connection), &connection);
-        do_log(L_ERROR, "Couldn't schedule DoSide.\n");
+        if(!handler)
+            do_log(L_ERROR, "Couldn't schedule DoSide.\n");
         /* Somebody will hopefully end up timing out. */
         return 1;
     }
