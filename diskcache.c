@@ -2169,19 +2169,17 @@ indexDiskObjects(FILE *out, const char *root, int recursive)
     }
 
     if(dobjects) {
-        DiskObjectPtr dobject;
         int entryno;
         dobjects = insertRoot(dobjects, root);
         dobjects = insertDirs(dobjects);
         dobjects = filterDiskObjects(dobjects, root, recursive);
-        dobject = dobjects;
         buf[0] = '\0';
         alternatingHttpStyle(out, "diskcachelist");
         fprintf(out, "<table id=diskcachelist>\n");
         fprintf(out, "<tbody>\n");
         entryno = 0;
         while(dobjects) {
-            dobject = dobjects;
+            DiskObjectPtr dobject = dobjects;
             i = strlen(dobject->location);
             isdir = (i == 0 || dobject->location[i - 1] == '/');
             if(entryno % 2)
