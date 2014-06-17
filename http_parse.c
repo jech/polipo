@@ -1249,7 +1249,8 @@ httpParseHeaders(int client, AtomPtr url,
                 cache_control.flags |= CACHE_COOKIE;
 
             if(hbuf) {
-                if(name != atomConnection && name != atomHost &&
+                if(name != atomConnection &&
+                   ( useClienHostHeader || name != atomHost ) &&
                    name != atomAcceptRange && name != atomTE &&
                    name != atomProxyAuthenticate &&
                    name != atomKeepAlive &&
