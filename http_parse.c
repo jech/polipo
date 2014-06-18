@@ -1250,7 +1250,7 @@ httpParseHeaders(int client, AtomPtr url,
 
             if(hbuf) {
                 if(name != atomConnection &&
-                   ( useClienHostHeader || name != atomHost ) &&
+                   (useClientHostHeader || name != atomHost) &&
                    name != atomAcceptRange && name != atomTE &&
                    name != atomProxyAuthenticate &&
                    name != atomKeepAlive &&

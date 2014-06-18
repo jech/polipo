@@ -40,7 +40,7 @@ int maxSideBuffering = 1500;
 int maxConnectionAge = 1260;
 int maxConnectionRequests = 400;
 int alwaysAddNoTransform = 0;
-int useClienHostHeader = 0;
+int useClientHostHeader = 0;
 
 static HTTPServerPtr servers = 0;
 
@@ -96,7 +96,7 @@ preinitServer(void)
                              "Maximum number of requests on a server-side connection.");
     CONFIG_VARIABLE(alwaysAddNoTransform, CONFIG_BOOLEAN,
                     "If true, add a no-transform directive to all requests.");
-    CONFIG_VARIABLE_SETTABLE(useClienHostHeader, CONFIG_BOOLEAN, configIntSetter,
+    CONFIG_VARIABLE_SETTABLE(useClientHostHeader, CONFIG_BOOLEAN, configIntSetter,
                              "Use client host header.");
 }
 
@@ -1625,7 +1625,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
 
     n = snnprintf(connection->reqbuf, n, bufsize, " HTTP/1.1");
 
-    if(!useClienHostHeader) {
+    if(!useClientHostHeader) {
 		n = snnprintf(connection->reqbuf, n, bufsize, "\r\nHost: ");
 		n = snnprint_n(connection->reqbuf, n, bufsize, url + x, y - x);
 		if(port != 80)
