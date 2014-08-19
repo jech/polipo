@@ -199,6 +199,7 @@ parseDomainFile(AtomPtr file,
                 DomainPtr **domains_return, regex_t **regex_return)
 {
     struct stat ss;
+    regex_t *regex;
     int rc;
 
     if(*domains_return) {
@@ -272,8 +273,6 @@ parseDomainFile(AtomPtr file,
         free(domains);
         domains = NULL;
     }
-
-    regex_t *regex;
 
     if(rlen > 0) {
         regex = malloc(sizeof(regex_t));
