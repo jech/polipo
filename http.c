@@ -1092,3 +1092,22 @@ httpHeaderMatch(AtomPtr header, AtomPtr headers1, AtomPtr headers2)
 
     return 1;
 }
+
+char *
+method2str(int method){
+    if (method == METHOD_GET) {
+        return "GET";
+    } else if (method == METHOD_HEAD) {
+        return "GET";
+    } else if (method == METHOD_CONDITIONAL_GET) {
+        return "CONDITIONAL_GET";
+    } else if (method == METHOD_CONNECT) {
+        return "CONNECT";
+    } else if (method == METHOD_POST) {
+        return "POST";
+    } else if (method == METHOD_PUT) {
+        return "PUT";
+    } else {
+        return "NONE";
+    }
+}

@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 
 #include "polipo.h"
+#include <time.h>
 
 #ifdef HAVE_SYSLOG
 #include <syslog.h>
@@ -397,6 +398,25 @@ really_do_log(int type, const char *f, ...)
     if(type & LOGGING_MAX & logLevel)
         really_do_log_v(type, f, args);
     va_end(args);
+}
+
+void
+really_do_log_time(int type, const char *f, ...)
+{
+        time_t rawtime;
+        struct tm * timeinfo;
+        time (&rawtime);
+	timeinfo = localtime (&rawtime);
+
+        char out[19 + 3 + strlen(f) + 1];
+
+	strftime(out, sizeof(char) * 23, "%Y-%m-%d %H:%M:%S - ", timeinfo);
+        strcat(out, f);
+
+        va_list args;
+        va_start(args, f);
+        really_do_log_v(type, out, args);
+        va_end(args);
 }
 
 void
