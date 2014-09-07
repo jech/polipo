@@ -65,49 +65,57 @@ AtomPtr socksProxyAddress = NULL;
 int socksProxyAddressIndex = -1;
 AtomPtr socksUserName = NULL;
 AtomPtr socksPassWord = NULL;
-AtomPtr socksAuthMethod = NULL;
 AtomPtr socksProxyType = NULL;
-AtomPtr aSocks4a, aSocks5, bNoAuth, bUserPass;
+AtomPtr aSocks4a, aSocks5;
 
 static int socksParentProxySetter(ConfigVariablePtr, void*);
 static int socksProxyTypeSetter(ConfigVariablePtr, void*);
-static int socksAuthMethodSetter(ConfigVariablePtr var, void *value);
 static int do_socks_connect_common(SocksRequestPtr);
 static int socksDnsHandler(int, GethostbynameRequestPtr);
 static int socksConnectHandler(int, FdEventHandlerPtr, ConnectRequestPtr);
 static int socksWriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socksReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5ReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
-static int socks5UPReadHandler(int, FdEventHandlerPtr, StreamRequestPtr);
+static int socks5ReadHandlerAuth(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5WriteHandler(int, FdEventHandlerPtr, StreamRequestPtr);
 static int socks5ReadHandler2(int, FdEventHandlerPtr, StreamRequestPtr);
 
 void
 preinitSocks()
 {
+    AtomPtr socksAuthCredentials = internAtom("");
+
     aSocks4a = internAtom("socks4a");
     aSocks5 = internAtom("socks5");
-    bNoAuth = internAtom("no");
-    bUserPass = internAtom("userpass");
     socksProxyType = retainAtom(aSocks5);
-    socksAuthMethod = retainAtom(bNoAuth);
     socksUserName = internAtom("");
     socksPassWord = internAtom("");
+
     CONFIG_VARIABLE_SETTABLE(socksParentProxy, CONFIG_ATOM_LOWER,
                              socksParentProxySetter,
                              "SOCKS parent proxy (host:port)");
-    CONFIG_VARIABLE_SETTABLE(socksUserName, CONFIG_ATOM,
+    CONFIG_VARIABLE_SETTABLE(socksAuthCredentials, CONFIG_PASSWORD,
                              configAtomSetter,
-                             "SOCKS4a (or SOCKS5) user name");
-    CONFIG_VARIABLE_SETTABLE(socksPassWord, CONFIG_PASSWORD,
-                             configAtomSetter,
-                             "SOCKS5 password");
+                             "SOCKS4a (or SOCKS5) credentials username:password");
     CONFIG_VARIABLE_SETTABLE(socksProxyType, CONFIG_ATOM_LOWER,
                              socksProxyTypeSetter,
                              "One of socks4a or socks5");
-    CONFIG_VARIABLE_SETTABLE(socksAuthMethod, CONFIG_ATOM_LOWER,
-                             socksAuthMethodSetter,
-                             "no or userpass");
+
+
+    // infer username and password from credentials
+    int rc = atomSplit(socksAuthCredentials, ':', &socksUserName, &socksPassWord);
+    if (rc < 0) {
+      do_log(L_ERROR, "Error splitting credentials");
+      exit(1);
+    } else if (rc == 0) {
+      // separator ':' not found
+      socksUserName = socksAuthCredentials;
+      releaseAtom(socksPassWord);
+      socksPassWord = NULL;
+    } else {
+      // split successfull: free memory
+      releaseAtom(socksAuthCredentials);
+    }
 }
 
 static int
@@ -116,17 +124,6 @@ socksParentProxySetter(ConfigVariablePtr var, void *value)
     configAtomSetter(var, value);
     initSocks();
     return 1;
-}
-
-static int
-socksAuthMethodSetter(ConfigVariablePtr var, void *value)
-{
-    if(*var->value.a != bNoAuth && *var->value.a != bUserPass) {
-        do_log(L_ERROR, "Unknown socksAuthMethod %s\n", (*var->value.a)->string);
-        return -1;
-    }
-
-    return configAtomSetter(var, value);
 }
 
 static int
@@ -334,9 +331,9 @@ socksConnectHandler(int status,
         }
         request->buf[0] = 5;             /* ver */
         request->buf[1] = 1;             /* nmethods */
-    if (socksAuthMethod == bNoAuth) {
+	if (socksPassWord == NULL) {
             request->buf[2] = 0;             /* no authentication required */
-	} else if (socksAuthMethod == bUserPass) {
+	} else {
             request->buf[2] = 2;             /* username/password */
 	}
         do_stream(IO_WRITE, request->fd, 0, request->buf, 3,
@@ -365,11 +362,16 @@ socksWriteHandler(int status,
         return 0;
     }
 
-    do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 8,
-              socksProxyType == aSocks5 ?
-              (socksAuthMethod == bUserPass ? socks5UPReadHandler : socks5ReadHandler) 
-		: socksReadHandler,
-              request);
+    int (*readHandler)(int, FdEventHandlerPtr, StreamRequestPtr) = NULL;
+    if (socksProxyType == aSocks4a){
+      readHandler = socksReadHandler;
+    } else if (socksPassWord == NULL) {
+      readHandler = socks5ReadHandler;
+    } else if (socksPassWord != NULL) {
+      readHandler = socks5ReadHandlerAuth;
+    }
+
+    do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 8, readHandler, request);
     return 1;
 
  error:
@@ -419,7 +421,7 @@ socksReadHandler(int status,
 }
 
 static int
-socks5UPReadHandler(int status,
+socks5ReadHandlerAuth(int status,
                   FdEventHandlerPtr event,
                   StreamRequestPtr srequest)
 {
@@ -486,8 +488,10 @@ socks5ReadHandler(int status,
         return 0;
     }
 
-    if((socksAuthMethod == bUserPass ? (request->buf[0] != 1) : (request->buf[0] != 5)) || request->buf[1] != 0) {
-
+    if(request->buf[1] != 0 ||
+       (socksPassWord != NULL && request->buf[0] != 1) || // user/pass: need ver 1
+       (socksPassWord == NULL && request->buf[0] != 5))   // no-auth:   need ver 5
+      {
         status = -ESOCKS_PROTOCOL;
         goto error;
     }
@@ -527,7 +531,7 @@ socks5WriteHandler(int status,
                    StreamRequestPtr srequest)
 {
     SocksRequestPtr request = srequest->data;
-    
+
     if(status < 0)
         goto error;
 
@@ -540,7 +544,8 @@ socks5WriteHandler(int status,
     }
 
     do_stream(IO_READ | IO_NOTNOW, request->fd, 0, request->buf, 10,
-              ((socksAuthMethod == bUserPass) && (authed == -1) ? socks5ReadHandler : socks5ReadHandler2), request);
+              ((socksPassWord != NULL) && (authed == -1) ? socks5ReadHandler : socks5ReadHandler2),
+	      request);
     return 1;
 
  error:
