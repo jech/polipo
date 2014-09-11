@@ -17,6 +17,10 @@
 # proxyAddress = "::0"        # both IPv4 and IPv6
 # proxyAddress = "0.0.0.0"    # IPv4 only
 
+# Uncomment this if you want your Polipo to bind to a specific IP:
+
+# proxyOutgoingAddress = "134.157.168.1"
+
 # If you do that, you'll want to restrict the set of hosts allowed to
 # connect:
 
