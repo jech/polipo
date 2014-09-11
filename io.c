@@ -32,6 +32,8 @@ THE SOFTWARE.
 int useTemporarySourceAddress = 1;
 #endif
 
+AtomPtr proxyOutgoingAddress = NULL;
+
 void
 preinitIo()
 {
@@ -40,6 +42,9 @@ preinitIo()
                              configIntSetter,
                              "Prefer IPv6 temporary source address.");
 #endif
+
+    CONFIG_VARIABLE(proxyOutgoingAddress, CONFIG_ATOM_LOWER,
+                    "The IP address which the proxy connects from.");
 
 #ifdef HAVE_WINSOCK
     /* Load the winsock dll */
@@ -403,6 +408,25 @@ streamRequestDone(StreamRequestPtr request)
 }
 
 static int
+serverSocket_outgoingIP(int fd)
+{
+        int rc;
+        unsigned long int bind_addr_saddr = inet_addr (proxyOutgoingAddress->string);
+        struct sockaddr_in local_sockaddr_in[] = {{ 0 }};
+
+        local_sockaddr_in->sin_family = AF_INET;
+        local_sockaddr_in->sin_addr.s_addr = bind_addr_saddr;
+        local_sockaddr_in->sin_port = htons (0);
+
+        rc = bind(fd, (struct sockaddr *)local_sockaddr_in, sizeof (struct sockaddr));
+        if(rc != 0) {
+            do_log_error(L_WARN, errno, "Couldn't bind outgoing IP %s", proxyOutgoingAddress->string);
+        }
+
+        return rc;
+}
+
+static int
 serverSocket(int af)
 {
     int fd, rc;
@@ -420,6 +444,10 @@ serverSocket(int af)
     }
 
     if(fd >= 0) {
+        if(proxyOutgoingAddress != NULL) {
+            serverSocket_outgoingIP(fd);
+        }
+
         rc = setNonblocking(fd, 1);
         if(rc < 0) {
             int errno_save = errno;
