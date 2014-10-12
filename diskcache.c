@@ -368,7 +368,7 @@ urlDirname(char *buf, int n, const char *url, int len)
     if(lwrcmp(url, "http://", 7) != 0)
         return -1;
 
-    if(checkRoot(localDocumentRoot) <= 0)
+    if(checkRoot(diskCacheRoot) <= 0)
         return -1;
 
     if(n <= diskCacheRoot->length)
