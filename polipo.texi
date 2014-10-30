@@ -305,10 +305,10 @@ results cacheable.}.  The @samp{PUT} method is used to replace an
 resource with a different instance; it is typically used by web
 publishing applications.
 
-@samp{POST} and @samp{PUT} requests are handled by Polipo pretty much
-like @samp{GET} and @samp{HEAD}; however, for various reasons, some
-precautions must be taken.  In particular, any cached data for the
-resource they refer to must be discarded, and they can never be
+@samp{POST}, @samp{PUT} and @samp{OPTIONS} requests are handled by
+Polipo pretty much like @samp{GET} and @samp{HEAD}; however, for various
+reasons, some precautions must be taken.  In particular, any cached data
+for the resource they refer to must be discarded, and they can never be
 pipelined.
 
 Finally, HTTP/1.1 includes a convenient backdoor with the
@@ -316,7 +316,7 @@ Finally, HTTP/1.1 includes a convenient backdoor with the
 @ref{Tunnelling connections}.
 
 Polipo does not currently handle the more exotic methods such as
-@samp{OPTIONS} and @samp{PROPFIND}.
+@samp{PROPFIND}.
 
 @node Running, Network, Background, Top
 @chapter Running Polipo
