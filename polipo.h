@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <inttypes.h>
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/time.h>

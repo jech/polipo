@@ -87,8 +87,8 @@ internAtomN(const char *string, int n)
         atomHashTable[h] = atom;
         used_atoms++;
     }
-    do_log(D_ATOM_REFCOUNT, "A 0x%lx %d++\n",
-           (unsigned long)atom, atom->refcount);
+    do_log(D_ATOM_REFCOUNT, "A 0x%" PRIxPTR " %d++\n",
+           (intptr_t)atom, atom->refcount);
     atom->refcount++;
     return atom;
 }
@@ -169,8 +169,8 @@ retainAtom(AtomPtr atom)
     if(atom == NULL)
         return NULL;
 
-    do_log(D_ATOM_REFCOUNT, "A 0x%lx %d++\n",
-           (unsigned long)atom, atom->refcount);
+    do_log(D_ATOM_REFCOUNT, "A 0x%" PRIxPTR " %d++\n",
+           (intptr_t)atom, atom->refcount);
     assert(atom->refcount >= 1 && atom->refcount < LARGE_ATOM_REFCOUNT);
     atom->refcount++;
     return atom;
@@ -182,8 +182,8 @@ releaseAtom(AtomPtr atom)
     if(atom == NULL)
         return;
 
-    do_log(D_ATOM_REFCOUNT, "A 0x%lx %d--\n",
-           (unsigned long)atom, atom->refcount);
+    do_log(D_ATOM_REFCOUNT, "A 0x%" PRIxPTR " %d--\n",
+           (intptr_t)atom, atom->refcount);
     assert(atom->refcount >= 1 && atom->refcount < LARGE_ATOM_REFCOUNT);
 
     atom->refcount--;

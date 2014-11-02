@@ -275,8 +275,8 @@ objectMetadataChanged(ObjectPtr object, int revalidate)
 ObjectPtr
 retainObject(ObjectPtr object)
 {
-    do_log(D_REFCOUNT, "O 0x%lx %d++\n",
-           (unsigned long)object, object->refcount);
+    do_log(D_REFCOUNT, "O 0x%" PRIxPTR " %d++\n",
+           (intptr_t)object, object->refcount);
     object->refcount++;
     return object;
 }
@@ -284,8 +284,8 @@ retainObject(ObjectPtr object)
 void
 releaseObject(ObjectPtr object)
 {
-    do_log(D_REFCOUNT, "O 0x%lx %d--\n",
-           (unsigned long)object, object->refcount);
+    do_log(D_REFCOUNT, "O 0x%" PRIxPTR " %d--\n",
+           (intptr_t)object, object->refcount);
     object->refcount--;
     if(object->refcount == 0) {
         assert(!object->condition.handlers && 
@@ -298,8 +298,8 @@ releaseObject(ObjectPtr object)
 void
 releaseNotifyObject(ObjectPtr object)
 {
-    do_log(D_REFCOUNT, "O 0x%lx %d--\n",
-           (unsigned long)object, object->refcount);
+    do_log(D_REFCOUNT, "O 0x%" PRIxPTR " %d--\n",
+           (intptr_t)object, object->refcount);
     object->refcount--;
     if(object->refcount > 0) {
         notifyObject(object);
@@ -314,7 +314,7 @@ releaseNotifyObject(ObjectPtr object)
 void 
 lockChunk(ObjectPtr object, int i)
 {
-    do_log(D_LOCK, "Lock 0x%lx[%d]: ", (unsigned long)object, i);
+    do_log(D_LOCK, "Lock 0x%" PRIxPTR "[%d]: ", (intptr_t)object, i);
     assert(i >= 0);
     if(i >= object->numchunks)
         objectSetChunks(object, i + 1);
@@ -325,7 +325,7 @@ lockChunk(ObjectPtr object, int i)
 void 
 unlockChunk(ObjectPtr object, int i)
 {
-    do_log(D_LOCK, "Unlock 0x%lx[%d]: ", (unsigned long)object, i);
+    do_log(D_LOCK, "Unlock 0x%" PRIxPTR "[%d]: ", (intptr_t)object, i);
     assert(i >= 0 && i < object->numchunks);
     assert(object->chunks[i].locked > 0);
     object->chunks[i].locked--;
@@ -479,8 +479,8 @@ objectAddData(ObjectPtr object, const char *data, int offset, int len)
 {
     int rc;
 
-    do_log(D_OBJECT_DATA, "Adding data to 0x%lx (%d) at %d: %d bytes\n",
-           (unsigned long)object, object->length, offset, len);
+    do_log(D_OBJECT_DATA, "Adding data to 0x%" PRIxPTR " (%d) at %d: %d bytes\n",
+           (intptr_t)object, object->length, offset, len);
 
     if(len == 0)
         return 1;
