@@ -686,7 +686,6 @@ create_listener(char *address, int port,
                 void *data)
 {
     int fd, rc;
-    int one = 1;
     int done;
     struct sockaddr_in addr;
 #ifdef HAVE_IPv6

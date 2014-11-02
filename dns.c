@@ -1402,7 +1402,7 @@ labelsToString(char *buf, int offset, int n, char *d, int m, int *j_return)
     int i = offset, j, k;
     int ll, rc;
 
-    j = 0;
+    j = k = 0;
     while(1) {
         if(i >= n) return -1;
         ll = *(unsigned char*)&buf[i]; i++;

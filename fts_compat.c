@@ -240,7 +240,9 @@ fts_read(FTS *fts)
     struct dirent *dirent;
     int rc;
     char *name;
+#ifdef S_ISLNK
     char buf[1024];
+#endif
 
     if(fts->ftsent.fts_path) {
         free(fts->ftsent.fts_path);
@@ -284,7 +286,9 @@ fts_read(FTS *fts)
 
     name = dirent->d_name;
 
+#ifdef S_ISLNK
  again2:
+#endif
     rc = stat(name, &fts->ftstat);
     if(rc < 0) {
         fts->ftsent.fts_info = FTS_NS;
