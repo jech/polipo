@@ -689,7 +689,7 @@ do_scheduled_accept(int status, FdEventHandlerPtr event)
 {
     AcceptRequestPtr request = (AcceptRequestPtr)&event->data;
     int rc, done;
-    unsigned len;
+    socklen_t len;
     struct sockaddr_in addr;
 
     if(status) {
@@ -1128,7 +1128,7 @@ int
 netAddressMatch(int fd, NetAddressPtr list)
 {
     int rc;
-    unsigned int len;
+    socklen_t len;
     struct sockaddr_in sain;
 #ifdef HAVE_IPv6
     struct sockaddr_in6 sain6;
