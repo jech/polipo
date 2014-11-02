@@ -153,8 +153,6 @@ struct pollfd {
 /* Winsock uses int instead of the usual socklen_t */
 typedef int socklen_t;
 
-typedef int pid_t;
-
 /* Function prototypes for functions in mingw.c */
 unsigned int win32_sleep(unsigned int);
 int     win32_inet_aton(const char *, struct in_addr *);
