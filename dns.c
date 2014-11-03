@@ -104,7 +104,7 @@ static int sendQuery(DnsQueryPtr query);
 static int idSeed;
 #endif
 
-#ifndef NO_FANCY_RESOLVER
+#if !defined(NO_FANCY_RESOLVER) && !defined(WIN32)
 static int
 parseResolvConf(char *filename)
 {
