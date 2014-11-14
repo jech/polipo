@@ -360,7 +360,6 @@ initForbidden(void)
     }
     
     parseDomainFile(forbiddenTunnelsFile, &forbiddenTunnelsDomains, &forbiddenTunnelsRegex);
-    //
     
     return;
 }

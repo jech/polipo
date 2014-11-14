@@ -1,3 +1,10 @@
+Polipo 1.1.2 (unreleased):
+
+  * Fix a bug that could prevent the on-disk cache from being written out.
+    Thanks to David Bonnes.
+  * Allow POST with no Content-Length.  Thanks to Jamie Jones.
+  * Windows build fixes.
+
 14 May 2014: Polipo 1.1.1:
 
   * Fix a typo that would cause a crash when connecting to a SOCKS
