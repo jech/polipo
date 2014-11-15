@@ -1,5 +1,6 @@
 Polipo 1.1.2 (unreleased):
 
+  * Implement support for the OPTIONS method (thanks to Jan Kraetzschmar).
   * Fix a bug that could prevent the on-disk cache from being written out.
     Thanks to David Bonnes.
   * Allow POST with no Content-Length.  Thanks to Jamie Jones.
