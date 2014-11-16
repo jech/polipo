@@ -3,6 +3,8 @@ Polipo 1.1.2 (unreleased):
   * Implemented support for SOCKS5 authenticatin (thanks to Amir Hossein
     and Heinrich Hartmann).
   * Implement support for the OPTIONS method (thanks to Jan Kraetzschmar).
+  * Implemented support for binding the server side to a specific address
+    (thanks to Sashka Nochkin).
   * Fix a bug that could prevent the on-disk cache from being written out.
     Thanks to David Bonnes.
   * Allow POST with no Content-Length.  Thanks to Jamie Jones.
