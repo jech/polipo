@@ -1293,7 +1293,7 @@ $ polipo parentProxy=localhost:8124
 @subsection SOCKS parent proxies
 @cindex SOCKS
 @vindex socksParentProxy
-@vindex socksUserName
+@vindex socksAuthCredentials
 @vindex socksProxyType
 
 The variable @code{socksParentProxy} specifies the hostname and port
@@ -1303,9 +1303,9 @@ defined by @code{socksProxyType}, which can be either @samp{socks4a}
 or @samp{socks5}; the latter value specifies ``SOCKS5 with
 hostnames'', and is the default.
 
-The user name passed to the SOCKS4a proxy is defined by the variable
-@code{socksUserName}.  This value is currently ignored with a
-SOCKS5 proxy.
+The variable @code{socksAuthCredentials} can be used if your SOCKS
+proxy requires authentication.  For SOCKS4 and 4a, it is just
+a username; for SOCKS5 it is of the form @samp{username:password}.
 
 The main application of the SOCKS support is to use
 @uref{http://tor.eff.org,,Tor} to evade overly restrictive or
