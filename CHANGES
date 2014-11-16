@@ -1,5 +1,7 @@
 Polipo 1.1.2 (unreleased):
 
+  * Implemented support for SOCKS5 authenticatin (thanks to Amir Hossein
+    and Heinrich Hartmann).
   * Implement support for the OPTIONS method (thanks to Jan Kraetzschmar).
   * Fix a bug that could prevent the on-disk cache from being written out.
     Thanks to David Bonnes.
