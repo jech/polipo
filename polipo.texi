@@ -724,6 +724,11 @@ both IPv4 and IPv6.  Polipo will try all of a hosts addresses in turn;
 once it has found one that works, it will stick to that address until
 it fails again.
 
+If your host has multiple IP addresses, you can specify an IP address
+to use for outgoing connections with the @code{proxyOutgoingAddress}
+variable.  If not specified (the default), it will be determined by
+the host OS.
+
 If connecting via IPv6 there is the possibility to use temporary
 source addresses to increase privacy (RFC@tie{}3041). The variable
 @code{useTemporarySourceAddress} controls the use of temporary
@@ -732,10 +737,6 @@ temporary addresses are preferred, if set to @code{false} static addresses
 are used and if set to @code{maybe} (the default) the operation
 system default is in effect. This setting is not available
 on all operation systems.
-
-If your host has multiple IP addresses, you can assign an IP address
-for outgoing connections using @code{proxyOutgoingAddress} variable.
-If not specified (the default), it will be determined by host OS.
 
 @menu
 * Allowed ports::               Where the proxy is allowed to connect.
