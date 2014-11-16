@@ -467,7 +467,8 @@ httpMakeServerRequest(char *name, int port, ObjectPtr object,
             return 1;
         }
     } else if(expectContinue >= 2 && server->version == HTTP_11) {
-        if(request->method == METHOD_POST || request->method == METHOD_PUT)
+        if(request->method == METHOD_POST || request->method == METHOD_PUT ||
+           request->method == METHOD_OPTIONS)
             request->flags |= REQUEST_WAIT_CONTINUE;
     }
         
@@ -1593,6 +1594,7 @@ httpWriteRequest(HTTPConnectionPtr connection, HTTPRequestPtr request,
     case METHOD_HEAD: m = "HEAD"; break;
     case METHOD_POST: m = "POST"; break;
     case METHOD_PUT: m = "PUT"; break;
+    case METHOD_OPTIONS: m = "OPTIONS"; break;
     default: abort();
     }
     n = snnprintf(connection->reqbuf, n, bufsize, "%s ", m);

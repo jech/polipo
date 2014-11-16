@@ -305,10 +305,10 @@ results cacheable.}.  The @samp{PUT} method is used to replace an
 resource with a different instance; it is typically used by web
 publishing applications.
 
-@samp{POST} and @samp{PUT} requests are handled by Polipo pretty much
-like @samp{GET} and @samp{HEAD}; however, for various reasons, some
-precautions must be taken.  In particular, any cached data for the
-resource they refer to must be discarded, and they can never be
+@samp{POST}, @samp{PUT} and @samp{OPTIONS} requests are handled by
+Polipo pretty much like @samp{GET} and @samp{HEAD}; however, for various
+reasons, some precautions must be taken.  In particular, any cached data
+for the resource they refer to must be discarded, and they can never be
 pipelined.
 
 Finally, HTTP/1.1 includes a convenient backdoor with the
@@ -316,7 +316,7 @@ Finally, HTTP/1.1 includes a convenient backdoor with the
 @ref{Tunnelling connections}.
 
 Polipo does not currently handle the more exotic methods such as
-@samp{OPTIONS} and @samp{PROPFIND}.
+@samp{PROPFIND}.
 
 @node Running, Network, Background, Top
 @chapter Running Polipo
@@ -1298,7 +1298,7 @@ $ polipo parentProxy=localhost:8124
 @subsection SOCKS parent proxies
 @cindex SOCKS
 @vindex socksParentProxy
-@vindex socksUserName
+@vindex socksAuthCredentials
 @vindex socksProxyType
 
 The variable @code{socksParentProxy} specifies the hostname and port
@@ -1308,9 +1308,9 @@ defined by @code{socksProxyType}, which can be either @samp{socks4a}
 or @samp{socks5}; the latter value specifies ``SOCKS5 with
 hostnames'', and is the default.
 
-The user name passed to the SOCKS4a proxy is defined by the variable
-@code{socksUserName}.  This value is currently ignored with a
-SOCKS5 proxy.
+The variable @code{socksAuthCredentials} can be used if your SOCKS
+proxy requires authentication.  For SOCKS4 and 4a, it is just
+a username; for SOCKS5 it is of the form @samp{username:password}.
 
 The main application of the SOCKS support is to use
 @uref{http://tor.eff.org,,Tor} to evade overly restrictive or
