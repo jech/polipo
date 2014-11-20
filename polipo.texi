@@ -1178,6 +1178,7 @@ webtrekk\..*
 @vindex dnsMaxTimeout
 @vindex dnsUseGethostbyname
 @vindex dnsNameServer
+@vindex dnsNameServerPort
 @vindex dnsNegativeTtl
 @vindex dnsGethostbynameTtl
 @vindex dnsQueryIPv6
@@ -1223,10 +1224,11 @@ recommended).
 If the internal DNS support is used, Polipo must be given a recursive
 name server to speak to.  By default, this information is taken from
 the @samp{/etc/resolv.conf} file at startup; however, if you wish to use
-a different name server, you may set the variable @code{dnsNameServer}
-to an IP address@footnote{While Polipo does its own caching of DNS
-data, I recommend that you run a local caching name server.  I am very
-happy with @uref{http://www.thekelleys.org.uk/dnsmasq/doc.html,,@code{pdnsd}}.}.
+a different name server, you may set the @code{dnsNameServer} and
+optionally @code{dnsNameServerPort} variables to an IP address and port
+number of a listening DNS server@footnote{While Polipo does its own
+caching of DNS data, I recommend that you run a local caching name server.
+I am very happy with @uref{http://www.thekelleys.org.uk/dnsmasq/doc.html,,@code{pdnsd}}.}.
 
 When the reply to a DNS request is late to come, Polipo will retry
 multiple times using an exponentially increasing timeout.  The maximum
