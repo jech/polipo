@@ -1228,7 +1228,7 @@ a different name server, you may set the @code{dnsNameServer} and
 optionally @code{dnsNameServerPort} variables to an IP address and port
 number of a listening DNS server@footnote{While Polipo does its own
 caching of DNS data, I recommend that you run a local caching name server.
-I am very happy with @uref{http://www.thekelleys.org.uk/dnsmasq/doc.html,,@code{pdnsd}}.}.
+I am very happy with @uref{http://www.thekelleys.org.uk/dnsmasq/doc.html,,@code{dnsmasq}}.}.
 
 When the reply to a DNS request is late to come, Polipo will retry
 multiple times using an exponentially increasing timeout.  The maximum
