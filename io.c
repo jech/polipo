@@ -745,9 +745,7 @@ create_listener(char *address, int port,
     }
 
     if(fd < 0) {
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto fail;
     }
 
 #ifndef WIN32
@@ -767,9 +765,8 @@ create_listener(char *address, int port,
         memset(&addr6, 0, sizeof(addr6));
         rc = inet_pton(AF_INET6, address, &addr6.sin6_addr);
         if(rc != 1) {
-            done = (*handler)(rc == 0 ? -ESYNTAX : -errno, NULL, NULL);
-            assert(done);
-            return NULL;
+            errno = (rc == 0) ? ESYNTAX : errno;
+            goto fail;
         }
         addr6.sin6_family = AF_INET6;
         addr6.sin6_port = htons(port);
@@ -782,9 +779,8 @@ create_listener(char *address, int port,
         memset(&addr, 0, sizeof(addr));
         rc = inet_aton(address, &addr.sin_addr);
         if(rc != 1) {
-            done = (*handler)(rc == 0 ? -ESYNTAX : -errno, NULL, NULL);
-            assert(done);
-            return NULL;
+            errno = (rc == 0) ? ESYNTAX : errno;
+            goto fail;
         }
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -793,33 +789,31 @@ create_listener(char *address, int port,
 
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't bind");
-        CLOSE(fd);
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto failwithfd;
     }
 
     rc = setNonblocking(fd, 1);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't set non blocking mode");
-        CLOSE(fd);
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto failwithfd;
     }
-        
+
     rc = listen(fd, 1024);
     if(rc < 0) {
         do_log_error(L_ERROR, errno, "Couldn't listen");
-        CLOSE(fd);
-        done = (*handler)(-errno, NULL, NULL);
-        assert(done);
-        return NULL;
+        goto failwithfd;
     }
 
     do_log(L_INFO, "Established listening socket on port %d.\n", port);
 
     return schedule_accept(fd, handler, data);
+
+failwithfd:
+    CLOSE(fd);
+fail:
+    done = (*handler)(-errno, NULL, NULL);
+    assert(done);
+    return NULL;
 }
 
 #ifndef SOL_TCP
