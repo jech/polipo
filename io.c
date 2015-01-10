@@ -708,14 +708,16 @@ do_scheduled_accept(int status, FdEventHandlerPtr event)
     return done;
 }
 
-FdEventHandlerPtr
-create_listener(char *address, int port,
-                int (*handler)(int, FdEventHandlerPtr, AcceptRequestPtr),
-                void *data)
+/**
+ * Opens a listening socket
+ *
+ * Returns the file descriptor on success, -1 on failure and will set errno.
+ */
+int
+open_listening_socket(char *address, int port)
 {
     int fd, rc;
     int one = 1;
-    int done;
     struct sockaddr_in addr;
 #ifdef HAVE_IPv6
     int inet6 = 1;
@@ -806,14 +808,28 @@ create_listener(char *address, int port,
 
     do_log(L_INFO, "Established listening socket on port %d.\n", port);
 
-    return schedule_accept(fd, handler, data);
+    return fd;
 
 failwithfd:
     CLOSE(fd);
 fail:
-    done = (*handler)(-errno, NULL, NULL);
-    assert(done);
-    return NULL;
+    return -1;
+}
+
+FdEventHandlerPtr
+create_listener(char *address, int port,
+                int (*handler)(int, FdEventHandlerPtr, AcceptRequestPtr),
+                void *data)
+{
+    int done;
+    int fd = open_listening_socket(address, port);
+    if (fd < 0) {
+        done = (*handler)(-errno, NULL, NULL);
+        assert(done);
+        return NULL;
+    } else {
+        return schedule_accept(fd, handler, data);
+    }
 }
 
 #ifndef SOL_TCP
