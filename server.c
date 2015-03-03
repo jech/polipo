@@ -1489,7 +1489,8 @@ httpServerRequest(ObjectPtr object, int method, int from, int to,
     rc = parseUrl(object->key, object->key_size, &x, &y, &port, &z);
     
     if(rc < 0 || x < 0 || y < 0 || y - x > 131) {
-        do_log(L_ERROR, "Couldn't parse URL %s\n", scrub(object->key));
+        do_log(L_ERROR, "Couldn't parse URL %s as http: rc=%d, x=%d, y=%d\n",
+          scrub(object->key), rc, x, y);
         abortObject(object, 400, internAtom("Couldn't parse URL"));
         notifyObject(object);
         return 1;
