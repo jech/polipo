@@ -272,8 +272,10 @@ tunnelHandlerParent(int fd, TunnelPtr tunnel)
     }
 
     n = snnprintf(tunnel->buf1.buf, tunnel->buf1.tail, CHUNK_SIZE,
-                  "CONNECT %s:%d HTTP/1.1",
-                  tunnel->hostname->string, tunnel->port);
+                  "CONNECT %s:%d HTTP/1.1\r\nHost: %s",
+                  tunnel->hostname->string, tunnel->port, tunnel->hostname->string);
+    if (tunnel->port != 443)
+        n = snnprintf(tunnel->buf1.buf, n, CHUNK_SIZE, ":%d", tunnel->port);
     if (parentAuthCredentials)
         n = buildServerAuthHeaders(tunnel->buf1.buf, n, CHUNK_SIZE,
                                    parentAuthCredentials);
