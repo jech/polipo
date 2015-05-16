@@ -1376,14 +1376,14 @@ stringToLabels(char *buf, int offset, int n, char *string)
 }
 
 #ifdef UNALIGNED_ACCESS
-#define DO_NTOHS(_d, _s) _d = ntohs(*(short*)(_s));
+#define DO_NTOHS(_d, _s) _d = ntohs(*(unsigned short*)(_s));
 #define DO_NTOHL(_d, _s) _d = ntohl(*(unsigned*)(_s))
-#define DO_HTONS(_d, _s) *(short*)(_d) = htons(_s);
+#define DO_HTONS(_d, _s) *(unsigned short*)(_d) = htons(_s);
 #define DO_HTONL(_d, _s) *(unsigned*)(_d) = htonl(_s)
 #else
 #define DO_NTOHS(_d, _s) \
-    do { short _dd; \
-         memcpy(&(_dd), (_s), sizeof(short)); \
+    do { unsigned short _dd; \
+         memcpy(&(_dd), (_s), sizeof(unsigned short)); \
          _d = ntohs(_dd); } while(0)
 #define DO_NTOHL(_d, _s) \
     do { unsigned _dd; \
