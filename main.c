@@ -152,9 +152,10 @@ main(int argc, char **argv)
     if(daemonise)
         do_daemonise(loggingToStderr());
 
-    if(pidFile)
+    if(pidFile) {
         pidFile = expandTilde(pidFile);
         writePid(pidFile->string);
+    }
 
     listener = create_listener(proxyAddress->string, 
                                proxyPort, httpAccept, NULL);
