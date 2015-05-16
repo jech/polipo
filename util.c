@@ -78,26 +78,6 @@ snnprint_n(char *restrict buf, int n, int len, const char *s, int slen)
 }
 
 int
-strcmp_n(const char *string, const char *buf, int n)
-{
-    int i;
-    i = 0;
-    while(string[i] != '\0' && i < n) {
-        if(string[i] < buf[i])
-            return -1;
-        else if(string[i] > buf[i])
-            return 1;
-        i++;
-    }
-    if(string[i] == '\0' || i == n)
-        return 0;
-    else if(i == n)
-        return 1;
-    else
-        return -1;
-}
-
-int 
 letter(char c)
 {
     if(c >= 'A' && c <= 'Z') return 1;
