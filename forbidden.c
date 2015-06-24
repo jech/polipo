@@ -763,7 +763,7 @@ runRedirector(pid_t *pid_return, int *read_fd_return, int *write_fd_return)
         if(filedes2[1] != 1)
             dup2(filedes2[1], 1);
 
-        execlp(redirector->string, redirector->string, NULL);
+        execlp(redirector->string, redirector->string, (char*)NULL);
         exit(142);
         /* NOTREACHED */
     }
