@@ -88,25 +88,22 @@ THE SOFTWARE.
 #define ATTRIBUTE(x) /**/
 #endif
 
-#if defined __GLIBC__
+/* Musl doesn't have a specific test, so assume musl if Linux and neither
+   __GLIBC__ nor __UCLIBC__ */
+
+#if defined __linux
 #define HAVE_TM_GMTOFF
-#ifndef __UCLIBC__
-#define HAVE_TIMEGM
-#define HAVE_FTS
-#define HAVE_FFSL
-#define HAVE_FFSLL
-#endif
 #define HAVE_SETENV
 #define HAVE_ASPRINTF
-#if (__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 2)
 #define HAVE_MEMRCHR
+#ifdef __GLIBC__
+#define HAVE_FTS
 #endif
-#endif
-
-#if defined(__linux__) && (__GNU_LIBRARY__ == 1)
-/* Linux libc 5 */
+#ifndef __UCLIBC__
+#define HAVE_FFSL
+#define HAVE_FFSLL
 #define HAVE_TIMEGM
-#define HAVE_SETENV
+#endif
 #endif
 
 #ifdef BSD

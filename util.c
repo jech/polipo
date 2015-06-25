@@ -791,7 +791,7 @@ intListCons(int from, int to, IntListPtr list)
 
 /* Return the amount of physical memory on the box, -1 if unknown or
    over two gigs. */
-#if defined(__linux__)
+#ifdef __linux
 
 #include <sys/sysinfo.h>
 int
