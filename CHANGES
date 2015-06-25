@@ -12,6 +12,7 @@ Polipo 1.1.2 (unreleased):
   * Allow POST with no Content-Length.  Thanks to Jamie Jones.
   * Windows build fixes.
   * Added support for musl, removed support for Linux libc5.
+  * Dropped support for very old OpenBSD versions.
 
 14 May 2014: Polipo 1.1.1:
 

@@ -157,9 +157,9 @@ THE SOFTWARE.
 #endif
 
 #ifdef __OpenBSD__
-#if OpenBSD >= 200311
+/* OpenBSD 2.3 and later */
 #define HAVE_IPv6
-#endif
+#define HAVE_ASPRINTF
 #endif
 
 #ifdef __APPLE__
