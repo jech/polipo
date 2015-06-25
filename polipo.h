@@ -203,12 +203,6 @@ THE SOFTWARE.
 #define NO_REDIRECTOR
 #endif
 
-/* This is not going to work if va_list is interesting.  But then, if you
-   have a non-trivial implementation of va_list, you should have va_copy. */
-#ifndef va_copy
-#define va_copy(a, b) do { a = b; } while(0)
-#endif
-
 #include "mingw.h"
 
 #include "ftsimport.h"
