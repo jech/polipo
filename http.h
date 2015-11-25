@@ -106,6 +106,7 @@ typedef struct _HTTPConnection {
 #define METHOD_POST 4
 #define METHOD_PUT 5
 #define METHOD_OPTIONS 6
+#define METHOD_DELETE 7
 
 #define REQUEST_SIDE(request) ((request)->method >= METHOD_POST)
 
