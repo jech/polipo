@@ -174,7 +174,7 @@ do_tunnel(int fd, char *buf, int offset, int len, AtomPtr url)
     if (tunnelIsMatched(url->string, url->length, 
 			tunnel->hostname->string, tunnel->hostname->length)) {
         releaseAtom(url);
-        tunnelError(tunnel, 404, internAtom("Forbidden tunnel"));
+        tunnelError(tunnel, 403, internAtom("Forbidden tunnel"));
 	logTunnel(tunnel,1);
         return;
     }
