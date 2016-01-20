@@ -1426,8 +1426,17 @@ parseUrl(const char *url, int len,
             }
         } else {
             for(i = x; i < len; i++)
-                if(url[i] == ':' || url[i] == '/')
+tryagain:
+                if(url[i] == ':' || url[i] == '/') {
+                    int tom = i;
+                    while (url[tom] != '/') {
+                        if (url[tom++] == '@') {
+                            x = i = tom;
+                            goto tryagain;
+                        }
+                    }
                     break;
+                }
         }
         y = i;
 
