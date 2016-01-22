@@ -1431,7 +1431,7 @@ tryagain:
                     int tom = i;
                     while (url[tom] != '/') {
                         if (url[tom++] == '@') {
-                            x = i = tom;
+                            i = tom;
                             goto tryagain;
                         }
                     }
