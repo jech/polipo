@@ -13,6 +13,7 @@ Polipo 1.1.2 (unreleased):
   * Windows build fixes.
   * Added support for musl, removed support for Linux libc5.
   * Dropped support for very old OpenBSD versions.
+  * Fixed the syntax of the generated Warning headers.
 
 14 May 2014: Polipo 1.1.1:
 
