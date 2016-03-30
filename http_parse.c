@@ -953,8 +953,8 @@ httpParseHeaders(int client, AtomPtr url,
                 } while(h < 0);
                 hbuf_length = h;
             }
-        } else if(name == atomTrailer || name == atomUpgrade) {
-            do_log(L_ERROR, "Trailers or upgrade present.\n");
+        } else if(name == atomTrailer) {
+            do_log(L_ERROR, "Trailers present.\n");
             goto fail;
         } else if(name == atomDate || name == atomExpires ||
                   name == atomIfModifiedSince || 
