@@ -1409,19 +1409,29 @@ int
 parseUrl(const char *url, int len,
          int *x_return, int *y_return, int *port_return, int *z_return)
 {
+
     int x, y, z, port = -1, i = 0;
+    int ipv4ma = 0; // IPv4 mapped address
 
     if(len >= 7 && lwrcmp(url, "http://", 7) == 0) {
         x = 7;
         if(x < len && url[x] == '[') {
+
             /* RFC 2732 */
             for(i = x + 1; i < len; i++) {
                 if(url[i] == ']') {
                     i++;
                     break;
                 }
-                if((url[i] != ':') && !letter(url[i]) && !digit(url[i]))
+                if((url[i] != ':') && !letter(url[i]) && !digit(url[i]) && url[i] != '.')
                     break;
+                if (url[i] == '.') {
+                    ipv4ma = 1;
+                }
+            }
+            if (ipv4ma) {
+                x = 7 + 8; //remove [::FFFF:
+                i--; // remove ]
             }
         } else {
             for(i = x; i < len; i++)
