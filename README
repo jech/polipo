@@ -1,11 +1,7 @@
-Polipo is obsolete
-==================
+Polipo is no longer maintained
+==============================
 
-When it was first written, Polipo was probably the best HTTP proxy
-available.  Since then, the web protocols have changed, and Polipo hasn't
-kept up -- it has no support for HTTP/2.0 or the WebSocket protocol.
-
-Polipo will no longer be maintained.
+Polipo is no longer maintained.  Sorry.
 
 
 Original Polipo README
