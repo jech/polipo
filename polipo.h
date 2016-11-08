@@ -41,6 +41,7 @@ THE SOFTWARE.
 #include <dirent.h>
 #else
 #include "dirent_compat.h"
+#define	F_OK	0	/* Check for file existence */
 #endif
 #include <fcntl.h>
 #include <time.h>

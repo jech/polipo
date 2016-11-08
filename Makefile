@@ -38,6 +38,10 @@ CDEBUGFLAGS = -Os -g -Wall -fno-strict-aliasing
 # EXE=.exe
 # LDLIBS = -lws2_32
 
+# On mingw-w64, you also need
+
+# CC = i686-w64-mingw32-gcc
+
 FILE_DEFINES = -DLOCAL_ROOT=\"$(LOCAL_ROOT)/\" \
                -DDISK_CACHE_ROOT=\"$(DISK_CACHE_ROOT)/\"
 
