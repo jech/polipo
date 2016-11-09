@@ -57,6 +57,8 @@ int loggingToStderr(void);
 
 void really_do_log(int type, const char *f, ...)
     ATTRIBUTE ((format (printf, 2, 3)));
+void really_do_log_time(int type, const char *f, ...)
+    ATTRIBUTE ((format (printf, 2, 3)));
 void really_do_log_v(int type, const char *f, va_list args)
     ATTRIBUTE ((format (printf, 2, 0)));
 void really_do_log_n(int type, const char *s, int n);
@@ -99,6 +101,10 @@ const char *scrub(const char *message);
 #define do_log(_type, _args...)                                \
     do {                                                       \
         if((_type) & (LOGGING_MAX)) really_do_log((_type), _args); \
+    } while(0)
+#define do_log_time(_type, _args...)                                \
+    do {                                                       \
+        if((_type) & (LOGGING_MAX)) really_do_log_time((_type), _args); \
     } while(0)
 #define do_log_error(_type, _e, _args...)                      \
     do {                                                       \
