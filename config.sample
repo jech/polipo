@@ -163,3 +163,8 @@
 # outgoing requests.
 
 # alwaysAddNoTransform = true
+
+# Uncomment this if you want to preserve the host header from the
+# incoming host HTTP request.
+
+# useClientHostHeader = true

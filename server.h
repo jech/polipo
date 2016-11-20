@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 
 extern int serverExpireTime, dontCacheRedirects;
+extern int useClientHostHeader;
 
 typedef struct _HTTPServer {
     char *name;
