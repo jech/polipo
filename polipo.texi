@@ -739,6 +739,10 @@ are used and if set to @code{maybe} (the default) the operation
 system default is in effect. This setting is not available
 on all operation systems.
 
+If your host has multiple IP addresses, you can assign an IP address
+for outgoing connections using @code{proxyOutgoingAddress} variable.
+If not specified (the default), it will be determined by host OS.
+
 @menu
 * Allowed ports::               Where the proxy is allowed to connect.
 @end menu
