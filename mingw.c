@@ -266,7 +266,7 @@ int win32_close_socket(SOCKET fd) {
     int rc;
 
     rc = closesocket(fd);
-    return 0;
+    return rc;
 }
 
 static void

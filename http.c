@@ -260,8 +260,8 @@ httpSetTimeout(HTTPConnectionPtr connection, int secs)
         new = scheduleTimeEvent(secs, httpTimeoutHandler,
                                 sizeof(connection), &connection);
         if(!new) {
-            do_log(L_ERROR, "Couldn't schedule timeout for connection 0x%lx\n",
-                   (unsigned long)connection);
+            do_log(L_ERROR, "Couldn't schedule timeout for connection 0x%" PRIxPTR "\n",
+                   (intptr_t)connection);
             return -1;
         }
     } else {
