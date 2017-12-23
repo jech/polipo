@@ -192,4 +192,14 @@ struct iovec {
 #define READV(x, y, z)  polipo_readv(x, y, z)
 int polipo_readv(int fd, const struct iovec *vector, int count);
 int polipo_writev(int fd, const struct iovec *vector, int count);
+
+#if _MSC_VER
+/* Add definitions missing from MSVC standard headers. */
+typedef int pid_t;
+
+#define R_OK    4       /* Test for read permission.  */
+#define W_OK    2       /* Test for write permission. */
+#define X_OK    1       /* execute permission - unsupported in windows */
+#define F_OK    0       /* Test for existence.  */
+#endif
 #endif
